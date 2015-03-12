@@ -423,8 +423,8 @@ homogenize(Matrix, RingElement) := Matrix => (f,n) -> (
 homogenize(Module,RingElement) := Module => (M,z) -> (
      if isFreeModule M then M
      else subquotient(
-	  if M.?generators then homogenize(M.generators,z),
-	  if M.?relations then homogenize(M.relations,z)))
+	  if M.?generators then homogenize(generators gb M.generators,z),
+	  if M.?relations then homogenize(generators gb M.relations,z)))
 
 homogenize(Ideal,RingElement) := Ideal => (I,z) -> ideal homogenize(module I, z)
 
@@ -451,6 +451,7 @@ listOfVars(Ring,Thing) := (R,x) -> error("expected 'Variables=>' argument to be 
 listOfVars(Ring,Nothing) := (R,x) -> toList(0 .. numgens R-1)
 listOfVars(Ring,List) := (R,x) -> (
      vrs := splice x;
+     if #vrs === 0 then return vrs;
      types := unique apply(vrs,class);
      if #types != 1 then error "expected a list or sequence of integers or variables in the same ring";
      if first types =!= ZZ then vrs = index \ vrs;
