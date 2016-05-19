@@ -22,7 +22,7 @@ CONFIGURECMD =  LIB_DIRS=$(LIBRARIESDIR)/lib ./configure  --with-gc --with-blas 
 			CFLAGS='$(CFLAGS) $(CPPFLAGS)' \
 			--with-gmp=$(LIBRARIESDIR) \
 			--with-mpfr=$(LIBRARIESDIR) \
-			--extensions=/Users/mike/arb-2.8.1
+			--extensions=/scratch/aleykin3/arb-2.8.1
 
 # The with-gmp and with-mpfr options above are barely used by the configure script: the directory given should contain a subdirectory "lib"; that's all.
 include ../Makefile.library
