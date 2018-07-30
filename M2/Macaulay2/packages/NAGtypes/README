@@ -1,0 +1,14 @@
+## Files:
+```
+Point.m2		WSet-ambient.m2		WSet-proxy.m2
+PolySystem.m2		WSet-multiaffine.m2	WitnessSet.m2
+WSet-abstract.m2	WSet-projective.m2	doc-NAGtypes.m2
+```
+
+## New WSet structure
+
+* `WSet-abstract.m2` lays foundation
+* `WSet-ambient.m2` describes affine and projective `Ambient` and `SlicingVariety`
+* `WSet-multiaffine.m2` a stab at mutli- affine/projective witness set/collection
+
+
