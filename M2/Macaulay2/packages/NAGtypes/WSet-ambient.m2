@@ -1,12 +1,12 @@
 -- Types of Ambient spaces 
-
+  
 -- AFFINE
 AffineSpace = new Type of Ambient
 net AffineSpace := A -> net "A^" | net dim A
 affineSpace = method()
 affineSpace Ring :=  R -> new AffineSpace from { 
     "coordinate ring"=> R
-    }
+    } 
 affineSpace(Ring,ZZ,Symbol) := (C,n,x) -> affineSpace( C[x_1..x_n] )
 
 ring AffineSpace := A -> A#"coordinate ring"
@@ -78,6 +78,8 @@ variables (ZZ, MultiAffineSpace) := (i,A) -> ( -- coordinates of the i-th piece
     	R
 	)
     )
+
+
 
 -- MULTI-PROJECTIVE
 MultiProjectiveSpace = new Type of Ambient

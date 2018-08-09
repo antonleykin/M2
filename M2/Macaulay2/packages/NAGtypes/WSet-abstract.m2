@@ -77,3 +77,4 @@ randomSlicingVariety = method()
 randomSlicingVariety SlicingVariety := S -> error "not implemented"
 
 
+

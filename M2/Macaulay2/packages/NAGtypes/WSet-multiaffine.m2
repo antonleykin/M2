@@ -9,7 +9,7 @@ net MultiSlicingVariety := S -> net "slice of codim " | net codim S
 map MultiSlicingVariety := o -> S -> transpose matrix{S#"maps"/transpose}
 
 randomSlicingVariety(MultiAffineSpace,List) := (A,K) -> ( -- K = list of codimensions 
-    assert(all(K,k->class k===ZZ and k>=0) and sum K>0);
+    if not (all(K,k->class k===ZZ and k>=0) and sum K>0) then error" codimensions are not nonnegative integers.";
     R := ring A;
     N := dim A;
     M := apply(#N,i->(
@@ -65,13 +65,11 @@ wCollection(Ambient,PolySystem) := o -> (A,F) ->
       Tolerance => o.Tolerance
       }
 
-dim WCollection := W -> if #W#"witnesses">0 then dim (W_(first multidimensions W)) else error "WCollection not initialized"  
-codim WCollection := {} >> o -> W ->  if #W#"witnesses">0 then codim (W_(first multidimensions W)) else error "WCollection not initialized"  
+dim WCollection := W -> first \ witnessKeys W  
+codim WCollection := {} >> o -> W ->  if #W#"witnesses">0 then codim (W_(first dim W)) else error "WCollection not initialized"  
 ambient WCollection := W -> W#"ambient"
 witnessKeys = method()
 witnessKeys WCollection := W -> keys W#"witnesses"
-multidimensions = method()
-multidimensions WCollection := W -> first \ witnessKeys W
 WCollection _ Sequence := (W,d) -> if member(d,witnessKeys W) then W#"witnesses"#d else null
 WCollection _ List := (W,d) ->  (
     r := select(witnessKeys W, k -> first k == d);
@@ -83,31 +81,45 @@ WCollection _ List := (W,d) ->  (
 -- points WCollection := W -> W.Points
 
 addWSet = method()
-addWSet (WCollection, List, MultiSlicingVariety, List) := (W,H,S,pts) -> W#"witnesses"#(codim S,H,S) = 
-    multiAffineWSet(W#"equations", 
-	multiSlicingVariety(multiAffineSpace ring ambient W,
-	    apply(#H, i->rationalMap transpose matrix {flatten entries S#"maps"#i | {H#i}})), 
-	pts)
+addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
+  if not W#"witnesses"#?(codim S)
+  then W#"witnesses"#(codim S)={};
+  W#"witnesses"#(codim S) = append(
+    W#"witnesses"#(codim S),
+    multiAffineWSet(W#"equations",S,pts))
+    )
 
-toChart(WCollection,Point,List) := (W,p,H) -> (
-    N := dim ambient W;
-    assert(#N==#H);
-    A := for h in H list sub(h,matrix p);
-    if any(A/abs) < W.Tolerance then infinity else point{ 
-	c := coordinates p;
-	c' := {};
-	scan(#N, i->(
-	    	n := N#i;	
-	    	t := take(c,n); 
-	    	c = drop(c,n);
-	    	c' = c' | apply(t,x->x/A#i);
-	    	));
-	c'
-	}
-    )  
 
     
-TEST ///
+TEST ///--multiaffine example
+restart
+debug needsPackage "NAGtypes"
+debug needsPackage "NumericalAlgebraicGeometry"
+errorDepth = 2
+A = multiAffineSpace(CC_53,{1,1},x)
+use ring A 
+-- multi=homogenized parabola y-z^2=0 where y=x_(0,0) and z=x_(1,0)
+F = polySystem {x_(1,1)^2-x_(0,1)}
+S=randomSlicingVariety(A,{1,0})
+peek S
+pts = {point{{1,1}},point{{1,-1}}}
+W = wCollection(A,F) 
+peek W
+peek  W#"equations"
+
+addWSet(W,S,pts)
+addWSet(W,S,pts)
+W#"witnesses"#{1,0}
+peek W
+first pairs( W#"witnesses")
+dim W
+W_{1,0}
+assert(W_{0,1} === null)
+///
+
+
+
+TEST ///--multiprojective example
 restart
 debug needsPackage "NAGtypes"
 debug needsPackage "NumericalAlgebraicGeometry"
@@ -120,8 +132,13 @@ H = {x_(1,1)-1,x_(0,1)-1}
 S = multiSlicingVariety(A, {rationalMap matrix{{x_(0,0)-1}}, rationalMap map((ring A)^0,(ring A)^1,0)})
 pts = {point{{1,1,1,1}},point{{1,1,-1,1}}}
 W = wCollection(A,F) 
+peek W
+peek  W#"equations"
+
 addWSet(W,H,S,pts)
 peek W
+first pairs( W#"witnesses")
+
 dim W
 W_{1,0}
 assert(W_{0,1} === null)
