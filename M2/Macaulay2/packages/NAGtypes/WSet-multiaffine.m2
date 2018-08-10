@@ -65,7 +65,9 @@ wCollection(Ambient,PolySystem) := o -> (A,F) ->
       Tolerance => o.Tolerance
       }
 
-dim WCollection := W -> first \ witnessKeys W  
+
+--Need to decide if we want to return the partial dimension set or report an error. 
+dim WCollection := W ->  witnessKeys W  
 codim WCollection := {} >> o -> W ->  if #W#"witnesses">0 then codim (W_(first dim W)) else error "WCollection not initialized"  
 ambient WCollection := W -> W#"ambient"
 witnessKeys = method()
