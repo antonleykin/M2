@@ -92,7 +92,9 @@ addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
     )
 
 
-    
+--MultiprojectiveNAGtypes
+--First we define multi-affine witness sets and collections. 
+--A witness set consists 
 TEST ///--multiaffine example
 restart
 debug needsPackage "NAGtypes"
@@ -100,7 +102,6 @@ debug needsPackage "NumericalAlgebraicGeometry"
 errorDepth = 2
 A = multiAffineSpace(CC_53,{1,1},x)
 use ring A 
--- multi=homogenized parabola y-z^2=0 where y=x_(0,0) and z=x_(1,0)
 F = polySystem {x_(1,1)^2-x_(0,1)}
 S=randomSlicingVariety(A,{1,0})
 peek S
@@ -108,14 +109,14 @@ pts = {point{{1,1}},point{{1,-1}}}
 W = wCollection(A,F) 
 peek W
 peek  W#"equations"
-
-addWSet(W,S,pts)
+addWSet(W,S,pts)--Here we should also be able to do addWSet(WCollection,WSet)
 addWSet(W,S,pts)
 W#"witnesses"#{1,0}
 peek W
 first pairs( W#"witnesses")
 dim W
-W_{1,0}
+
+W_{1,0}--Not sure what Anton wanted to do here.
 assert(W_{0,1} === null)
 ///
 
