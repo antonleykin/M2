@@ -61,17 +61,15 @@ wCollection(Ambient,PolySystem) := o -> (A,F) ->
   new WCollection from {
       "ambient" => A,
       "equations" => F,
-      "witnesses" => new MutableHashTable from {},
+      "witnesses" => null,
       Tolerance => o.Tolerance
       }
 
 
 --Need to decide if we want to return the partial dimension set or report an error. 
-dim WCollection := W ->  witnessKeys W  
-codim WCollection := {} >> o -> W ->  if #W#"witnesses">0 then codim (W_(first dim W)) else error "WCollection not initialized"  
+dim WCollection := W ->  if W#"witnesses"=!=null then keys W#"witnesses" else error "WCollection not initialized"  
+codim WCollection := {} >> o -> W ->  apply(dim W, d -> dim ambient W - d)
 ambient WCollection := W -> W#"ambient"
-witnessKeys = method()
-witnessKeys WCollection := W -> keys W#"witnesses"
 WCollection _ Sequence := (W,d) -> if member(d,witnessKeys W) then W#"witnesses"#d else null
 WCollection _ List := (W,d) ->  (
     r := select(witnessKeys W, k -> first k == d);
@@ -84,13 +82,16 @@ WCollection _ List := (W,d) ->  (
 
 addWSet = method()
 addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
-  if not W#"witnesses"#?(codim S)
-  then W#"witnesses"#(codim S)={};
-  W#"witnesses"#(codim S) = append(
-    W#"witnesses"#(codim S),
-    multiAffineWSet(W#"equations",S,pts))
+    if #pts == 0 then error "refusing to add an empty witness set"; 
+    if W#"witnesses"===null (	
+      	-- do computation of the dim set
+	-- (described in the "polymatroid" literature?)
+      	);
+    W#"witnesses"#(codim S) = append(
+    	W#"witnesses"#(codim S),
+    	multiAffineWSet(W#"equations",S,pts)
+	)    	
     )
-
 
 --MultiprojectiveNAGtypes
 --First we define multi-affine witness sets and collections. 
@@ -116,8 +117,12 @@ peek W
 first pairs( W#"witnesses")
 dim W
 
-W_{1,0}--Not sure what Anton wanted to do here.
-assert(W_{0,1} === null)
+-- how to perturb a slice?
+-- how to "populate" a w.set? (suppose you have a partial w.set)
+-- how to populate a neighboring dimension w.set ("hop" or "hopscotch"?) 
+-- how to do a trace test?
+-- how to check irreducibility?
+
 ///
 
 
