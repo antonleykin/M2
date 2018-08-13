@@ -111,7 +111,7 @@ dim(Point,PolySystem):= (pt,F) ->(
   thePartialJacs:=apply(variables(A),v->sub(diff (v,F.PolyMap),matrix pt));
   theJacs:=apply(subsets thePartialJacs,I->if #I>0 
     then concatenateMatrix(I_0,drop(I,1)));--drop one for the empty set
-    print 1;
+--    print 1;
   theRanks:=drop(apply(theJacs,j->if j=!=null 	      then (numericalRank j)),1);--drop 1 for the empty set
   theVarGroups:= apply(  drop(subsets(#dim A),1),I->apply(#dim A,i->if member(i,I) then 1 else 0 ));
 --    print 2;
