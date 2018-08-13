@@ -114,15 +114,15 @@ dim(Point,PolySystem):= (pt,F) ->(
     print 1;
   theRanks:=drop(apply(theJacs,j->if j=!=null 	      then (numericalRank j)),1);--drop 1 for the empty set
   theVarGroups:= apply(  drop(subsets(#dim A),1),I->apply(#dim A,i->if member(i,I) then 1 else 0 ));
-    print 2;
+--    print 2;
   M:=matrix drop(theVarGroups,-1);
-    print M;
+--    print M;
   v:=transpose matrix {drop(theRanks,-1)};
-    print v;
+--    print v;
   N:=matrix {theVarGroups_-1};
-    print N;
+--    print N;
   w:=transpose matrix{{theRanks_-1}};
-    print w;
+--    print w;
   print (M,v,N,w);
   P:= polyhedronFromHData(M,v,N,w);
   apply(latticePoints P,p->transpose matrix {dim A}-p)
