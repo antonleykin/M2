@@ -1,4 +1,5 @@
 -- multi-affine and multi-projective witness sets 
+needsPackage"Polyhedra"
 
 MultiSlicingVariety = new Type of SlicingVariety
 MultiSlicingVariety.synonym = "multi-affine slice"
@@ -70,9 +71,9 @@ wCollection(Ambient,PolySystem) := o -> (A,F) ->
 dim WCollection := W ->  if W#"witnesses"=!=null then keys W#"witnesses" else error "WCollection not initialized"  
 codim WCollection := {} >> o -> W ->  apply(dim W, d -> dim ambient W - d)
 ambient WCollection := W -> W#"ambient"
-WCollection _ Sequence := (W,d) -> if member(d,witnessKeys W) then W#"witnesses"#d else null
+WCollection _ Sequence := (W,d) -> if member(d,W#"witnesses") then W#"witnesses"#d else null
 WCollection _ List := (W,d) ->  (
-    r := select(witnessKeys W, k -> first k == d);
+    r := select(W#"witnesses", k -> first k == d);
     if #r>0 then W_(first r) 
     else null
     ) 
@@ -83,8 +84,8 @@ WCollection _ List := (W,d) ->  (
 addWSet = method()
 addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
     if #pts == 0 then error "refusing to add an empty witness set"; 
-    if W#"witnesses"===null (	
-      	-- do computation of the dim set
+    if W#"witnesses"===null then (	
+	-- do computation of the dim set
 	-- (described in the "polymatroid" literature?)
       	);
     W#"witnesses"#(codim S) = append(
@@ -93,21 +94,65 @@ addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
 	)    	
     )
 
+ 
+concatenateMatrix=method()
+concatenateMatrix(Matrix,List):=(M,L)->(apply(L,m->M=M|m); return M)
+--concatenate(Matrix,List):=(M,L)->(apply(L,m->M=M|m); return M)
+ 
+ 
+--Input: PolySystem and a point. We assume it is a general point, 
+---I.e., it only lives on one irreducible component.
+--Output: dimension set of a variety that is an irreducible component of the PolySystem containing that point. 
+--Let's also assume the variety is d dimensional as an affine space or maybe not. 
+
+dim(Point,PolySystem):= (pt,F) ->( 
+  jacF:=jacobian F; --This ia a matrix. 
+  A:=multiAffineSpace ring F;
+  thePartialJacs:=apply(variables(A),v->sub(diff (v,F.PolyMap),matrix pt));
+  theJacs:=apply(subsets thePartialJacs,I->if #I>0 
+    then concatenateMatrix(I_0,drop(I,1)));--drop one for the empty set
+    print 1;
+  theRanks:=drop(apply(theJacs,j->if j=!=null 	      then (numericalRank j)),1);--drop 1 for the empty set
+  theVarGroups:= apply(  drop(subsets(#dim A),1),I->apply(#dim A,i->if member(i,I) then 1 else 0 ));
+    print 2;
+  M:=matrix drop(theVarGroups,-1);
+    print M;
+  v:=transpose matrix {drop(theRanks,-1)};
+    print v;
+  N:=matrix {theVarGroups_-1};
+    print N;
+  w:=transpose matrix{{theRanks_-1}};
+    print w;
+  print (M,v,N,w);
+  P:= polyhedronFromHData(M,v,N,w);
+  apply(latticePoints P,p->transpose matrix {dim A}-p)
+    ) 
+
 --MultiprojectiveNAGtypes
 --First we define multi-affine witness sets and collections. 
 --A witness set consists 
 TEST ///--multiaffine example
 restart
-debug needsPackage "NAGtypes"
+debug needsPackage "NAGtypes"--numericalRank is acting weird
+--I get the following error:Documents/GitHub/M2/M2/Macaulay2/packages/NAGtypes/WSet-multiaffine.m2:114:77-114:90: here is the first use of 'numericalRank'
 debug needsPackage "NumericalAlgebraicGeometry"
+debug needsPackage "NAGtypes"
+--But everything works fine after this line.
 errorDepth = 2
-A = multiAffineSpace(CC_53,{1,1},x)
+A = multiAffineSpace(CC_53,{3,2},symbol x)
 use ring A 
+variables A
 F = polySystem {x_(1,1)^2-x_(0,1)}
+jacobian F
 S=randomSlicingVariety(A,{1,0})
 peek S
-pts = {point{{1,1}},point{{1,-1}}}
+codim S
+dim A-dim S==codim S
+pts = {point{apply(dim ring A,i->1_CC)}}
 W = wCollection(A,F) 
+
+dim(first pts,F)--Not sure if we are computing the correct thing because 
+
 peek W
 peek  W#"equations"
 addWSet(W,S,pts)--Here we should also be able to do addWSet(WCollection,WSet)
@@ -122,6 +167,11 @@ dim W
 -- how to populate a neighboring dimension w.set ("hop" or "hopscotch"?) 
 -- how to do a trace test?
 -- how to check irreducibility?
+---
+
+A = multiAffineSpace(CC_53,{2,3},symbol x)
+use ring A 
+F = polySystem {random({1,1},ring A),random({1,0},ring A)}
 
 ///
 

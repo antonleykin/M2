@@ -77,7 +77,8 @@ variables (ZZ, MultiAffineSpace) := (i,A) -> ( -- coordinates of the i-th piece
     	standardWeightVector(i,degreeLength R),
     	R
 	)
-    )
+    ) 
+variables (MultiAffineSpace) := (A) -> apply(#(dim A),i->variables(i,A))
 
 
 
