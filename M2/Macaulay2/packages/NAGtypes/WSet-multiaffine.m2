@@ -94,6 +94,8 @@ addWSet (WCollection, MultiSlicingVariety, List) := (W,S,pts) ->(
 	)    	
     )
 
+
+
  
 concatenateMatrix=method()
 concatenateMatrix(Matrix,List):=(M,L)->(apply(L,m->M=M|m); return M)
@@ -123,11 +125,12 @@ dim(Point,PolySystem):= (pt,F) ->(
 --    print N;
   w:=transpose matrix{{theRanks_-1}};
 --    print w;
-  print (M,v,N,w);
+--  print (M,v,N,w);
   P:= polyhedronFromHData(M,v,N,w);
-  apply(latticePoints P,p->transpose matrix {dim A}-p)
+  apply(latticePoints P,p->flatten entries (transpose matrix {dim A}-p))
     ) 
 
+polySystem(MultiSlicingVariety):=(S)->apply(S#"maps",i->flatten entries i)//flatten //polySystem
 --MultiprojectiveNAGtypes
 --First we define multi-affine witness sets and collections. 
 --A witness set consists 
@@ -145,13 +148,18 @@ variables A
 F = polySystem {x_(1,1)^2-x_(0,1)}
 jacobian F
 S=randomSlicingVariety(A,{1,0})
+codim S
+dim A
 peek S
 codim S
 dim A-dim S==codim S
 pts = {point{apply(dim ring A,i->1_CC)}}
 W = wCollection(A,F) 
 
-dim(first pts,F)--Not sure if we are computing the correct thing because 
+typeG={1,2}
+G=randomSlicingVariety(A,typeG)
+dim(first pts,polySystem G) 
+
 
 peek W
 peek  W#"equations"
