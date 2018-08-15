@@ -17,7 +17,7 @@ randomSlicingVariety(MultiAffineSpace,List) := (A,K) -> ( -- K = list of codimen
 	    n := N#i; 
 	    k := K#i;
 	    if k==0 then map(R^0,R^1,0)
-	    else (variables(i,A) * random(R^n,R^k) - matrix {toList (k:1_R)})
+	    else transpose (variables(i,A) * random(R^n,R^k) - matrix {toList (k:1_R)})
 	    ));
     multiSlicingVariety( A, M/rationalMap )
     )
@@ -34,9 +34,9 @@ multiAffineWSet (PolySystem,SlicingVariety,List) := (F,S,pts) -> (
       	  "points" => pts
       	  }
       )
+equations := W -> W#"equations" 
 dim MultiAffineWSet := W -> codim W#"slice"
 degree MultiAffineWSet := W -> # points W 
-
 net MultiAffineWSet := W -> net "multiAffineWSet(dim=" | net dim W | ",deg=" | net degree W | ")" 
 
 slicingVariety MultiAffineWSet := W -> W#"slice" 
@@ -107,12 +107,14 @@ concatenateMatrix(Matrix,List):=(M,L)->(apply(L,m->M=M|m); return M)
 --Output: dimension set of a variety that is an irreducible component of the PolySystem containing that point. 
 --Let's also assume the variety is d dimensional as an affine space or maybe not. 
 
-dim(Point,PolySystem):= (pt,F) ->( 
-  jacF:=jacobian F; --This ia a matrix. 
-  A:=multiAffineSpace ring F;
-  thePartialJacs:=apply(variables(A),v->sub(diff (v,F.PolyMap),matrix pt));
-  theJacs:=apply(subsets thePartialJacs,I->if #I>0 
-    then concatenateMatrix(I_0,drop(I,1)));--drop one for the empty set
+dim(Point,WCollection):= (pt,WC) ->( 
+    A := ambient WC;
+    F := equations WC;
+    jacF := jacobian F; --This ia a matrix. 
+    thePartialJacs := apply(variables(A),v->sub(diff (v,F.PolyMap),matrix pt));
+    theJacs := apply(subsets thePartialJacs,
+	I -> if #I>0 
+    	then concatenateMatrix(I_0,drop(I,1)));--drop one for the empty set
 --    print 1;
   theRanks:=drop(apply(theJacs,j->if j=!=null 	      then (numericalRank j)),1);--drop 1 for the empty set
   theVarGroups:= apply(  drop(subsets(#dim A),1),I->apply(#dim A,i->if member(i,I) then 1 else 0 ));
@@ -130,7 +132,6 @@ dim(Point,PolySystem):= (pt,F) ->(
   apply(latticePoints P,p->flatten entries (transpose matrix {dim A}-p))
     ) 
 
-polySystem(MultiSlicingVariety):=(S)->apply(S#"maps",i->flatten entries i)//flatten //polySystem
 --MultiprojectiveNAGtypes
 --First we define multi-affine witness sets and collections. 
 --A witness set consists 
@@ -155,10 +156,12 @@ codim S
 dim A-dim S==codim S
 pts = {point{apply(dim ring A,i->1_CC)}}
 W = wCollection(A,F) 
+dim(first pts,W) 
 
-typeG={1,2}
-G=randomSlicingVariety(A,typeG)
-dim(first pts,polySystem G) 
+-- dim  
+codimG = {1,2}
+G = randomSlicingVariety(A,codimG)
+dim(first pts,wCollection(A,polySystem map G)) 
 
 
 peek W
