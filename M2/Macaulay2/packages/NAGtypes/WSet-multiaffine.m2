@@ -163,6 +163,25 @@ codimG = {1,2}
 G = randomSlicingVariety(A,codimG)
 dim(first pts,wCollection(A,polySystem map G)) 
 
+---https://arxiv.org/pdf/1507.07069.pdf
+--4-homogeneous
+restart
+debug needsPackage "NAGtypes"--numericalRank is acting weird
+debug needsPackage "NumericalAlgebraicGeometry"
+debug needsPackage "NAGtypes"
+R=CC[rho1]**CC[omega]**CC[d13]**CC[d23]**CC[x,y]
+A = multiAffineSpace(R)
+
+rho2=1-rho1
+mu=random CC
+f1=omega*rho1-1
+f2=omega*rho2-1
+f3=(rho1-x)^2+y^2-d13^2
+f4=(rho2+x)^2+y^2-d23^2
+F=polySystem {f1,f2,f3,f4}
+WC=wCollection(A,F)
+pt=point{{1,1,1,1,1,1_CC}}
+dim(pt,WC)
 
 peek W
 peek  W#"equations"
@@ -183,6 +202,57 @@ dim W
 A = multiAffineSpace(CC_53,{2,3},symbol x)
 use ring A 
 F = polySystem {random({1,1},ring A),random({1,0},ring A)}
+
+---Affine funtf 3v5
+restart
+debug needsPackage "NAGtypes"--numericalRank is acting weird
+debug needsPackage "NumericalAlgebraicGeometry"
+debug needsPackage "NAGtypes"
+
+--R=CC[{w1v1, w1v2, w1v3}]**CC[{w2v1, w2v2, w2v3}]**CC[{w3v1, w3v2, w3v3}]**CC[{w4v1, w4v2, w4v3}]**CC[{w5v1, w5v2, w5v3}]
+R=CC[{w1v1, w2v1, w3v1, w4v1, w5v1}]**CC[ {w1v2, w2v2, w3v2, w4v2, w5v2}] ** CC[{w1v3, w2v3, w3v3, w4v3, w5v3}]
+jade0 = w1v1^2+w2v1^2+w3v1^2+w4v1^2+w5v1^2-1 ; 
+jade1 = w1v1*w1v2+w2v1*w2v2+w3v1*w3v2+w4v1*w4v2+w5v1*w5v2 ; 
+jade2 = w1v1*w1v3+w2v1*w2v3+w3v1*w3v3+w4v1*w4v3+w5v1*w5v3 ; 
+jade3 = w1v2*w1v3+w2v2*w2v3+w3v2*w3v3+w4v2*w4v3+w5v2*w5v3 ; 
+jade4 = w1v1^2+w2v1^2+w3v1^2+w4v1^2+w5v1^2-w1v2^2-w2v2^2-w3v2^2-w4v2^2-w5v2^2 ; 
+jade5 = w1v2^2+w2v2^2+w3v2^2+w4v2^2+w5v2^2-w1v3^2-w2v3^2-w3v3^2-w4v3^2-w5v3^2 ; 
+jade6 = w1v1^2-w2v1^2+w1v2^2-w2v2^2+w1v3^2-w2v3^2 ; 
+jade7 = w2v1^2-w3v1^2+w2v2^2-w3v2^2+w2v3^2-w3v3^2 ; 
+jade8 = w3v1^2-w4v1^2+w3v2^2-w4v2^2+w3v3^2-w4v3^2 ; 
+jade9 = w4v1^2-w5v1^2+w4v2^2-w5v2^2+w4v3^2-w5v3^2 ; 
+A = multiAffineSpace(R)
+F=polySystem {jade0, jade1, jade2, jade3, jade4, jade5, jade6, jade7, jade8, jade9 }; 
+pt=point{flatten transpose{{.878350739656677-.655267722694227*ii,
+.992311073747755+.624621562952355*ii,
+-.0756482712266543+.585129100769662*ii},{
+-.0874625187231375+.801322947708998*ii,
+-.424393626311276-.189829556344162*ii,
+-1.04426756056119+.010032611254391*ii},{
+1.17293648518138+.419135675010108*ii,
+-.716316717577425+.399760065697915*ii,
+.20570523824176-.997858436351401*ii},{
+-.87323559289995-.558018942856899*ii,
+.888959981317501-.54097142448466*ii,
+.0108016860631553-.590653623384341*ii},{
+.44614976208454-.746970959032991*ii,
+.0865526973753582+.772655502291471*ii,
+-1.26212825023999-.211060561983885*ii}}}
+win=dim(pt,wCollection(A,F))
+needsPackage"Polyhedra"
+P= convexHull transpose matrix win
+vertices P
+--halfspaces P
+--methods class P
+--Jose thinks that we might not want to store the lattice points of the polytope. 
+--Maybe it is better to store the dimension as a polytope itself. 
+
+
+
+
+restart
+loadPackage"Bertini"
+bertiniPosDimSolve({jade0, jade1, jade2, jade3, jade4, jade5, jade6, jade7, jade8, jade9 })
 
 ///
 
