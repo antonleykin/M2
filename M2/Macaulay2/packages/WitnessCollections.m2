@@ -88,13 +88,35 @@ dimensionPartition MultiAffineWSet := WS -> (
     else P#theKey=append(P#theKey,p)));
   print apply(keys P,i->vertices i);
   print  netList pairs P;
-  apply(keys P,
+  theValues:=apply(keys P,
     dimpoly->multiAffineWSet(equations WS,slicingVariety WS, P#dimpoly,
       "dimension polytope"=>dimpoly
-      )  )
+      )  );
+  return new MutableHashTable from transpose {keys P,theValues}
   )
+dimensionPartition (WCollection,List) := (WC,sliceType) -> ( 
+  allSlice:=apply(WC#"witnesses"#sliceType,i->dimensionPartition i);
+  P:=new MutableHashTable;
+  print ( allSlice/pairs);
+  apply(allSlice,gws->apply(keys gws,dp->(
+    theKey:=memberEqualEqualOut(dp,keys P);
+    if null=== theKey then P#dp={gws#dp}
+    else P#theKey=append(P#theKey,gws#dp))));
+  return P
+  )
+
 dimensionPartition WCollection := WC -> ( 
-  apply(WC#"witness")  
+  Q:=new MutableHashTable;
+  allTypes:=apply(WC#"witnesses"//keys,st->(--st=sliceType
+    gws:=dimensionPartition(WC,st);
+    apply(keys gws,dp->(
+      theKey:=memberEqualEqualOut(dp,keys Q);
+      if null=== theKey 
+      then (Q#dp=wCollection(ambient WC,equations WC);
+	  theKey=dp);
+      apply(gws#dp,ws->addWSet(Q#theKey,slicingVariety ws, points ws)
+	  )))));
+  return Q
   )
 
 
@@ -123,7 +145,24 @@ assert(dim W2=={0,1})
 assert(degree W1==2)
 assert(degree W2==3)
 thePartition= dimensionPartition(W2)
-assert(#thePartition==2)
+peek thePartition
+thePartition#(first keys thePartition)
+dim first keys thePartition
+dim last keys thePartition
+assert(#keys thePartition==2)
+--
+WC=wCollection(A,F)
+addWSet(WC,S1,pts1)
+addWSet(WC,S2,pts2)
+addWSet(WC,S1,pts1)
+addWSet(WC,S2,pts2)
+keys WC
+P=dimensionPartition( WC,{0,1})
+P#(first keys P)
+keys P
+P=dimensionPartition( WC)
+P#(last keys P)#"witnesses"//peek
+
 ///
 
 
