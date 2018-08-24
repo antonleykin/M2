@@ -72,16 +72,26 @@ dimensionPolytope(Point,Ambient,PolySystem):= (pt,A,F) ->(
 --where each component is equidimensional in the dimension polytope sense.
 --(These do not have to be irreducible)
 
+
+memberEqualEqualOut:=(x,L)->(
+  theOut:=null;
+  scan(L,i->if i==x then (theOut=i; break )) ;
+  return theOut );
+
 dimensionPartition = method()
 dimensionPartition MultiAffineWSet := WS -> ( 
-  P:=partition(p->dimensionPolytope(p,WS), points WS);
+  P:=new MutableHashTable;
+  apply(points WS,p->(
+    dp:=dimensionPolytope(p,WS);
+    theKey:=memberEqualEqualOut(dp,keys P);
+    if null=== theKey then P#dp={p}
+    else P#theKey=append(P#theKey,p)));
   print apply(keys P,i->vertices i);
   print  netList pairs P;
   apply(keys P,
     dimpoly->multiAffineWSet(equations WS,slicingVariety WS, P#dimpoly,
       "dimension polytope"=>dimpoly
-      )  );
-  return P  
+      )  )
   )
 dimensionPartition WCollection := WC -> ( 
   apply(WC#"witness")  
@@ -96,8 +106,6 @@ needsPackage "Polyhedra"
 errorDepth = 2
 A = multiAffineSpace(CC_53,{1,1},symbol x)
 use ring A 
-
--- multi=homogenized parabola y-z^2=0 where y=x_(0,1) and z=x_(1,1)
 x=first flatten entries first variables A
 y=first flatten entries last variables A
 F = polySystem {x*y*(x^2-y)}
@@ -114,11 +122,8 @@ assert (dim W1==codim S1)
 assert(dim W2=={0,1})
 assert(degree W1==2)
 assert(degree W2==3)
-P= dimensionPartition(W2)
-for i in keys P list for j in keys P list i===j
-help partition
-peek W2
-methods dimensionPartition
+thePartition= dimensionPartition(W2)
+assert(#thePartition==2)
 ///
 
 
