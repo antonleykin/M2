@@ -21,15 +21,18 @@ randomSlicingVariety(MultiAffineSpace,List) := (A,K) -> ( -- K = list of codimen
     )
 
 MultiAffineWSet = new Type of WSet
-multiAffineWSet = method(TypicalValue=>MultiAffineWSet)
-multiAffineWSet (PolySystem,SlicingVariety,List) := (F,S,pts) -> (
+multiAffineWSet = method(TypicalValue=>MultiAffineWSet,
+    Options=>{"dimension polytope"=>null,"is irreducible"=>null})
+multiAffineWSet (PolySystem,SlicingVariety,List) := o->(F,S,pts) -> (
       R := ring F;
       -- assert isHomogeneous F.PolyMap; --!!! 
       new MultiAffineWSet from {
       	  "ambient" => multiAffineSpace R,
 	  "equations" => F, 
       	  "slice" => S,
-      	  "points" => pts
+      	  "points" => pts,
+	  "is irreducible"=>o#"is irreducible",
+	  "dimension polytope"=>o#"dimension polytope"
       	  }
       )
 equations MultiAffineWSet := W -> W#"equations" 

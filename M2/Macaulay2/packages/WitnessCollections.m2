@@ -34,9 +34,10 @@ debug needsPackage "NAGtypes"
 --Let's also assume the variety is d dimensional as an affine space or maybe not. 
 
 dimensionPolytope = method()
-dimensionPolytope(Point,WCollection):= (pt,WC) ->( 
-    A := ambient WC;
-    F := equations WC;
+
+dimensionPolytope(Point,MultiAffineWSet):= (pt,MAWS) ->dimensionPolytope(pt,ambient MAWS,equations MAWS)  
+dimensionPolytope(Point,WCollection):= (pt,WC) ->dimensionPolytope(pt,ambient WC,equations WC)  
+dimensionPolytope(Point,Ambient,PolySystem):= (pt,A,F) ->( 
     jacF := jacobian F; --This ia a matrix. 
     thePartialJacs := apply(variables(A),v->sub(diff (v,F.PolyMap),matrix pt));
     theJacs := apply(subsets thePartialJacs,
@@ -60,6 +61,69 @@ dimensionPolytope(Point,WCollection):= (pt,WC) ->(
   --apply(latticePoints P,p->flatten entries (transpose matrix {dim A}-p))
     ) 
 
+
+
+
+---Input: A witness collection of a multi affine variety--
+--it is really a partial witness collection. 
+---(Possibly irreducible and non equidimensional in the polytope sense; 
+--we assume nothing).
+--Output: Describes a union of components--
+--where each component is equidimensional in the dimension polytope sense.
+--(These do not have to be irreducible)
+
+dimensionPartition = method()
+dimensionPartition MultiAffineWSet := WS -> ( 
+  P:=partition(p->dimensionPolytope(p,WS), points WS);
+  print apply(keys P,i->vertices i);
+  print  netList pairs P;
+  apply(keys P,
+    dimpoly->multiAffineWSet(equations WS,slicingVariety WS, P#dimpoly,
+      "dimension polytope"=>dimpoly
+      )  );
+  return P  
+  )
+dimensionPartition WCollection := WC -> ( 
+  apply(WC#"witness")  
+  )
+
+
+TEST ///--dimension partition example
+restart
+debug needsPackage "NAGtypes"
+debug needsPackage "WitnessCollections"
+needsPackage "Polyhedra"
+errorDepth = 2
+A = multiAffineSpace(CC_53,{1,1},symbol x)
+use ring A 
+
+-- multi=homogenized parabola y-z^2=0 where y=x_(0,1) and z=x_(1,1)
+x=first flatten entries first variables A
+y=first flatten entries last variables A
+F = polySystem {x*y*(x^2-y)}
+S1 = randomSlicingVariety(A,{1,0})
+S2 = randomSlicingVariety(A,{0,1})
+S1#"maps"=replace(0,matrix {{x-3_CC}},S1#"maps") 
+S2#"maps"=replace(1,matrix {{y-4_CC}},S2#"maps") 
+pts1 = {point{sub(matrix{{3,0}},CC)},point{sub(matrix{{3,9}},CC)}}
+pts2 = {point{sub(matrix{{0,4}},CC)},point{sub(matrix{{2,4}},CC)},point{sub(matrix{{-2,4}},CC)}}
+W1 = multiAffineWSet(F,S1,pts1)
+W2 = multiAffineWSet(F,S2,pts2)
+keys W1
+assert (dim W1==codim S1)
+assert(dim W2=={0,1})
+assert(degree W1==2)
+assert(degree W2==3)
+P= dimensionPartition(W2)
+for i in keys P list for j in keys P list i===j
+help partition
+peek W2
+methods dimensionPartition
+///
+
+
+
+
 TEST ///--multiaffine example
 restart
 debug needsPackage "NAGtypes"
@@ -75,6 +139,7 @@ assert(codim S == {1,0})
 assert(dim A == codim S + dim S)
 P = point{apply(dim ring A,i->1_CC)}
 W = wCollection(A,F) 
+peek W
 assert( latticePoints dimensionPolytope(P,W) / entries // sort ==  {{{0}, {1}}, {{1}, {0}}} )
 
 latticePoints dimensionPolytope(
@@ -102,8 +167,10 @@ restart
 debug needsPackage "NAGtypes"
 debug needsPackage "WitnessCollections"
 
---R=CC[{w1v1, w1v2, w1v3}]**CC[{w2v1, w2v2, w2v3}]**CC[{w3v1, w3v2, w3v3}]**CC[{w4v1, w4v2, w4v3}]**CC[{w5v1, w5v2, w5v3}]
-R=CC[{w1v1, w2v1, w3v1, w4v1, w5v1}]**CC[ {w1v2, w2v2, w3v2, w4v2, w5v2}] ** CC[{w1v3, w2v3, w3v3, w4v3, w5v3}]
+R=CC[{w1v1, w1v2, w1v3}]**CC[{w2v1, w2v2, w2v3}]**CC[{w3v1, w3v2, w3v3}]**CC[{w4v1, w4v2, w4v3}]**CC[{w5v1, w5v2, w5v3}]
+--R=CC[w1v1]**CC[w1v2]**CC[ w1v3]**CC[w2v1]**CC[ w2v2]**CC[ w2v3]**CC[w3v1]**CC[w3v2]**CC[ w3v3]**CC[w4v1]**CC[w4v2]**CC[ w4v3]**CC[w5v1]**CC[ w5v2]**CC[ w5v3]
+--R=CC[{w1v1, w2v1, w3v1, w4v1, w5v1}]**CC[ {w1v2, w2v2, w3v2, w4v2, w5v2}] ** CC[{w1v3, w2v3, w3v3, w4v3, w5v3}]
+
 jade0 = w1v1^2+w2v1^2+w3v1^2+w4v1^2+w5v1^2-1 ; 
 jade1 = w1v1*w1v2+w2v1*w2v2+w3v1*w3v2+w4v1*w4v2+w5v1*w5v2 ; 
 jade2 = w1v1*w1v3+w2v1*w2v3+w3v1*w3v3+w4v1*w4v3+w5v1*w5v3 ; 
@@ -116,7 +183,7 @@ jade8 = w3v1^2-w4v1^2+w3v2^2-w4v2^2+w3v3^2-w4v3^2 ;
 jade9 = w4v1^2-w5v1^2+w4v2^2-w5v2^2+w4v3^2-w5v3^2 ; 
 A = multiAffineSpace(R)
 F=polySystem {jade0, jade1, jade2, jade3, jade4, jade5, jade6, jade7, jade8, jade9 }; 
-pt=point{flatten transpose{{.878350739656677-.655267722694227*ii,
+pt=point{flatten {{.878350739656677-.655267722694227*ii,
 .992311073747755+.624621562952355*ii,
 -.0756482712266543+.585129100769662*ii},{
 -.0874625187231375+.801322947708998*ii,
@@ -132,9 +199,10 @@ pt=point{flatten transpose{{.878350739656677-.655267722694227*ii,
 .0865526973753582+.772655502291471*ii,
 -1.26212825023999-.211060561983885*ii}}}
 win=dimensionPolytope(pt,wCollection(A,F))
+
 needsPackage"Polyhedra"
 vertices win
-
+latticePoints win 
 restart
 loadPackage"Bertini"
 bertiniPosDimSolve({jade0, jade1, jade2, jade3, jade4, jade5, jade6, jade7, jade8, jade9 })
