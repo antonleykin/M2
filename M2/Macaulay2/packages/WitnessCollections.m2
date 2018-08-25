@@ -78,48 +78,66 @@ memberEqualEqualOut:=(x,L)->(
   scan(L,i->if i==x then (theOut=i; break )) ;
   return theOut );
 
-dimensionPartition = method()
-dimensionPartition MultiAffineWSet := WS -> ( 
+dimensionPartition = method(
+    Options=>{
+	"is junk point"=>((pt)->false),
+	"is junk slice type"=>((st)->false),
+	"is junk dimension polytope"=>((dp)->false)
+	})
+dimensionPartition MultiAffineWSet := o-> WS -> ( 
   P:=new MutableHashTable;
-  apply(points WS,p->(
-    dp:=dimensionPolytope(p,WS);
-    theKey:=memberEqualEqualOut(dp,keys P);
-    if null=== theKey then P#dp={p}
-    else P#theKey=append(P#theKey,p)));
-  print apply(keys P,i->vertices i);
-  print  netList pairs P;
-  theValues:=apply(keys P,
-    dimpoly->multiAffineWSet(equations WS,slicingVariety WS, P#dimpoly,
-      "dimension polytope"=>dimpoly
-      )  );
+  jPt:=o#"is junk point";
+  jDp:=o#"is junk dimension polytope";
+  jSt:=o#"is junk slice type";
+  if not jSt(codim slicingVariety WS) 
+  then(
+    apply(points WS,p->(
+      if not jPt(p)
+      then (dp:=dimensionPolytope(p,WS);
+        theKey:=memberEqualEqualOut(dp,keys P);
+        if null=== theKey and not jDp(dp) then P#dp={p}
+        else if not jDp(dp) then P#theKey=append(P#theKey,p))));
+    theValues:=apply(keys P,
+      dimpoly->multiAffineWSet(equations WS,slicingVariety WS, P#dimpoly,
+        "dimension polytope"=>dimpoly
+        )  );
   return new MutableHashTable from transpose {keys P,theValues}
-  )
-dimensionPartition (WCollection,List) := (WC,sliceType) -> ( 
-  allSlice:=apply(WC#"witnesses"#sliceType,i->dimensionPartition i);
-  P:=new MutableHashTable;
-  print ( allSlice/pairs);
-  apply(allSlice,gws->apply(keys gws,dp->(
-    theKey:=memberEqualEqualOut(dp,keys P);
-    if null=== theKey then P#dp={gws#dp}
-    else P#theKey=append(P#theKey,gws#dp))));
-  return P
-  )
+  ) else return new MutableHashTable from {})
+dimensionPartition (WCollection,List) := o-> (WC,sliceType) -> ( 
+  jPt:=o#"is junk point";  
+  jDp:=o#"is junk dimension polytope";
+  jSt:=o#"is junk slice type";
+    allSlice:=apply(WC#"witnesses"#sliceType,
+      i->dimensionPartition(i,
+        "is junk point"=>jPt,
+        "is junk dimension polytope"=>jDp,
+        "is junk slice type"=>jSt));
+    P:=new MutableHashTable;
+    apply(allSlice,gws->apply(keys gws,dp->(
+      theKey:=memberEqualEqualOut(dp,keys P);
+      if null=== theKey and not jDp(dp) then P#dp={gws#dp}
+      else if not jDp(dp) then P#theKey=append(P#theKey,gws#dp))));
+    return P)
 
-dimensionPartition WCollection := WC -> ( 
+dimensionPartition WCollection := o->  WC -> ( 
   Q:=new MutableHashTable;
+  jSt:=o#"is junk slice type";
+  jPt:=o#"is junk point";  
+  jDp:=o#"is junk dimension polytope";
   allTypes:=apply(WC#"witnesses"//keys,st->(--st=sliceType
-    gws:=dimensionPartition(WC,st);
-    apply(keys gws,dp->(
-      theKey:=memberEqualEqualOut(dp,keys Q);
-      if null=== theKey 
-      then (Q#dp=wCollection(ambient WC,equations WC);
+    if not jSt(st)
+    then (gws:=dimensionPartition(WC,st,"is junk point"=>jPt,"is junk slice type"=>jSt,"is junk dimension polytope"=>jDp);
+      apply(keys gws,dp->(
+        theKey:=memberEqualEqualOut(dp,keys Q);
+        if null=== theKey 
+        then (Q#dp=wCollection(ambient WC,equations WC);
 	  theKey=dp);
-      apply(gws#dp,ws->addWSet(Q#theKey,slicingVariety ws, points ws)
-	  )))));
+        apply(gws#dp,ws->addWSet(Q#theKey,slicingVariety ws, points ws)
+	  ))))));
   return Q
   )
 
-
+--
 TEST ///--dimension partition example
 restart
 debug needsPackage "NAGtypes"
@@ -144,12 +162,12 @@ assert (dim W1==codim S1)
 assert(dim W2=={0,1})
 assert(degree W1==2)
 assert(degree W2==3)
-thePartition= dimensionPartition(W2)
-peek thePartition
-thePartition#(first keys thePartition)
-dim first keys thePartition
-dim last keys thePartition
-assert(#keys thePartition==2)
+pW2= dimensionPartition(W2)
+class pW2===MutableHashTable
+peek pW2
+assert(class first values pW2 ===MultiAffineWSet)
+assert(sort {dim first keys pW2,dim last keys pW2}===sort {0,1})
+assert(#keys pW2==2)
 --
 WC=wCollection(A,F)
 addWSet(WC,S1,pts1)
@@ -158,10 +176,59 @@ addWSet(WC,S1,pts1)
 addWSet(WC,S2,pts2)
 keys WC
 P=dimensionPartition( WC,{0,1})
-P#(first keys P)
-keys P
-P=dimensionPartition( WC)
-P#(last keys P)#"witnesses"//peek
+assert(class first keys P===Polyhedron)
+assert(class first values P===List)
+assert(class first first values P===MultiAffineWSet)
+assert(2==#keys P) 
+
+Q=dimensionPartition( WC)
+assert(class first keys Q===Polyhedron)
+assert(class first values Q===WCollection)
+assert(3==#keys Q) 
+assert(2==max apply(values Q,wc->#wc#"witnesses"))
+
+--apply(values Q,wc->dimensionPolytope wc)
+keys first values Q
+--junk functions
+--junk point
+pW1=dimensionPartition( W1,"is junk point"=>(pt->true))
+assert(#keys pW1==0)
+P=dimensionPartition( WC,{0,1},"is junk point"=>(pt->true))
+assert(#keys P==0)
+Q=dimensionPartition( WC,"is junk point"=>(dp->true))
+assert(#keys Q==0)
+--junk dimension polytope
+pW1=dimensionPartition( W1,"is junk dimension polytope"=>(dp->true))
+assert(#keys pW1==0)
+
+P=dimensionPartition( WC,{0,1},"is junk dimension polytope"=>(dp->true))
+assert(#keys P==0)
+P=dimensionPartition( WC,{0,1},"is junk dimension polytope"=>(dp->(dim dp=!=1)))
+assert(#keys P==1)
+
+Q=dimensionPartition( WC,"is junk dimension polytope"=>(dp->true))
+assert(#keys Q==0)
+Q=dimensionPartition( WC,"is junk dimension polytope"=>(dp->(dim dp=!=1)))
+assert(#keys Q==1)
+
+--junk slice type
+pW1=dimensionPartition( W1,"is junk slice type"=>(st->true))
+assert(#keys pW1==0)
+
+P=dimensionPartition( WC,{0,1},"is junk slice type"=>(st->true))
+assert(#keys P==0)
+P=dimensionPartition( WC,{0,1},"is junk slice type"=>(st->st=={0,1}))
+assert(#keys P==0)
+P=dimensionPartition( WC,{0,1},"is junk slice type"=>(st->st=!={0,1}))
+assert(#keys P==2)
+
+Q=dimensionPartition( WC,"is junk slice type"=>(st->true))
+assert(#keys Q==0)
+Q=dimensionPartition( WC,"is junk slice type"=>(st->st=={0,1}))
+assert(#keys Q==2)
+assert(class first keys Q===Polyhedron)
+assert(class first values Q===WCollection)
+assert(1==max apply(values Q,wc->#wc#"witnesses"))
 
 ///
 
