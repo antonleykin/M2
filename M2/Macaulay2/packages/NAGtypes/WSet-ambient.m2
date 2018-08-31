@@ -80,6 +80,18 @@ variables (ZZ, MultiAffineSpace) := (i,A) -> ( -- coordinates of the i-th piece
     ) 
 variables (MultiAffineSpace) := (A) -> apply(#(dim A),i->variables(i,A))
 
+randomSlicingVariety(MultiAffineSpace,List) := (A,K) -> ( -- K = list of codimensions 
+    if not (all(K,k->class k===ZZ and k>=0) and sum K>0) then error" codimensions are not nonnegative integers.";
+    R := ring A;
+    N := dim A;
+    M := apply(#N,i->(
+	    n := N#i; 
+	    k := K#i;
+	    if k==0 then map(R^0,R^1,0)
+	    else transpose (variables(i,A) * random(R^n,R^k) - matrix {toList (k:1_R)})
+	    ));
+    multiSlicingVariety( A, M/rationalMap )
+    )
 
 
 -- MULTI-PROJECTIVE

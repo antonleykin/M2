@@ -7,19 +7,6 @@ codim MultiSlicingVariety :=  {} >> o -> S -> rank@@target\S#"maps"
 net MultiSlicingVariety := S -> net "slice of codim " | net codim S
 map MultiSlicingVariety := o -> S -> transpose matrix{S#"maps"/transpose}
 
-randomSlicingVariety(MultiAffineSpace,List) := (A,K) -> ( -- K = list of codimensions 
-    if not (all(K,k->class k===ZZ and k>=0) and sum K>0) then error" codimensions are not nonnegative integers.";
-    R := ring A;
-    N := dim A;
-    M := apply(#N,i->(
-	    n := N#i; 
-	    k := K#i;
-	    if k==0 then map(R^0,R^1,0)
-	    else transpose (variables(i,A) * random(R^n,R^k) - matrix {toList (k:1_R)})
-	    ));
-    multiSlicingVariety( A, M/rationalMap )
-    )
-
 MultiAffineWSet = new Type of WSet
 multiAffineWSet = method(TypicalValue=>MultiAffineWSet,
     Options=>{"dimension polytope"=>null,"is irreducible"=>null})

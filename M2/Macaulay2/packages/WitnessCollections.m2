@@ -11,7 +11,7 @@ newPackage(
 	  {Name => "Jose Rodriguez", Email => "jose@madison"},
 	  {Name => "Anton Leykin", Email => "leykin@math.gatech.edu"}
 	  },
-     PackageImports => {"NumericalAlgebraicGeometry", "Polyhedra"},
+     PackageImports => {"NumericalAlgebraicGeometry", "MonodromySolver", "Polyhedra"},
      DebuggingMode => false 
      --DebuggingMode => true 
      )
@@ -324,12 +324,15 @@ bertiniPosDimSolve({jade0, jade1, jade2, jade3, jade4, jade5, jade6, jade7, jade
 -- WSet-*.m2 are loaded by NAGtypes
 -- !!! perhaps merge with witness-set.m2 ???
 
-moveSlicingVariety(MultiAffineWSet,MultiSlicingVariety) := (W,S) -> (
+moveWitnessPoints(MultiAffineWSet,MultiSlicingVariety) := (W,S) -> (
     E := equations W#"equations";
     A := flatten entries map slicingVariety W;
     B := flatten entries map S;
-    ptsB := track(E|A, E|B, points W, 
-	NumericalAlgebraicGeometry$gamma=>exp(random(0.,2*pi)*ii));
+    track(E|A, E|B, points W, 
+	NumericalAlgebraicGeometry$gamma=>exp(random(0.,2*pi)*ii))
+    )
+moveSlicingVariety(MultiAffineWSet,MultiSlicingVariety) := (W,S) -> (
+    ptsB := moveWitnessPoints(W,S);
     if any(ptsB, p->status p =!= Regular) then null -- failed
     else multiAffineWSet(W#"equations",S,ptsB) 
     )
@@ -356,5 +359,58 @@ residuals = for p in pts' list
 assert all(flatten residuals, r->norm r < 1e-6)
 ///
 
+
+populate = method()
+-- attempts to find more witness points given a partial w.set
+populate MultiAffineWSet := W -> (
+    A := ambient W;
+    K := codim slicingVariety W;
+    N := dim A; -- list of # vars in each group
+    c := symbol c;
+    cs := flatten apply(#N, i->( -- i = var group #
+	    n := N#i; -- n = dim of i-th factor of the ambient
+	    k := K#i; -- k = codim of slice (for i)
+	    if k==0 then {} else toList(c_(i,1,1)..c_(i,n,k))
+	    ));
+    C := (coefficientRing ring A)[cs];
+    R := C(monoid ring A);  
+    toR := map(R,ring A,vars R);
+    M := apply(#N,i->(
+	    n := N#i; 
+	    k := K#i;
+	    if k==0 then map(R^0,R^1,0)
+	    else transpose (toR variables(i,A) * genericMatrix(C,c_(i,1,1),n,k) - matrix {toList (k:1_R)})
+	    ));
+    -- monodromySolve( ??? )
+    --
+-* examples (monodromySolve,PolySystem,Point,List)
+
+    S = CC[a,b,c];
+      R = S[x,w];
+      (h, f) = (a*x+b*w+c, 3*x^2 - w + 1);
+      x0 = point {{ii_CC,-2}}; -- clearly a zero of f
+      l = apply(2,i->random CC);
+      p0 = point({append(l,- sum apply(l, x0.Coordinates,(i,x)->i*x))});
+      (N, npaths) = monodromySolve(polySystem {h,f},p0,{x0},NumberOfNodes=>3);
+*-
+    )
+
+TEST ///
+restart 
+debug needsPackage "NAGtypes"
+debug needsPackage "WitnessCollections"
+debug needsPackage "MonodromySolver"
+errorDepth = 0
+A = multiAffineSpace(CC_53,{2,2},x)
+use ring A 
+-- multi=homogenized parabola y-z^2=0 where y=x_(0,1) and z=x_(1,1)
+F = polySystem {x_(0,1)*x_(1,2)^2-x_(1,1)^2*x_(0,2),x_(1,2)-1,x_(0,2)-1}
+S = multiSlicingVariety(A, {rationalMap matrix{{x_(0,1)-1}}, rationalMap map((ring A)^0,(ring A)^1,0)})
+pts = {point{{1,1,1,1}},point{{1,1,-1,1}}}
+W = multiAffineWSet(F,S,pts)
+dim W
+degree W
+
+///
 end
 check "WitnessCollections"

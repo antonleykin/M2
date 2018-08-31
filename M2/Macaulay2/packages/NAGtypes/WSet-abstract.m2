@@ -39,6 +39,8 @@ slicingVariety WSet := W -> error "not implemented"
 -- isOn = method()
 -- isOn (Point,WSet) := (P,W) -> error "not implemented"
 
+moveWitnessPoints = method(TypicalValue=>List) 
+moveWitnessPoints (WSet, SlicingVariety) := (W,S) -> error "not implemented"
 moveSlicingVariety = method(TypicalValue=>WSet) 
 moveSlicingVariety (WSet, SlicingVariety) := (W,S) -> error "not implemented"
 
