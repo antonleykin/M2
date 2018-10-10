@@ -364,26 +364,47 @@ populate = method()
 -- attempts to find more witness points given a partial w.set
 populate MultiAffineWSet := W -> (
     A := ambient W;
-    K := codim slicingVariety W;
+    sW:=slicingVariety W;
+    K := codim sW;--multicodimension here is a list.
     N := dim A; -- list of # vars in each group
-    c := symbol c;
+    c := symbol c;---used for the coefficients
     cs := flatten apply(#N, i->( -- i = var group #
 	    n := N#i; -- n = dim of i-th factor of the ambient
 	    k := K#i; -- k = codim of slice (for i)
 	    if k==0 then {} else toList(c_(i,1,1)..c_(i,n,k))
-	    ));
-    C := (coefficientRing ring A)[cs];
-    R := C(monoid ring A);  
+	    ));    
+    C := (coefficientRing ring A)[cs];--ring of coefficients
+    R := C(monoid ring A);  ---big ring of coefficients and variables A 
     toR := map(R,ring A,vars R);
+--The goal is to get polynomial equations to feed into monodromy. 
     M := apply(#N,i->(
 	    n := N#i; 
-	    k := K#i;
+	    k := K#i; 
 	    if k==0 then map(R^0,R^1,0)
 	    else transpose (toR variables(i,A) * genericMatrix(C,c_(i,1,1),n,k) - matrix {toList (k:1_R)})
 	    ));
-    -- monodromySolve( ??? )
+    mSV:=sW#"maps"; 
+    --Base point:
+    setRandomSeed 0;
+    p0:=point{     flatten flatten apply(#mSV,
+      i->apply(flatten entries mSV#i, 
+	aPoly->flatten entries((-1/ coefficient(1_(ring aPoly),aPoly) )*lift(last coefficients(aPoly, Monomials=>variables(i,A)),
+	coefficientRing C))))};
+    print p0;--{6, -5, 3, -2, -4, 5}
+    H:=polySystem (apply(equations F,f->toR f )|M/flatten@@entries  //flatten );
+    --(HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>3);    
+    (HN,npaths):=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
+    W#"points"=HN#PartialSols//points
+    )
+
     --
 -* examples (monodromySolve,PolySystem,Point,List)
+      R = CC[a_1..a_5,b_1..b_5][x,y,z,t,u]
+      (N,npaths) = monodromySolve F
+      first N.SpecializedSystem -- (the first polynomial of) a randomly generated system in the family defined by P
+      first N.PartialSols -- a solution to N.SpecializedSystem
+      npaths -- total number of paths tracked in call to monodromySolve
+
 
     S = CC[a,b,c];
       R = S[x,w];
@@ -393,23 +414,35 @@ populate MultiAffineWSet := W -> (
       p0 = point({append(l,- sum apply(l, x0.Coordinates,(i,x)->i*x))});
       (N, npaths) = monodromySolve(polySystem {h,f},p0,{x0},NumberOfNodes=>3);
 *-
-    )
 
 TEST ///
 restart 
 debug needsPackage "NAGtypes"
 debug needsPackage "WitnessCollections"
 debug needsPackage "MonodromySolver"
-errorDepth = 0
+errorDepth = 2
 A = multiAffineSpace(CC_53,{2,2},x)
-use ring A 
--- multi=homogenized parabola y-z^2=0 where y=x_(0,1) and z=x_(1,1)
-F = polySystem {x_(0,1)*x_(1,2)^2-x_(1,1)^2*x_(0,2),x_(1,2)-1,x_(0,2)-1}
-S = multiSlicingVariety(A, {rationalMap matrix{{x_(0,1)-1}}, rationalMap map((ring A)^0,(ring A)^1,0)})
-pts = {point{{1,1,1,1}},point{{1,1,-1,1}}}
+(X,Y)=variables A/entries/flatten//toSequence
+F = polySystem {X_0^5*Y_1^2-2*X_1^2*Y_1^2+2*X_1+3*Y_0-4}--X_1+3*Y_0-5*X_1+2*Y_1-1
+#equations F
+
+S = multiSlicingVariety(A, 
+    {rationalMap matrix{{-10*X_1+12*X_0-2}},rationalMap transpose matrix{{2*Y_1-3*Y_0+1,5*Y_1-4*Y_0-1}}})
+---Need an error catcher to transpose matrices
+peek S
+pts = {point{{1,1,1,1}}}
 W = multiAffineWSet(F,S,pts)
+-----TODO
+---make the constructor of multiaffine witness set complain if you are providing a slice in the group of variables. 
+--variable group checking. 
 dim W
 degree W
+ring slicingVariety W   ---TO DO   
+
+
+
+
+
 
 ///
 end
