@@ -391,8 +391,8 @@ populate MultiAffineWSet := W -> (
 	aPoly->flatten entries((-1/ coefficient(1_(ring aPoly),aPoly) )*lift(last coefficients(aPoly, Monomials=>variables(i,A)),
 	coefficientRing C))))};
     print p0;--{6, -5, 3, -2, -4, 5}
-    H:=polySystem (apply(equations F,f->toR f )|M/flatten@@entries  //flatten );
-    --(HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>3);    
+    H:=polySystem (apply(equations equations W,f->toR f )|M/flatten@@entries  //flatten );
+--    (HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>3);    
     (HN,npaths):=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
     W#"points"=HN#PartialSols//points
     )
@@ -432,6 +432,8 @@ S = multiSlicingVariety(A,
 peek S
 pts = {point{{1,1,1,1}}}
 W = multiAffineWSet(F,S,pts)
+equations W
+
 -----TODO
 ---make the constructor of multiaffine witness set complain if you are providing a slice in the group of variables. 
 --variable group checking. 
