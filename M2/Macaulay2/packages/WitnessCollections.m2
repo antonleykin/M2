@@ -369,8 +369,8 @@ populate = method()
 -- attempts to find more witness points given a partial w.set
 populate MultiAffineWSet := W -> (
     A := ambient W;
-    sW:=slicingVariety W;
-    K := codim sW;--multicodimension here is a list.
+    sliceW:=slicingVariety W;
+    K := codim sliceW;--multicodimension here is a list.
     N := dim A; -- list of # vars in each group
     c := symbol c;---used for the coefficients
     cs := flatten apply(#N, i->( -- i = var group #
@@ -378,37 +378,47 @@ populate MultiAffineWSet := W -> (
 	    k := K#i; -- k = codim of slice (for i)
 	    if k==0 then {} else toList(c_(i,1,1)..c_(i,n,k))
 	    ));    
-    C := (coefficientRing ring A)[cs];--ring of coefficients
-    R := C(monoid ring A);  ---big ring of coefficients and variables A 
+    C := (coefficientRing ring A)[cs]; -- ring of coefficients
+    R := C(monoid ring A); -- big ring of coefficients and variables A 
     toR := map(R,ring A,vars R);
---The goal is to get polynomial equations to feed into monodromy. 
-    M := apply(#N,i->(
+    -- (1)
+    -- get H, polynomial system to feed into monodromy 
+    parametricSlice := apply(#N,i->(
 	    n := N#i; 
 	    k := K#i; 
 	    if k==0 then map(R^0,R^1,0)
-	    else transpose (toR variables(i,A) * genericMatrix(C,c_(i,1,1),n,k) - matrix {toList (k:1_R)})
+	    else transpose (toR variables(i,A) * genericMatrix(C,c_(i,1,1),n,k) - 
+		matrix {toList (k:1_R)} -- all equations look like: (a linear form) - 1 = 0
+		)
 	    ));
-    mSV:=sW#"maps"; 
-    --Base point:
-    setRandomSeed 0;
-    p0:=point{     flatten flatten apply(#mSV,
-      i->apply(flatten entries mSV#i, 
-	aPoly->flatten entries((-1/ coefficient(1_(ring aPoly),aPoly) )*lift(last coefficients(aPoly, Monomials=>variables(i,A)),
-	coefficientRing C))))};
-    print p0;--{6, -5, 3, -2, -4, 5} 
-    H:=polySystem (apply(equations equations W,f->toR f )|M/flatten@@entries  //flatten );
-    savePoint:=first points W;
---    (HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>1);         
+    H := polySystem(
+	apply(equations equations W,f->toR f) | 
+	parametricSlice/flatten@@entries//flatten 
+	);
+    -- (2)
+    -- make a basePoint that specializes the parameters to sliceW
+    sliceMaps := sliceW#"maps"; 
+    basePoint := point{ -- base point
+	flatten flatten apply(#sliceMaps,
+      	    i->apply(
+		flatten entries sliceMaps#i, 
+		aPoly -> flatten entries(
+		    (-1/ coefficient(1_(ring aPoly),aPoly) )*
+		    lift(last coefficients(aPoly, Monomials=>variables(i,A)),coefficientRing C))
+		)
+	    )};
+    savePoint := first points W;
     --Current work around---filter the output of monodromy solve before we put it into witness points.       
-    (HN,npaths):=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
-    foundPoints:=HN#PartialSols//points;
---    W#"points"=HN#PartialSols//points;
-    while not apply(#foundPoints,i->
-	if areEqual(foundPoints_i,savePoint) 
-	then break true else if i==#foundPoints-1 then break false
-	) do(
-	(HN,npaths)=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
-    	foundPoints=HN#PartialSols//points);
+    done := false; count := 0;
+    while not done do (
+	(HN,npaths) := monodromySolve(H,basePoint,points W,Verbose=>true,NumberOfNodes=>3);
+	foundPoints := HN#PartialSols//points;
+	
+	done = any(foundPoints,p->areEqual(p,savePoint));
+	count = count + 1;
+	if count >= getDefault Attempts 
+	then error "populate failed: too many attempts"
+	);
     W#"points"=foundPoints
     )
 	
@@ -429,7 +439,7 @@ S = multiSlicingVariety(A,
     {rationalMap matrix{{-10*X_1+12*X_0-2}},rationalMap transpose matrix{{2*Y_1-3*Y_0+1,5*Y_1-4*Y_0-1}}})
 pts = {point{{1,1,1,1}}}
 W = multiAffineWSet(F,S,pts)
-populate(W)
+populate W 
 
 ---Need an error catcher to transpose matrices
 peek S
@@ -481,8 +491,8 @@ ring slicingVariety W   ---TO DO
       (h, f) = (a*x+b*w+c, 3*x^2 - w + 1);
       x0 = point {{ii_CC,-2}}; -- clearly a zero of f
       l = apply(2,i->random CC);
-      p0 = point({append(l,- sum apply(l, x0.Coordinates,(i,x)->i*x))});
-      (N, npaths) = monodromySolve(polySystem {h,f},p0,{x0},NumberOfNodes=>3);
+      basePoint = point({append(l,- sum apply(l, x0.Coordinates,(i,x)->i*x))});
+      (N, npaths) = monodromySolve(polySystem {h,f},basePoint,{x0},NumberOfNodes=>3);
 *-
 
 TEST ///
