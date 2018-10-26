@@ -6,7 +6,7 @@ newPackage(
      Date => "Summer 2018",
      Headline => "witness collections representing multiaffine varieties",
      HomePage => "",
-     AuxiliaryFiles => false,
+     AuxiliaryFiles => true,
      Authors => {
 	  {Name => "Jose Rodriguez", Email => "jose@madison"},
 	  {Name => "Anton Leykin", Email => "leykin@math.gatech.edu"}
@@ -136,6 +136,11 @@ dimensionPartition WCollection := o->  WC -> (
 	  ))))));
   return Q
   )
+
+
+-*
+This package can be used as follows. 
+*-
 
 --
 TEST ///--dimension partition example
@@ -390,12 +395,77 @@ populate MultiAffineWSet := W -> (
       i->apply(flatten entries mSV#i, 
 	aPoly->flatten entries((-1/ coefficient(1_(ring aPoly),aPoly) )*lift(last coefficients(aPoly, Monomials=>variables(i,A)),
 	coefficientRing C))))};
-    print p0;--{6, -5, 3, -2, -4, 5}
+    print p0;--{6, -5, 3, -2, -4, 5} 
     H:=polySystem (apply(equations equations W,f->toR f )|M/flatten@@entries  //flatten );
---    (HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>3);    
+    savePoint:=first points W;
+--    (HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>1);         
+    --Current work around---filter the output of monodromy solve before we put it into witness points.       
     (HN,npaths):=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
-    W#"points"=HN#PartialSols//points
+    foundPoints:=HN#PartialSols//points;
+--    W#"points"=HN#PartialSols//points;
+    while not apply(#foundPoints,i->
+	if areEqual(foundPoints_i,savePoint) 
+	then break true else if i==#foundPoints-1 then break false
+	) do(
+	(HN,npaths)=monodromySolve(H,p0,points W,Verbose=>true,NumberOfNodes=>3);
+    	foundPoints=HN#PartialSols//points);
+    W#"points"=foundPoints
     )
+	
+
+
+TEST ///--populate
+restart 
+debug needsPackage "NAGtypes"
+debug needsPackage "WitnessCollections"
+debug needsPackage "MonodromySolver"
+errorDepth = 2
+A = multiAffineSpace(CC_53,{2,2},x)
+(X,Y)=variables A/entries/flatten//toSequence
+F = polySystem {X_0^5*Y_1^2-2*X_1^2*Y_1^2+2*X_1+3*Y_0-4}--X_1+3*Y_0-5*X_1+2*Y_1-1
+#equations F
+ 
+S = multiSlicingVariety(A, 
+    {rationalMap matrix{{-10*X_1+12*X_0-2}},rationalMap transpose matrix{{2*Y_1-3*Y_0+1,5*Y_1-4*Y_0-1}}})
+pts = {point{{1,1,1,1}}}
+W = multiAffineWSet(F,S,pts)
+populate(W)
+
+---Need an error catcher to transpose matrices
+peek S
+
+equations W
+
+-----TODO
+---make the constructor of multiaffine witness set complain if you are providing a slice in the group of variables. 
+--variable group checking. 
+dim W
+degree W
+ring slicingVariety W   ---TO DO   
+
+
+
+
+
+
+///
+
+
+
+---Documentation. 
+
+
+--Hopscotch--multiAffineWSet that has no witness points
+--tracetest for hopscotch to check if it is complete. 
+---trace test on a collection ---later
+---flag for completeness of a witness set.
+----IsComplete=>true/false/null.
+
+
+--Multi affine witness set. 
+--
+
+
 
     --
 -* examples (monodromySolve,PolySystem,Point,List)
@@ -440,12 +510,8 @@ equations W
 dim W
 degree W
 ring slicingVariety W   ---TO DO   
-
-
-
-
-
-
 ///
+
+
 end
 check "WitnessCollections"
