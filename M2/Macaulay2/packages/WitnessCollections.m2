@@ -8,7 +8,7 @@ newPackage(
      HomePage => "",
      AuxiliaryFiles => true,
      Authors => {
-	  {Name => "Jose Rodriguez", Email => "jose@madison"},
+	  {Name => "Jose Rodriguez", Email => "jose@math.wisc.edu"},
 	  {Name => "Anton Leykin", Email => "leykin@math.gatech.edu"}
 	  },
      PackageImports => {"NumericalAlgebraicGeometry", "MonodromySolver", "Polyhedra"},
@@ -389,6 +389,8 @@ populate MultiAffineWSet := W -> (
 	    else transpose (toR variables(i,A) * genericMatrix(C,c_(i,1,1),n,k) - matrix {toList (k:1_R)})
 	    ));
     mSV:=sW#"maps"; 
+    print mSV;
+    print class first mSV;
     --Base point:
     setRandomSeed 0;
     p0:=point{     flatten flatten apply(#mSV,
