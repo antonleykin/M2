@@ -23,8 +23,7 @@ newPackage(
         Configuration => {
             "path" => ""
             },
-        PackageImports => {"Polyhedra"},
-        DebuggingMode => true
+        PackageImports => {"FourierMotzkin"}
         )
 
 export {
@@ -45,7 +44,8 @@ export {
     "ConnectedToRegular",
     "Homogenize",
     "RegularOnly",
-    "Fine"
+    "Fine",
+    "topcomIsTriangulation"
     }
 
 exportMutable {
@@ -231,7 +231,8 @@ flips(Matrix, List) := opts -> (A, tri) -> (
 fineStarTriangulation = method()
 fineStarTriangulation(Matrix, List) := (A, tri) -> (
     aA := augment A;
-    H := first halfspaces convexHull aA;
+    -- H := first halfspaces convexHull aA;
+    H := transpose(-(first fourierMotzkin aA));
     myfacets := for e in entries H list (
         positions(flatten entries(matrix {e} * aA), x -> x == 0)
         );
@@ -250,7 +251,8 @@ regularFineStarTriangulation Matrix := (A) -> fineStarTriangulation(A, regularFi
 naiveIsTriangulation = method()
 naiveIsTriangulation(Matrix, List, List) := (A, circuits, tri) -> (
     aA := augment A;
-    H := first halfspaces convexHull aA;
+    -- H := first halfspaces convexHull aA;
+    H := transpose(-(first fourierMotzkin aA));
     myfacets := for e in entries H list (
         positions(flatten entries(matrix {e} * aA), x -> x == 0)
         );
@@ -271,6 +273,28 @@ naiveIsTriangulation(Matrix, List, List) := (A, circuits, tri) -> (
     all(test2, x -> x#0 == 0 or x#1 == 0)
     )
 naiveIsTriangulation(Matrix, List) := (A, tri) -> naiveIsTriangulation(A, orientedCircuits A, tri)
+
+
+topcomIsTriangulation = method();
+topcomIsTriangulation(Matrix, List) := (Vin, T) -> (
+   -- Topcom does not check whether the sets in T actually form simplices. In
+   -- that case it throws an error instead of giving an answer.  -- So we do it
+   -- manually:
+   V := promote(augment Vin, QQ);
+   d := numRows V;
+   if not all(T, t-> #t == d) then (
+      << "Index sets do not correspond to full-dimensional simplices" << endl;
+      return false;
+   );
+   simplices := apply(T, t -> V_t);
+   if not all(simplices, s->d==rank s) then (
+      << "Index sets do not correspond to full-dimensional simplices" << endl;
+      return false;
+   );
+   (outfile, errfile) := callTopcom("points2nflips --checktriang -v", {topcomPoints(V, Homogenize=>false), [], T });
+   not match("not valid", get errfile)
+)
+
 
 beginDocumentation()
 
@@ -437,6 +461,20 @@ TEST ///
   assert(ch1 == ch2)
 ///
 
+TEST ///
+-- Bad triangulations of the square
+V = transpose matrix {{0,0},{1,0},{0,1},{1,1}}
+T1 = {{0,1,2}}
+T2 = {{0,1,2},{0,1,3}}
+T3 = {{0,1,2,3}}
+assert(not naiveIsTriangulation(V, T1))
+assert(not naiveIsTriangulation(V, T2))
+assert(not naiveIsTriangulation(V, T3))
+assert(not topcomIsTriangulation(V, T1))
+assert(not topcomIsTriangulation(V, T2))
+assert(not topcomIsTriangulation(V, T3))
+///
+
 -- This example is a good one, but takes too long to be run automatically
 ///
 restart
@@ -539,6 +577,7 @@ restart
         0   0   2   0  -2   0   2  -3   0   2  -3   0
         0   0   0   0   0   1  -1   1   1  -2   1  -2"
  A = matrixFromString last first parseKS str
+ A = matrix first kreuzerSkarke str
  P = convexHull A
  P2 = polar P
  A1 = vertices P2
@@ -618,10 +657,9 @@ TEST ///
   debug needsPackage "Topcom"
   needsPackage "ReflexivePolytopesDB"
   needsPackage "StringTorics"
-  str = getKreuzerSkarke(50, Limit=>10);
-  polytopes = parseKS str
-  tope = polytopes_5_1
-  A = matrixFromString tope
+  polytopes = kreuzerSkarke(50, Limit=>10);
+  tope = polytopes_5
+  A = matrix tope
   P = convexHull A
   P2 = polar P
   A = matrix{latticePoints P2}
@@ -677,8 +715,6 @@ TEST ///
   assert not isRegularTriangulation(A,tri)
 
 ///
-
-
 
 
 end--

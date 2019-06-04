@@ -8,7 +8,7 @@ newPackage(
      HomePage => "",
      AuxiliaryFiles => true,
      Authors => {
-	  {Name => "Jose Rodriguez", Email => "jose@math.wisc.edu"},
+	  {Name => "Jose Rodriguez", Email => "jose@madison"},
 	  {Name => "Anton Leykin", Email => "leykin@math.gatech.edu"}
 	  },
      PackageImports => {"NumericalAlgebraicGeometry", "MonodromySolver", "Polyhedra"},
@@ -391,20 +391,6 @@ populate MultiAffineWSet := W -> (
 		matrix {toList (k:1_R)} -- all equations look like: (a linear form) - 1 = 0
 		)
 	    ));
-<<<<<<< HEAD
-    mSV:=sW#"maps"; 
-    print mSV;
-    print class first mSV;
-    --Base point:
-    setRandomSeed 0;
-    p0:=point{     flatten flatten apply(#mSV,
-      i->apply(flatten entries mSV#i, 
-	aPoly->flatten entries((-1/ coefficient(1_(ring aPoly),aPoly) )*lift(last coefficients(aPoly, Monomials=>variables(i,A)),
-	coefficientRing C))))};
-    print p0;--{6, -5, 3, -2, -4, 5} 
-    H:=polySystem (apply(equations equations W,f->toR f )|M/flatten@@entries  //flatten );
-    savePoint:=first points W;
---    (HN,npaths):=monodromySolve(H,p0,{point {{1,1,1,1}}},Verbose=>true,NumberOfNodes=>1);         
     H := polySystem(
 	apply(equations equations W,f->toR f) | 
 	parametricSlice/flatten@@entries//flatten 
