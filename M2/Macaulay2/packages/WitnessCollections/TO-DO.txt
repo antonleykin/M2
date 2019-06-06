@@ -1,0 +1,42 @@
+CoveringWSet(A,B; P,t; F,G,L; P0,t0,W0): 
+  a type that represents a variety in the multiaffine space B that is the (closure of) 
+  the image under rational map G of an irreducible component V(F), a variety in the multiaffine space A;
+  P and t are parameters in the "slice" L
+  W0 stores at least one of (finitely many) points G( V(F) \cap V(L(P0,t0)) ) on the component
+
+Possible implementation: 
+  A,B are represented by lists of integers (the numbers of variables in each variable group)
+  F,G are Systems in the variables of A 
+  L is a System that provides a "slice" depending on parameters P and t and variables of A
+  P is a list of parameters
+  t is ONE parameter that (if P are fixed) parametrizes a linear pencil that can be used for a trace test.
+  P0,t0 are generic values of the parameters   
+
+Require:
+  L should be such that for generic values of P (and t not fixed) we swipe a curve that is _irreducible_.
+
+Methods (basic):
+  completeWitnessSet -- extends W0 to a complete set of witness points (via monodromy using trace test as a stopping criterion)   
+  isOn x -- checks whether point x in B is on this component
+Methods (provided by a derived type that controls how L is created)
+  genericSliceThrough x -- given a point x in B produce values of P and t such that G(L) goes through x
+  
+Basic multiaffine example:
+  A = B = CC^m \times CC^n (corresponding groups of vars are x and y)  
+  W0 = {(x0,y0)}, a single point  
+  F = a local complete intersection at (x0,y0), reduced
+  G = id
+  L = linear functions with parametric coefficients of several kinds
+    (1) involving either x or y only
+    (2) involving x and y
+    (3) involving x and y and using parameter t   
+  Note: type (1) slices need to preserve (ir)reducibility
+        type (2) slices cut down to a curve after "coarsening"
+	type (3) slice is of form ax+by+t   
+  (For this example type (2) is not necessary -- see Prop 13 in "Trace test".)
+ 
+Potential problems:
+  Hypersurface section -- to implement a regeneration algorithm one needs to be able to intersect our component with a hypersuface in B
+    This may require storing extra structure: some slicing hyperplanes (or their parameters) need to be marked as the "base" slices.
+    Also: Which parts of L can be kept after?   
+  Composition -- given our representation of a component and a map from B to C, how to produce a similar representation of its image?    
