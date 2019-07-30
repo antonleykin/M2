@@ -1,60 +1,4 @@
-
-newPackage(
-    "MultiaffineDimension",
-    Version => "1.0", 
-    Date => "Feb 2019", 
-    Authors => {
-   {Name => "Jose Israel Rodriguez",
-       Email => "Jose@Math.wisc.edu",
-       HomePage => "http://www.math.wisc.edu/~jose/"}
-    },
-    Headline => "Determines the dimension of a multiaffine variety ",
-    DebuggingMode => true,
-    AuxiliaryFiles => true,
-    PackageImports => {"NumericalAlgebraicGeometry","Polyhedra","NAGtypes"},
-    PackageExports => {"NumericalAlgebraicGeometry","Polyhedra","NAGtypes"},
-  Configuration => { "RandomCoefficients"=>CC },
-  CacheExampleOutput => false
-)
-
---path=prepend("/Users/jo/Documents/GoodGit/MultiaffineDimension",path)
---loadPackage("MultiaffineDimension",Reload=>true)
---examples MultiaffineDimension
-
-randomCC=()->random CC
-randomRR=()->((-1)^(random(1,2)) *random RR)
-randomZZ=()->random(1,30103)
-randomValue=(kk)-> if kk===CC then randomCC() else if kk===RR then randomRR() else randomZZ() 
-
-export { 
-    "multiaffineDimension",--documented
-    "restrictionCodimension","RestrictionInformation",--documented
-    "sequentialDimension",
-    "wellPositionedLinearSpace",
-    "wellPositionedIdeal",
-    "LinearSpaceType"    
-        }
-
-
-
-
---###################################
--- TYPE DEFINITIONS
---###################################
---DimensionReduction=new Type of MutableHashTable
---DimensionMatroidal=new Type of MutableHashTable
-
---###################################
--- METHODS
---###################################
-randomVector=method(Options=>{		})
-randomVector(ZZ,Thing):= o->(n,R) ->apply(n,i->randomValue(R))--list of length n of randomValue
--*
---testing random vector
-randomVector(3,CC)
-randomVector(3,RR)
-randomVector(3,ZZ)
-*-
+needs"common.m2"
 
 --This function returns a polyhedron. 
 ----INPUTS 
@@ -64,39 +8,51 @@ randomVector(3,ZZ)
 --list the length gens R that is used to partition the variables. if position i has the same value as position j then xi and xj are in the same variable group. 
 ----pt
 --witness point. 
- 
-multiaffineDimension=method(TypicalValue=>Thing,Options=>{})
-multiaffineDimension(List,List,Point) := o ->(F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
-    R := ring first F;
-    variableGroups := apply(G, ip -> matrix{ apply( ip, j -> (gens R)_j) } );
-    thePartialJacs:= apply(variableGroups, vg -> --one variable group
-	sub(diff (vg,transpose matrix{F}),matrix pt)
-	);
-    intrinsicDimension :=  thePartialJacs/numColumns//sum - numericalRank(transpose matrix{thePartialJacs},Threshold => .0001);
-    theJacs := apply(drop(subsets thePartialJacs,1),---we drop the empty set. 
-	Icom -> if #Icom>0 	then matrix{Icom} else error"#Icom=0");
-    subsetsIV := drop(subsets(#G),1);--all nonempty subsets of [0,1,..,#G-1]
+
+multiaffineDimension = method(TypicalValue=>Thing)
+multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
+    (m,n,JF) := createJacobian F; --JF is a m by n matrix
+    Jpt := evaluateJacobian(pt,m,n,JF); 
+    thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
+    intrinsicCodimension :=  numericalRank  Jpt ;
+    --all nonempty subsets of [0,1,..,#G-1]
+    subsetsIV := drop(subsets(#G),1);
     M := {};
     v := {};
-    scan(subsetsIV,Icom->(
-    	M = append(M,apply(#G,i->if member(i,Icom) then 0 else 1 ));
-	DFI :=  matrix{apply(Icom,i->thePartialJacs_i)};
-	v = append(v,
-	    DFI//numColumns - numericalRank(transpose DFI,Threshold => .0001)
+    scan(subsetsIV, Icomplement->(
+    	    M = append(M,apply(#G,i->if member(i,Icomplement) then 0 else 1 ));
+    	    varsInIcom := flatten G_Icomplement;
+	    v = append(v,
+		n-intrinsicCodimension + 
+		-#varsInIcom +numericalRank Jpt_varsInIcom
 	    )));
---Inequalities.  
+    --Inequalities.  
     M = matrix M;
---  print theVarGroups;
     v = transpose matrix {v};
-  print (M,v);
---Equalities
-  N:=matrix {apply(#G,i->1)};
-  w:=matrix{{intrinsicDimension}};
---  print (N,w);
-  P:=polyhedronFromHData(-M,-v,N,w);
-  return P
-    );
-
+    print (M,v);
+    --Equalities
+    N := matrix {apply(#G,i->1)};
+    w := matrix{{n -intrinsicCodimension}};
+    --  print (N,w);
+    --M*matrix{{e_1},...,{e_k}} \leq v 
+    --N*matrix{{e_1},...,{e_k}} = w     
+    P:=polyhedronFromHData(M,v,N,w);
+    return P
+    )
+end
+restart
+needs "multiaffineDimension.m2"
+declareVariable \ {x,y,z,w}
+f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
+h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
+F = gateSystem(matrix{{x,y,z,w}},transpose gateMatrix{{f,h}})
+G = new VariableGroup from {{0},{1},{2},{3}}
+pt = point{{4,-2/3,-1.44419, .765304}}
+P = multiaffineDimension(F,G,pt)
+latticePoints P 
+ 
+ 
+ restart
 
 -*
        R = CC[x1,x2,x3,y];
@@ -124,6 +80,16 @@ multiaffineDimension(List,List,Point) := o ->(F,G,pt)->( --(polynomial system, k
     P = multiaffineDimension(F,G,pt)
     latticePoints P    
 
+
+restart
+       R = CC[x,y,z,w];
+f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
+h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
+F ={f,h}
+pt = point{{4_CC,-2/3_CC,-1.44419_CC, .765304_CC}}
+       G={{0},{1},{2},{3}}
+       P = multiaffineDimension (F,G,pt)
+       latticePoints P
 *-
 
 
