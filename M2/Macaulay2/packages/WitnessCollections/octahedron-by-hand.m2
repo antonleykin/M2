@@ -72,20 +72,5 @@ MasterGS = gateSystem(
     (gateMatrix F)||L
     )
 x0 =point sub(matrix pt,CC)
+
 createSeedPair(MasterGS,x0) -- bug?
-
--*
-G=MasterGS
-n := numVariables G;
-m := numParameters G;
-N := numFunctions G;
-I := id_(CC^m);
-A := random(CC^0,CC^N);
-scan(m, i -> A = A || evaluate(G, point I_{i}, x0));
-b := evaluate(G, point matrix 0_(CC^m), x0);
-K := numericalKernel(transpose A, 1e-5) ;
-offset := solve(transpose A,transpose b,ClosestFit=>true);
-p0 := point(K* random(CC^(m-n), CC^1) - offset);
-(p0, x0)
-
-*-
