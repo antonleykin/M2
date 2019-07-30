@@ -26,10 +26,10 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
 		n-intrinsicCodimension + 
 		-#varsInIcom +numericalRank Jpt_varsInIcom
 	    )));
-    --Inequalities.  
+    --Inequalities.   
     M = matrix M;
     v = transpose matrix {v};
-    print (M,v);
+--    print (M,v);
     --Equalities
     N := matrix {apply(#G,i->1)};
     w := matrix{{n -intrinsicCodimension}};
