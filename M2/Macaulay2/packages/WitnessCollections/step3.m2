@@ -73,7 +73,6 @@ makeSliceSystem (GateSystem, VariableGroup, Sequence) := (F, G, SCseq) -> (
 	    sliceCounter = sliceCounter + 1;
 	    -- ... and add in parameters to ParamList
 	    for j from 0 to blockSize do (
-	    	<< sliceParamCounter-blockSize-1+j << endl;
 	    	ParamList#(localSliceParamCounter+j) =  sliceParam_(sliceParamCounter-blockSize-1+j);
 	    	);	  
 	    localSliceParamCounter = localSliceParamCounter + blockSize;

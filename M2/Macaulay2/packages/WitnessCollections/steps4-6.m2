@@ -1,4 +1,3 @@
-restart
 needs "step3.m2"
 
 -- override buggy code in MonodromySolver
@@ -31,6 +30,7 @@ needs "steps4-6.m2"
 -- STEP 5: trace test
 p1 = V.BasePoint
 p1Sols = points V.PartialSols
+assert(#p1Sols == 12)
 
 -- 2nd parallel slice
 p2 = point{drop(coordinates p1,-1)|{random CC}}
