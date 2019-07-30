@@ -1,7 +1,7 @@
 
 getSequenceSC = method(TypicalValue=>Thing)
 getSequenceSC (Polyhedron) := (P)->(
-    SCS := {};
+    SCS := ();
     if isEmpty(P) then error" P is empty. " ;
     -- k is the number of factors and number of variable groups
     k := ambDim P;
@@ -26,31 +26,30 @@ getSequenceSC (Polyhedron) := (P)->(
 	    else bfe#i = 0));
     print ("bfe"=>bfe);
     idMatrix:= diagonalMatrix(apply(k,i->1));
+    --newP is now a matroid polytope by shifting by -bfe
     newP=affineImage(idMatrix,newP,-matrix transpose {toList bfe});
     scan(bfe,i->scan(bfe#i,j -> SCS=append(SCS, i)));
-    print 1;
-    dimLowerBound = 1;
     print("SCS"=>SCS);
+    dimLowerBound = 1;
     numFactors := k;
     scan(k,i->(
     	    ai := for j to k-1 list if k-1-j<=i then 1 else 0;
     	    print ai;
     	    maxAi := latticePoints affineImage(matrix{ai},newP);
 	    maxAi = maxAi/entries/flatten/flatten//flatten//max;
-    	    print ("i"=>i);
+    	    --maxAi is the dimension of the projection to the i+1 last coordinates.  
 	    print maxAi;
-	    print SCS;
-	    if i>0 then (
+	    if i>0 then (--then we coarsen the last two factors
 		SCS = append(SCS,{k-1-i,k-i});
    	    	numFactors = numFactors - 1);
     	    if maxAi > dimLowerBound then (
-   	    	print(k-1-i == numFactors);
-	    	SCS = append(SCS, k-1-i)
+--    	    	print("test"=>(k-1-i,numFactors-1)); --these numbers should be the same
+	    	SCS = append(SCS, numFactors-1)
 		);
 	    dimLowerBound = max(maxAi,dimLowerBound)));	    
     assert(numFactors ==1);
     SCS=append(SCS,0);
-    return toSequence SCS
+    return  SCS
     )
 
 end
@@ -69,15 +68,15 @@ latticePoints P
 getSequenceSC (P)
 
 
-declareVariable \ {d,x,y,z,w}
-f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
-h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
-f3 = d
-F = gateSystem(matrix{{d,x,y,z,w}},transpose gateMatrix{{f,h,f3}})
-G = new VariableGroup from {{0},{1},{2},{3},{4}}
-pt = point{{0,4,-2/3,-1.44419, .765304}}
-P = multiaffineDimension(F,G,pt)
-latticePoints P 
+declareVariable \ {d,x,y,z,w};
+f = 1 + 2*x + 3*y^2+4*z^3+5*w^4;
+h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w;
+f3 = d;
+F = gateSystem(matrix{{d,x,y,z,w}},transpose gateMatrix{{f,h,f3}});
+G = new VariableGroup from {{0},{1},{2},{3},{4}};
+pt = point{{0,4,-2/3,-1.44419, .765304}};
+P = multiaffineDimension(F,G,pt);
+latticePoints P ;
 getSequenceSC (P)
 
 X = {x,y,z,w,d}
@@ -91,4 +90,12 @@ pt = point{{0,4,-2/3,-1.44419, .765304}}
 P = multiaffineDimension(F,G,pt)
 latticePoints P 
 getSequenceSC (P)
+
+
+
+
+
+
+
+
 
