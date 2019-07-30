@@ -1,5 +1,4 @@
-restart
-needs "octahedron.m2"
+needs "step3.m2"
 
 -- override buggy code in MonodromySolver
 createSeedPair (System, Point) := o -> (P, x0) -> (
@@ -17,13 +16,21 @@ createSeedPair (System, Point) := o -> (P, x0) -> (
     (p0, x0)
     )
 
+x0 =point sub(matrix pt,CC)
 (p0, x0)=createSeedPair(MasterGS,x0)
 norm evaluate(MasterGS,p0,x0)
+
+end--
+
+restart
+needs "steps4-6.m2"
+
 (V,npaths)=monodromySolve(MasterGS,p0,{x0},Verbose=>true,NumberOfNodes=>3)
 
 -- STEP 5: trace test
 p1 = V.BasePoint
 p1Sols = points V.PartialSols
+assert(#p1Sols == 12)
 
 -- 2nd parallel slice
 p2 = point{drop(coordinates p1,-1)|{random CC}}
