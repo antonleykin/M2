@@ -40,7 +40,7 @@ getSequenceSC (Polyhedron) := (P)->(
     	    if maxAi>dimLowerBound then SCS=append(SCS,{i-1,i});
 	    dimLowerBound = max(maxAi,dimLowerBound)));	    
     SCS=append(SCS,0);
-    return SCS
+    return toSequence SCS
     )
 
 end
