@@ -1,17 +1,17 @@
 
-SequenceSC = new Type of MutableList
-
 getSequenceSC = method(TypicalValue=>Thing)
 getSequenceSC (Polyhedron) := (P)->(
     SCS := {};
-    if isEmpty(P) then error"P is empty." ;
-    k:=ambDim P;
-    bfe:=new MutableList from {};
+    if isEmpty(P) then error" P is empty. " ;
+    -- k is the number of factors and number of variable groups
+    k := ambDim P;
+    -- bfe is a maximal integer vector such for each i such that bfe_i is nonzero there exists a vector bfe+ei in P.
+    bfe := new MutableList from {};
     newP:=P;
     scan(k,i->(
-	    --ith basis vector
+	    --ei is the ith basis vector
     	    ei := for j to k-1 list if i==j then 1 else 0;
-	    --project to first coordinate
+	    --project P to the ith coordinate and get the lattice points which are in N.
     	    maxEi := latticePoints affineImage(matrix{ei},newP);
 	    maxEi = maxEi/entries/flatten/flatten//flatten//max;
     	    --if maxEi is greater than one then Bertini's theorem applies and we can slice.
@@ -30,22 +30,32 @@ getSequenceSC (Polyhedron) := (P)->(
     scan(bfe,i->scan(bfe#i,j -> SCS=append(SCS, i)));
     print 1;
     dimLowerBound = 1;
+    print("SCS"=>SCS);
+    numFactors := k;
     scan(k,i->(
-    	    ai := for j to k-1 list if j<=i then 1 else 0;
+    	    ai := for j to k-1 list if k-1-j<=i then 1 else 0;
+    	    print ai;
     	    maxAi := latticePoints affineImage(matrix{ai},newP);
 	    maxAi = maxAi/entries/flatten/flatten//flatten//max;
     	    print ("i"=>i);
 	    print maxAi;
 	    print SCS;
-    	    if maxAi>dimLowerBound then SCS=append(SCS,{i-1,i});
+	    if i>0 then (
+		SCS = append(SCS,{k-1-i,k-i});
+   	    	numFactors = numFactors - 1);
+    	    if maxAi > dimLowerBound then (
+   	    	print(k-1-i == numFactors);
+	    	SCS = append(SCS, k-1-i)
+		);
 	    dimLowerBound = max(maxAi,dimLowerBound)));	    
+    assert(numFactors ==1);
     SCS=append(SCS,0);
     return toSequence SCS
     )
 
 end
 restart
-needs "multiaffineDimension.m2"
+needs "step1.m2"
 needs "step2.m2"
 
 declareVariable \ {x,y,z,w}
@@ -69,3 +79,16 @@ pt = point{{0,4,-2/3,-1.44419, .765304}}
 P = multiaffineDimension(F,G,pt)
 latticePoints P 
 getSequenceSC (P)
+
+X = {x,y,z,w,d}
+declareVariable \ X
+f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
+h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
+f3 = d
+F = gateSystem(matrix{X},transpose gateMatrix{{f,h,f3}})
+G = new VariableGroup from {{0},{1},{2},{3},{4}}
+pt = point{{0,4,-2/3,-1.44419, .765304}}
+P = multiaffineDimension(F,G,pt)
+latticePoints P 
+getSequenceSC (P)
+
