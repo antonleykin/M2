@@ -43,12 +43,14 @@ getSequenceSC (Polyhedron) := (P)->(
 	    then coarsenPositions = append(coarsenPositions,i);
 	    previousA = maxAi;
 	    ));
+    -- leadVG is the first coordinate where the projection to that factor is a curve.
     leadVG :=first coarsenPositions;	
     coarsenPositions = drop(coarsenPositions,1); 
-    --print coarsenPositions;
+    --We coarsen and slice in the leadVG variable dim(X)-1 times
     scan(#coarsenPositions,shift->(
 	    SCS = append(SCS,{leadVG,coarsenPositions_shift-shift});
 	    SCS = append(SCS,leadVG)));
+    --We coarsen to get one factor
     scan(k-1-#coarsenPositions,i->SCS = append(SCS,{0,1}));
     SCS=append(SCS,0);
     return  SCS
