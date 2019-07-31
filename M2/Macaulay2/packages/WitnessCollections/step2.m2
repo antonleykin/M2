@@ -31,7 +31,7 @@ getSequenceSC (Polyhedron) := (P)->(
     newP=affineImage(idMatrix,newP,-matrix transpose {toList bfe});
     scan(bfe,i->scan(bfe#i,j -> SCS=append(SCS, i)));
     print("SCS"=>SCS);
-    dimLowerBound = 1;
+    dimLowerBound := 1;
     numFactors := k;
     scan(k,i->(
     	    ai := for j to k-1 list if k-1-j<=i then 1 else 0;
