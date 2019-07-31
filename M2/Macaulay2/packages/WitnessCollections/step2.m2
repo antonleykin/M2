@@ -5,23 +5,24 @@ getSequenceSC (Polyhedron) := (P)->(
     if isEmpty(P) then error" P is empty. " ;
     -- k is the number of factors and number of variable groups
     k := ambDim P;
-    -- bfe is a maximal integer vector such for each i such that bfe_i is nonzero there exists a vector bfe+ei in P.
+    -- bfe is a maximal integer vector such that for each i with bfe_i=!=0 there exists a vector bfe+ei in P.
     bfe := new MutableList from {};
     newP:=P;
     scan(k,i->(
 	    --ei is the ith basis vector
     	    ei := for j to k-1 list if i==j then 1 else 0;
-	    --project P to the ith coordinate and get the lattice points which are in N.
-    	    maxEi := latticePoints affineImage(matrix{ei},newP);
-	    maxEi = maxEi/entries/flatten/flatten//flatten//max;
+	    --project newP to the ith coordinate to get a lattice polytopy in R, 
+	    -- which is just a list of integers. The largest integer is maxEi
+    	    maxEi := max\\flatten\\flatten\flatten\entries \latticePoints affineImage(matrix{ei},newP);
     	    --if maxEi is greater than one then Bertini's theorem applies and we can slice.
 	    if maxEi > 1 then (
 		bfe#i = maxEi-1;
 	    	if bfe#i>0 and not isEmpty(newP) 
 	    	then (
 		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I  
+    	    	    ---newP on the lhs consists of integer vectors in newP on the rhs that are greater than or equal to bfe (coordinatewise).
   	    	    newP = intersection(newP,Q);
-  	    	    print latticePoints newP;
+--  	    	    print latticePoints newP;
 	    	    ))
 	    else bfe#i = 0));
     print ("bfe"=>bfe);
@@ -34,11 +35,11 @@ getSequenceSC (Polyhedron) := (P)->(
     numFactors := k;
     scan(k,i->(
     	    ai := for j to k-1 list if k-1-j<=i then 1 else 0;
-    	    print ai;
+--    	    print ai;
     	    maxAi := latticePoints affineImage(matrix{ai},newP);
 	    maxAi = maxAi/entries/flatten/flatten//flatten//max;
     	    --maxAi is the dimension of the projection to the i+1 last coordinates.  
-	    print maxAi;
+--	    print maxAi;
 	    if i>0 then (--then we coarsen the last two factors
 		SCS = append(SCS,{k-1-i,k-i});
    	    	numFactors = numFactors - 1);
@@ -66,7 +67,6 @@ pt = point{{4,-2/3,-1.44419, .765304}}
 P = multiaffineDimension(F,G,pt)
 latticePoints P 
 getSequenceSC (P)
-
 
 declareVariable \ {d,x,y,z,w};
 f = 1 + 2*x + 3*y^2+4*z^3+5*w^4;
