@@ -1,6 +1,6 @@
 newPackage(
 	"NumericalDecomposition",
-    	Version => "1.14", 
+    	Version => "1.14",
     	Date => "Aug 2019",
     	Authors => {
 	     {Name => "Timothy Duff", Email => "tduff3@gatech.edu"},
@@ -25,7 +25,7 @@ makeSliceSystem
 Backtrack
 MaxNumTraceTests
 TraceTolerance///
-    
+
 -- TYPES --
 VariableGroup = new Type of List
 
@@ -71,19 +71,13 @@ createSeedPair (System, Point) := o -> (P, x0) -> (
 
 -- STEP 1 --
 
---This function returns a polyhedron. 
-----INPUTS 
-----F
---list of polynomials system in R=CC[x1,x2,...,xn].
----- groupVars
---list the length gens R that is used to partition the variables. if position i has the same value as position j then xi and xj are in the same variable group. 
-----pt
---witness point. 
+--This function returns a polyhedron.
 
 multiaffineDimension = method(TypicalValue=>Thing)
+multiaffineDimension(GateSystem, List, Point) := (F,G,pt)->multiaffineDimension(F,new VariableGroup from G,pt)
 multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
     (m,n,JF) := createJacobian F; --JF is a m by n matrix
-    Jpt := evaluateJacobian(pt,m,n,JF); 
+    Jpt := evaluateJacobian(pt,m,n,JF);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
     intrinsicCodimension :=  numericalRank  Jpt ;
     --all nonempty subsets of [0,1,..,#G-1]
@@ -94,10 +88,10 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
     	    M = append(M,apply(#G,i->if member(i,Icomplement) then 0 else 1 ));
     	    varsInIcom := flatten G_Icomplement;
 	    v = append(v,
-		n-intrinsicCodimension + 
+		n-intrinsicCodimension +
 		-#varsInIcom +numericalRank Jpt_varsInIcom
 	    )));
-    --Inequalities.   
+    --Inequalities.
     M = matrix M;
     v = transpose matrix {v};
 --    print (M,v);
@@ -105,8 +99,8 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
     N := matrix {apply(#G,i->1)};
     w := matrix{{n -intrinsicCodimension}};
     --  print (N,w);
-    --M*matrix{{e_1},...,{e_k}} \leq v 
-    --N*matrix{{e_1},...,{e_k}} = w     
+    --M*matrix{{e_1},...,{e_k}} \leq v
+    --N*matrix{{e_1},...,{e_k}} = w
     P:=polyhedronFromHData(M,v,N,w);
     return P
     )
@@ -124,15 +118,15 @@ getSequenceSC (Polyhedron) := (P)->(
     scan(k,i->(
 	    --ei is the ith basis vector
     	    ei := for j to k-1 list if i==j then 1 else 0;
-	    --project newP to the ith coordinate to get a lattice polytopy in R, 
+	    --project newP to the ith coordinate to get a lattice polytopy in R,
 	    -- which is just a list of integers. The largest integer is maxEi
     	    maxEi := max\\flatten\\flatten\flatten\entries \latticePoints affineImage(matrix{ei},newP);
     	    --if maxEi is greater than one then Bertini's theorem applies and we can slice.
 	    if maxEi > 1 then (
 		bfe#i = maxEi-1;
-	    	if bfe#i>0 and not isEmpty(newP) 
+	    	if bfe#i>0 and not isEmpty(newP)
 	    	then (
-		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I  
+		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I
     	    	    ---newP on the lhs consists of integer vectors in newP on the rhs that are greater than or equal to bfe (coordinatewise).
   	    	    newP = intersection(newP,Q);
 --  	    	    print latticePoints newP;
@@ -151,7 +145,7 @@ getSequenceSC (Polyhedron) := (P)->(
 --    	    print ai;
     	    maxAi := latticePoints affineImage(matrix{ai},newP);
 	    maxAi = maxAi/entries/flatten/flatten//flatten//max;
-    	    --maxAi is the dimension of the projection to the i+1 last coordinates.  
+    	    --maxAi is the dimension of the projection to the i+1 last coordinates.
 --	    print maxAi;
 	    if i>0 then (--then we coarsen the last two factors
 		SCS = append(SCS,{k-1-i,k-i});
@@ -160,7 +154,7 @@ getSequenceSC (Polyhedron) := (P)->(
 --    	    	print("test"=>(k-1-i,numFactors-1)); --these numbers should be the same
 	    	SCS = append(SCS, numFactors-1)
 		);
-	    dimLowerBound = max(maxAi,dimLowerBound)));	    
+	    dimLowerBound = max(maxAi,dimLowerBound)));
     assert(numFactors ==1);
     SCS=append(SCS,0);
     return  SCS
@@ -184,7 +178,7 @@ makeSliceSystem (GateSystem, VariableGroup, Sequence) := (F, G, SCseq) -> (
 	    -- ... and add in parameters to ParamList
 	    for j from 0 to blockSize do (
 	    	ParamList#(localSliceParamCounter+j) =  sliceParam_(sliceParamCounter-blockSize-1+j);
-	    	);	  
+	    	);
 	    localSliceParamCounter = localSliceParamCounter + blockSize + 1;
 	    )
     	else if (instance(s,List) and #s == 2) then (
@@ -198,12 +192,12 @@ makeSliceSystem (GateSystem, VariableGroup, Sequence) := (F, G, SCseq) -> (
     	);
     gateSystem(
 	gateMatrix{toList ParamList} | parameters F, -- parameters
-    	vars F, 
+    	vars F,
     	(gateMatrix F) || transpose gateMatrix{toList Leqs}
-    	) 
+    	)
     )
 
--- STEP 4-6 
+-- STEP 4-6
 -- prepare the homotopy graph
 populateWitnessCollection = method(
     Options=>{AugmentEdgeCount=>0, AugmentNodeCount=> 1, NumberOfEdges => 1,
@@ -218,7 +212,7 @@ populateWitnessCollection (GateSystem, Point) := o -> (masterGS, x0) -> (
     p1 := first createSeedPair(masterGS,x0);
     G := homotopyGraph(masterGS, Potential=>o.Potential);
     addNode(G, p1, pointArray{x0});
-    -- assume complete graph 
+    -- assume complete graph
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
     coreNodes := toList G.Vertices;
     -- two "special nodes"
