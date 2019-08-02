@@ -107,6 +107,7 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
 
 -- STEP 2 --
 getSequenceSC = method(TypicalValue=>Thing)
+--TODO: have an option Strategy => ZZ
 getSequenceSC (Polyhedron) := (P)->(
     SCS := ();
     if isEmpty(P) then error" P is empty. " ;
