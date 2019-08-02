@@ -11,15 +11,15 @@ getSequenceSC (Polyhedron) := (P)->(
     scan(k,i->(
 	    --ei is the ith basis vector
     	    ei := for j to k-1 list if i==j then 1 else 0;
-	    --project newP to the ith coordinate to get a lattice polytopy in R, 
+	    --project newP to the ith coordinate to get a lattice polytopy in R,
 	    -- which is just a list of integers. The largest integer is maxEi
     	    maxEi := max\\flatten\\flatten\flatten\entries \latticePoints affineImage(matrix{ei},newP);
     	    --if maxEi is greater than one then Bertini's theorem applies and we can slice.
 	    if maxEi > 1 then (
 		bfe#i = maxEi-1;
-	    	if bfe#i>0 and not isEmpty(newP) 
+	    	if bfe#i>0 and not isEmpty(newP)
 	    	then (
-		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I  
+		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I
     	    	    ---newP on the lhs consists of integer vectors in newP on the rhs that are greater than or equal to bfe (coordinatewise).
   	    	    newP = intersection(newP,Q);
   	    	    --print latticePoints newP;
@@ -37,15 +37,15 @@ getSequenceSC (Polyhedron) := (P)->(
     scan(k,i->(
     	    ai := for j to k-1 list if j<=i then 1 else 0;
 --    	    print ai;
-    	    --maxAi is the dimension of the projection to the first i+1 coordinates.  
+    	    --maxAi is the dimension of the projection to the first i+1 coordinates.
     	    maxAi := max\\flatten\\flatten\flatten\entries\latticePoints affineImage(matrix{ai},newP);
     	    if previousA<maxAi
 	    then coarsenPositions = append(coarsenPositions,i);
 	    previousA = maxAi;
 	    ));
     -- leadVG is the first coordinate where the projection to that factor is a curve.
-    leadVG :=first coarsenPositions;	
-    coarsenPositions = drop(coarsenPositions,1); 
+    leadVG :=first coarsenPositions;
+    coarsenPositions = drop(coarsenPositions,1);
     --We coarsen and slice in the leadVG variable dim(X)-1 times
     scan(#coarsenPositions,shift->(
 	    SCS = append(SCS,{leadVG,coarsenPositions_shift-shift});
@@ -68,7 +68,7 @@ F = gateSystem(matrix{{x,y,z,w}},transpose gateMatrix{{f,h}})
 G = new VariableGroup from {{0},{1},{2},{3}}
 pt = point{{4,-2/3,-1.44419, .765304}}
 P = multiaffineDimension(F,G,pt)
-latticePoints P 
+latticePoints P
 getSequenceSC (P)
 
 declareVariable \ {d,x,y,z,w};
@@ -91,14 +91,5 @@ F = gateSystem(matrix{X},transpose gateMatrix{{f,h,f3}})
 G = new VariableGroup from {{0},{1},{2},{3},{4}}
 pt = point{{0,4,-2/3,-1.44419, .765304}}
 P = multiaffineDimension(F,G,pt)
-latticePoints P 
+latticePoints P
 getSequenceSC (P)
-
-
-
-
-
-
-
-
-
