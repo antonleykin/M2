@@ -292,3 +292,15 @@ membershipTest (Point, GateSystem, Sequence) := o -> (x1, F, MonodromyResult) ->
     targetSols := pointArray trackHomotopy(MembershipHomotopy,points startSols);
     if o.Backtrack then member(first points targetSols, p1Sols) else member(x1, targetSols)
     )
+
+beginDocumentation()
+needs "./NumericalDecomposition/Documentation/doc12.m2"
+needs "./NumericalDecomposition/Documentation/doc3456.m2"
+end
+
+restart
+uninstallPackage "MonodromySolver"
+installPackage "MonodromySolver"
+installPackage("MonodromySolver", RemakeAllDocumentation=>true)
+check "MonodromySolver"
+peek MonodromySolver
