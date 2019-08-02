@@ -8,8 +8,8 @@ newPackage(
 	     {Name => "Jose Rodriguez", Email => "???"}
 	     },
     	Headline => "numerical decomposition of varieties",
-	PackageImports => {"MonodromySolver"},
-	PackageExports => {"NumericalAlgebraicGeometry","Polyhedra"},
+	PackageImports => {},
+	PackageExports => {"NumericalAlgebraicGeometry","Polyhedra","MonodromySolver"},
 	DebuggingMode => true,
 	AuxiliaryFiles => true
     	)
@@ -17,6 +17,7 @@ debug MonodromySolver
 
 -- types
 export lines ///VariableGroup
+WitnessCurve
 ///
 -- functions and options
 export lines ///multiaffineDimension
@@ -24,10 +25,13 @@ getSequenceSC
 makeSliceSystem
 Backtrack
 MaxNumTraceTests
-TraceTolerance///
+TraceTolerance
+witnessCurve
+populate///
     
 -- TYPES --
 VariableGroup = new Type of List
+WitnessCurve = new Type of HashTable
 
 -- SERVICE FUNCTIONS
 
@@ -205,7 +209,7 @@ makeSliceSystem (GateSystem, VariableGroup, Sequence) := (F, G, SCseq) -> (
 
 -- STEP 4-6 
 -- prepare the homotopy graph
-populateWitnessCollection = method(
+populate = method(
     Options=>{AugmentEdgeCount=>0, AugmentNodeCount=> 1, NumberOfEdges => 1,
        NumberOfRepeats => 10, BatchSize => infinity, Potential => null,
        EdgesSaturated => false, Randomizer => null, SelectEdgeAndDirection =>selectBestEdgeAndDirection,
@@ -213,11 +217,13 @@ populateWitnessCollection = method(
        Verbose => false, FilterCondition => null, TargetSolutionCount =>
        null, "new tracking routine" => true,
        NumberOfNodes => 2, MaxNumTraceTests => 3, TraceTolerance => 1e-4})
-populateWitnessCollection (GateSystem, Point) := o -> (masterGS, x0) -> (
+populate WitnessCurve := o -> W -> (
+    masterGS := W#"Equations";
+    p1 := W.cache#"SpecializationParameters";
+    x0 := first W.cache#"WitnessPoints";
     n := # coordinates x0;
-    p1 := first createSeedPair(masterGS,x0);
-    G := homotopyGraph(masterGS, Potential=>o.Potential);
-    addNode(G, p1, pointArray{x0});
+    G := homotopyGraph(W#"Equations", Potential=>o.Potential);
+    addNode(G, p1, W.cache#"WitnessPoints");
     -- assume complete graph 
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
     coreNodes := toList G.Vertices;
@@ -277,7 +283,7 @@ populateWitnessCollection (GateSystem, Point) := o -> (masterGS, x0) -> (
 	<< "we have tracked " << nMonodromyPaths << " paths so far (includes trace test nodes)" << endl;
 	<< " and we ran " << numTraceTests << " trace test(s)" << endl;
 	);
-    G
+--    G
     )
 
 membershipTest = method(Options=>{Backtrack=>false})
@@ -292,6 +298,60 @@ membershipTest (Point, GateSystem, Sequence) := o -> (x1, F, MonodromyResult) ->
     targetSols := pointArray trackHomotopy(MembershipHomotopy,points startSols);
     if o.Backtrack then member(first points targetSols, p1Sols) else member(x1, targetSols)
     )
+
+-*
+ todo: 
+ -) isComplete (wrt. some optional tolerance)
+ -) store partial trace test values in W
+ -) repopulate
+ -) enhancements (rational map, etc.)
+ -) refinement (Anton's end)
+*-
+witnessCurve = method(Options=>{})--eventual options might include SC strategy, for instance
+witnessCurve (GateSystem, List, Point) := o -> (F, Blocks, pt) -> (
+    I := vars F;
+    V := toList flatten entries I;
+--    assert(set flatten Blocks == set V);
+    assert(# flatten Blocks == # V);
+    G := new VariableGroup from for b in Blocks list(b/(v->position(V,x->x===v)));
+    V/(v->position(Blocks,B->member(v,B)));
+    m := numcols parameters F;
+    P := multiaffineDimension(F,G,pt);
+    SCseq := getSequenceSC P;
+    masterGS := makeSliceSystem(F,G,SCseq); -- this should always take the point, have the default of returning a square subsystem, and allow for parameters in F
+    new WitnessCurve from {
+	"Equations" => masterGS,
+	"NumVars" => # V,
+	"NumParams" => m,
+	"NumSliceParams" => (numcols parameters masterGS)-m,
+	"NumSlices" => numFunctions masterGS - numFunctions F, -- assumes square
+	cache => new CacheTable from {
+	    "SpecializationParameters" => first createSeedPair(masterGS, pt),
+	    "WitnessPoints" => pointArray {pt}
+	    }
+	}
+    )
+
+witnessPoints = method()
+witnessPoints WitnessCurve := W -> points W.cache#"WitnessPoints"
+
+/// TEST
+restart
+needsPackage "NumericalDecomposition"
+declareVariable \ {x,y}
+F = gateSystem(
+    gateMatrix{{x,y}},
+    gateMatrix{{y^2-x^3-x+1}}
+    )
+pt = point{{2.00000001,-3+0.0000001*ii}}
+evaluate(F,pt)
+W = witnessCurve(F, {{x,y}}, pt)
+populate W
+witnessPoints W
+///	
+    
+    
+
 
 beginDocumentation()
 needs "./NumericalDecomposition/Documentation/doc12.m2"
