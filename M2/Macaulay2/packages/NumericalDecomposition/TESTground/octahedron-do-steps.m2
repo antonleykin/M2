@@ -6,8 +6,9 @@ h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z
 F = gateSystem(matrix{{x,y,z,w}},transpose gateMatrix{{f,h}})
 G = new VariableGroup from {{0},{1},{2},{3}}
 pt = point{{4,-2/3,-1.44419, .765304}}
+assert(norm evaluate(F,pt) < 0.001)
 P = multiaffineDimension(F,G,pt)
-
+latticePoints P
 -- output of step 1), input to step 2)
 assert (
     P == convexHull transpose matrix{
