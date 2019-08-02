@@ -132,12 +132,12 @@ getSequenceSC (Polyhedron) := (P)->(
 --  	    	    print latticePoints newP;
 	    	    ))
 	    else bfe#i = 0));
-    print ("bfe"=>bfe);
+    --print ("bfe"=>bfe);
     idMatrix:= diagonalMatrix(apply(k,i->1));
     --newP is now a matroid polytope by shifting by -bfe
     newP=affineImage(idMatrix,newP,-matrix transpose {toList bfe});
     scan(#bfe,i->scan(bfe#i,j -> SCS=append(SCS, i)));
-    print("SCS"=>SCS);
+    --print("SCS"=>SCS);
     dimLowerBound := 1;
     numFactors := k;
     scan(k,i->(
