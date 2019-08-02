@@ -22,20 +22,31 @@ doc ///--multiaffineDimension
   Description
     Text
       This method computes the multidimension by
-      computing the numerical ranks of submatrices of the Jacobian of F.
+      computing the ranks of submatrices of the Jacobian of F.
+      When using exact artithmetic the method rank is used, otherwise numericalRank is used.
       Each submatrix and rank induces an inequality that defines the polytope P
       according to "A numerical toolkit for multiprojective varieties, Algorithm 2.3".
     Example
-      R = CC[x1,x2,x3,y];
-      F = gateSystem polySystem {x1-x2-y};
+      V = matrix{declareVariable\{x1,x2,x3,y}}
+      F = gateSystem(V, gateMatrix{{x1-x2-y}})
       pt = point{{2,1,1,3_CC}};
       G={{0,1,2},{3}}
       P = multiaffineDimension(F,G,pt)
       latticePoints P
+      --Finite field arithmetic also works.
+      V2 = matrix{declareVariable\{a1,a2,a3,b}}
+      F = gateSystem(V2, gateMatrix{{a1-a2-b}})
+      pt = point{{2,1,1,3_ZZ/30103}};
+      G={{0,1,2},{3}}
+      P = multiaffineDimension(F,G,pt)
+      latticePoints P
+    Text
+      It is possible to go from a list of ring elements to a gate system.
+    Example
+      TODO
   Caveat
     We assume that the point pt is generic and that the numerical rank is computed correctly.
 ///
-
 
 doc ///--getSequenceSC
   Key

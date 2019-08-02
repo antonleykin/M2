@@ -79,8 +79,11 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
     (m,n,JF) := createJacobian F; --JF is a m by n matrix
     Jpt := evaluateJacobian(pt,m,n,JF);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
-    intrinsicCodimension :=  numericalRank  Jpt ;
     --all nonempty subsets of [0,1,..,#G-1]
+		if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField)
+		then useRank :=  numericalRank
+		else useRank =  rank;
+		intrinsicCodimension :=  useRank  Jpt;
     subsetsIV := drop(subsets(#G),1);
     M := {};
     v := {};
@@ -89,7 +92,7 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
     	    varsInIcom := flatten G_Icomplement;
 	    v = append(v,
 		n-intrinsicCodimension +
-		-#varsInIcom +numericalRank Jpt_varsInIcom
+		-#varsInIcom +useRank Jpt_varsInIcom
 	    )));
     --Inequalities.
     M = matrix M;
