@@ -221,7 +221,7 @@ populate WitnessCurve := o -> W -> (
     n := # coordinates x0;
     G := homotopyGraph(W#"Equations", Potential=>o.Potential);
     addNode(G, p1, W.cache#"WitnessPoints");
-    -- assume complete graph 
+    -- assume complete graph
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
     coreNodes := toList G.Vertices;
     -- two "special nodes"
@@ -297,7 +297,7 @@ membershipTest (Point, GateSystem, Sequence) := o -> (x1, F, MonodromyResult) ->
     )
 
 -*
- todo: 
+ todo:
  -) isComplete (wrt. some optional tolerance)
  -) store partial trace test values in W
  -) repopulate
@@ -345,9 +345,9 @@ evaluate(F,pt)
 W = witnessCurve(F, {{x,y}}, pt)
 populate W
 witnessPoints W
-///	
-    
-    
+///
+
+
 
 
 beginDocumentation()

@@ -23,7 +23,7 @@ doc ///--multiaffineDimension
     Text
       This method computes the multidimension by
       computing the ranks of submatrices of the Jacobian of F.
-      When using exact artithmetic the method rank is used, otherwise numericalRank is used.
+      When using exact arithmetic the method rank is used, otherwise numericalRank is used.
       Each submatrix and rank induces an inequality that defines the polytope P
       according to "A numerical toolkit for multiprojective varieties, Algorithm 2.3".
     Example
