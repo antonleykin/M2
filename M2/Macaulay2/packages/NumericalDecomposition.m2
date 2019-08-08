@@ -9,7 +9,7 @@ newPackage(
 	     },
     	Headline => "numerical decomposition of varieties",
 	PackageImports => {},
-	PackageExports => {"NumericalAlgebraicGeometry","Polyhedra","MonodromySolver"},
+	PackageExports => {"NAGtypes","NumericalAlgebraicGeometry","Polyhedra","MonodromySolver"},
 	DebuggingMode => true,
 	AuxiliaryFiles => true
     	)
@@ -41,7 +41,7 @@ createJacobian GateSystem := GS -> (
     I := vars GS;
     J := diff(I,F);
     (m,n) := (numrows J,numcols J);
-    JGS := gateSystem(I, flatten J);
+    JGS := gateSystem(I, transpose gateMatrix{flatten entries J});
     (m,n,JGS)
     )
 evaluateJacobian (Point, ZZ, ZZ, GateSystem) := (pt, m,n,JGS) -> matrix(evaluate(JGS,matrix pt),m,n)
@@ -215,11 +215,11 @@ populate = method(
        null, "new tracking routine" => true,
        NumberOfNodes => 2, MaxNumTraceTests => 3, TraceTolerance => 1e-4})
 populate WitnessCurve := o -> W -> (
-    masterGS := W#"Equations";
+    masterGS := W#"system with slices";
     p1 := W.cache#"SpecializationParameters";
     x0 := first W.cache#"WitnessPoints";
     n := # coordinates x0;
-    G := homotopyGraph(W#"Equations", Potential=>o.Potential);
+    G := homotopyGraph(W#"system with slices", Potential=>o.Potential);
     addNode(G, p1, W.cache#"WitnessPoints");
     -- assume complete graph
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
@@ -317,7 +317,11 @@ witnessCurve (GateSystem, List, Point) := o -> (F, Blocks, pt) -> (
     SCseq := getSequenceSC P;
     masterGS := makeSliceSystem(F,G,SCseq); -- this should always take the point, have the default of returning a square subsystem, and allow for parameters in F
     new WitnessCurve from {
-	"Equations" => masterGS,
+	-- unnecessary keys (for keeping record)
+	"original system" => F, 
+	"SC sequence" => SCseq,
+	-- necessary keys
+	"system with slices" => masterGS,
 	"NumVars" => # V,
 	"NumParams" => m,
 	"NumSliceParams" => (numcols parameters masterGS)-m,
@@ -329,11 +333,9 @@ witnessCurve (GateSystem, List, Point) := o -> (F, Blocks, pt) -> (
 	}
     )
 
-witnessPoints = method()
-witnessPoints WitnessCurve := W -> points W.cache#"WitnessPoints"
+points WitnessCurve := W -> points W.cache#"WitnessPoints"
 
-/// TEST
-restart
+TEST /// -- one factor of dim=2
 needsPackage "NumericalDecomposition"
 declareVariable \ {x,y}
 F = gateSystem(
@@ -341,14 +343,61 @@ F = gateSystem(
     gateMatrix{{y^2-x^3-x+1}}
     )
 pt = point{{2.00000001,-3+0.0000001*ii}}
-evaluate(F,pt)
+assert(norm evaluate(F,pt)<0.0001)
 W = witnessCurve(F, {{x,y}}, pt)
 populate W
-witnessPoints W
+points W
 ///
 
+TEST /// -- two factors of dim=1
+needsPackage "NumericalDecomposition"
+declareVariable \ {x,y}
+F = gateSystem(
+    gateMatrix{{x,y}},
+    gateMatrix{{y^2-x^3-x+1}}
+    )
+pt = point{{2.00000001,-3+0.0000001*ii}}
+assert(norm evaluate(F,pt)<0.0001)
+W = witnessCurve(F, {{x},{y}}, pt)
+populate W
+points W
+///
 
+TEST /// -- one factor of dim=4 with parameters
+needsPackage "NumericalDecomposition"
+declareVariable \ {x0,x1,y0,y1,ax,ay}
+F = gateSystem(
+    gateMatrix{{ax,ay}},
+    gateMatrix{{x0,x1,y0,y1}},    
+    gateMatrix{{y1^2+y0^2*(-x1^3-x1*x0^2+x0^3)},
+	    {ax*x1+x0-1},
+	    {ay*y1+y0-1}}
+    )
+pt'a = point{{0,0}}
+pt = point{{1,2.00000001,1,-3+0.0000001*ii}}
+assert(norm evaluate(F,pt'a,pt) < 0.0001)
+W = witnessCurve(F, {{x0,y0,x1,y1}}, pt)
+populate W
+error "note: trace test fails"
+points W
+///
 
+-- IN: a list of points
+-- OUT: a hash table of 
+--      WitnessCurve => list of points (that belong to the component witnessed by the key)
+decompose(List, System, List) := (pts,system,varParts) -> (
+    F := gateSystem system;
+    curves := new MutableHashTable;
+    for pt in pts do (
+	C := select(1,keys curves,c->"is0n"(pt,c)); -- TODO: implement isOn (replaces membershipTest)
+	if C=!=null then curves#C = append(curves#C,pt) else (
+	    C = witnessCurve(F,varParts,pt);
+	    populate C;
+	    curves#C = {pt};
+	    )
+	); 
+    new HashTable from curves
+    )
 
 beginDocumentation()
 needs "./NumericalDecomposition/Documentation/doc12.m2"
@@ -356,8 +405,8 @@ needs "./NumericalDecomposition/Documentation/doc3456.m2"
 end
 
 restart
-uninstallPackage "MonodromySolver"
-installPackage "MonodromySolver"
-installPackage("MonodromySolver", RemakeAllDocumentation=>true)
-check "MonodromySolver"
-peek MonodromySolver
+uninstallPackage "NumericalDecomposition"
+installPackage "NumericalDecomposition"
+installPackage("NumericalDecomposition", RemakeAllDocumentation=>true)
+check "NumericalDecomposition"
+peek NumericalDecomposition
