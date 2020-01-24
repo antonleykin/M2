@@ -1,28 +1,17 @@
-add_library(engine STATIC
-#  CMakeLists.txt
+add_library(engine
+  STATIC
   Eschreyer.cpp
   Eschreyer.hpp
   GF.cpp
   GF.hpp
   LLL.cpp
   LLL.hpp
-#  Makefile.common.in
-#  Makefile.files
-#  Makefile.in
   NAG.cpp
   NAG.hpp
-#  README
   SLP-defs.hpp
   SLP-imp.hpp
   SLP.cpp
   SLP.hpp
-#  STYLE.txt
-#  TAGS
-#  TODO
-#  TODO-SLPs
-#  TODO-numerics
-#  TODO-rings-matrices
-#  TODO-sparsepolyring
   ZZ.cpp
   ZZ.hpp
   ZZp.cpp
@@ -35,7 +24,6 @@ add_library(engine STATIC
   aring-RR.hpp
   aring-RRR.cpp
   aring-RRR.hpp
-  aring-example.hpp
   aring-gf-flint-big.cpp
   aring-gf-flint-big.hpp
   aring-gf-flint.cpp
@@ -45,7 +33,6 @@ add_library(engine STATIC
   aring-glue.hpp
   aring-m2-gf.cpp
   aring-m2-gf.hpp
-  aring-poly-zz-flint.hpp
   aring-qq-flint.cpp
   aring-qq-flint.hpp
   aring-qq-gmp.cpp
@@ -54,8 +41,8 @@ add_library(engine STATIC
   aring-tower.cpp
   aring-tower.hpp
   aring-translate.hpp
-#  aring-wrap.cpp
-#  aring-wrap.hpp
+#  aring-wrap.cpp     # WHY?
+#  aring-wrap.hpp     # WHY?
   aring-zz-flint.cpp
   aring-zz-flint.hpp
   aring-zz-gmp.cpp
@@ -112,9 +99,10 @@ add_library(engine STATIC
   dmat-zzp-flint.hpp
   dmat.cpp
   dmat.hpp
-#  doxygen-settings
   dpoly.cpp
   dpoly.hpp
+  eigen.cpp
+  eigen.hpp
   engine-includes.hpp
   engine.cpp
   engine.h
@@ -126,19 +114,18 @@ add_library(engine STATIC
   factor.cpp
   finalize.cpp
   finalize.hpp
-#  fixspace
+  flint.cpp
   fplll-interface.cpp
   fplll-interface.hpp
   frac.cpp
   frac.hpp
   fractionfreeLU.cpp
   fractionfreeLU.hpp
-#  franzi-brp-test.cpp
+#  franzi-brp-test.cpp # WHY?
   franzi-brp.cpp
   franzi-brp.hpp
   franzi-gb.cpp
   franzi-interface.cpp
-  free-resolutions
   freemod.cpp
   freemod.hpp
   gauss.cpp
@@ -147,7 +134,6 @@ add_library(engine STATIC
   gb-default.hpp
   gb-homog2.cpp
   gb-homog2.hpp
-  gb-mora.hpp
   gb-sugarless.cpp
   gb-sugarless.hpp
   gb-test1.cpp
@@ -163,6 +149,7 @@ add_library(engine STATIC
   gbweight.hpp
   geopoly.hpp
   geovec.hpp
+  gmp-util.h
   hash.hpp
   hermite.cpp
   hermite.hpp
@@ -181,6 +168,8 @@ add_library(engine STATIC
   interrupted.hpp
   lapack.cpp
   lapack.hpp
+  localring.cpp
+  localring.hpp
   mat-arith.hpp
   mat-elem-ops.hpp
   mat-linalg.hpp
@@ -206,16 +195,19 @@ add_library(engine STATIC
   monideal.hpp
   monoid.cpp
   monoid.hpp
+  monomial-sets.cpp
+  monomial-sets.hpp
   monomial.cpp
   monomial.hpp
-#  monorder.cpp
-#  monorder.hpp
   monordering.c
   monordering.h
   montable.cpp
   montable.hpp
   montableZZ.cpp
   montableZZ.hpp
+  mpreal.h
+  mutablecomplex.cpp
+  mutablecomplex.hpp
   mutablemat-defs.hpp
   mutablemat-imp.hpp
   mutablemat.cpp
@@ -228,21 +220,13 @@ add_library(engine STATIC
   ntl-internal.cpp
   ntuple.cpp
   ntuple.hpp
-#  overflow-test.cpp
+#  overflow-test.cpp # WHY?
   overflow.cpp
   overflow.hpp
   pfaff.cpp
   pfaff.hpp
-#  pi-genmask.cc
-#  pi-readme.txt
-#  pi-test.cc
-#  pi.cc
-#  pi.h
-#  pm-test.cpp
-#  pm.cpp
-#  pm.hpp
-#  points.cpp
-#  points.hpp
+#  points.cpp  # WHY?
+#  points.hpp  # WHY?
   poly.cpp
   poly.hpp
   polyquotient.cpp
@@ -254,7 +238,7 @@ add_library(engine STATIC
   qring.cpp
   qring.hpp
   queue.hpp
-  rand.c
+  rand.cpp
   rand.h
   reader.cpp
   reader.hpp
@@ -306,8 +290,6 @@ add_library(engine STATIC
   smat.hpp
   solvable.cpp
   solvable.hpp
-  spair-heap.cpp
-  spair-heap.hpp
   spair.cpp
   spair.hpp
   stdinc-m2.hpp
@@ -339,9 +321,8 @@ add_library(engine STATIC
   x-mutablemat.cpp
   x-relem.cpp
   x-ringmap.cpp
-#  f4/Makefile.files
-#  f4/Makefile.in
-#  f4/README-RES-F4
+
+  # f4
   f4/f4-computation.cpp
   f4/f4-computation.hpp
   f4/f4-m2-interface.cpp
@@ -353,6 +334,7 @@ add_library(engine STATIC
   f4/f4-spairs.cpp
   f4/f4-spairs.hpp
   f4/f4-syz.cpp
+  f4/f4-syz.hpp
   f4/f4-types.cpp
   f4/f4-types.hpp
   f4/f4.cpp
@@ -395,6 +377,8 @@ add_library(engine STATIC
   f4/res-moninfo-sparse.hpp
   f4/res-moninfo.cpp
   f4/res-moninfo.hpp
+  f4/res-monomial-sorter.cpp
+  f4/res-monomial-sorter.hpp
   f4/res-monomial-types.hpp
   f4/res-poly-ring.cpp
   f4/res-poly-ring.hpp
@@ -405,6 +389,32 @@ add_library(engine STATIC
   f4/res-varpower-monomial.hpp
   f4/varpower-monomial.cpp
   f4/varpower-monomial.hpp
+  )
+  
+target_include_directories(engine
+  PUBLIC
+    ${SOURCE}/include
+    # Order matters here
+    ${SOURCE}/Macaulay2/c
+    ${SOURCE}/Macaulay2/d
+    ${SOURCE}/Macaulay2/e
+    ${BOOTSTRAP}/include
+    ${BOOTSTRAP}/Macaulay2/d
+    ${BOOTSTRAP}/Macaulay2/e-includes
+    ${BOOTSTRAP}/usr-host/include
+  PRIVATE
+    /usr/include/libxml2
+    /usr/include/eigen3
+    ../../submodules/memtailor/src
+    ../../submodules/mathic/src
+    ../../submodules/mathicgb/src
+    ${CMAKE_CURRENT_BINARY_DIR}/../d
+  )
+
+if(FALSE)
+enable_testing()
+add_executable(macaulay2-test
+  # unit-tests
   unit-tests/ARingCCCTest.cpp
   unit-tests/ARingCCTest.cpp
   unit-tests/ARingGFTest.cpp
@@ -422,10 +432,7 @@ add_library(engine STATIC
   unit-tests/M2-replacement.c
   unit-tests/M2mem-replacement.c
   unit-tests/M2mem-replacement.h
-  unit-tests/Makefile.files
-  unit-tests/Makefile.in
   unit-tests/PointArray.cpp
-  unit-tests/README
   unit-tests/ResTest.cpp
   unit-tests/RingCCCTest.cpp
   unit-tests/RingQQTest.cpp
@@ -437,23 +444,28 @@ add_library(engine STATIC
   unit-tests/SubsetTest.cpp
   unit-tests/basics-test.cpp
   unit-tests/fromStream.cpp
-  unit-tests/gtest-include.cpp
+#  unit-tests/gtest-include.cpp
   unit-tests/testMain.cpp
-  )
+)
 
-set(BOOTSTRAP "/Users/mike/src/M2/M2/BUILD/mike/builds.tmp/darwin64-clang")
+# find_package(GTest REQUIRED)
+# include_directories(${GTEST_INCLUDE_DIRS})
+# target_link_libraries(macaulay2-test ${GTEST_BOTH_LIBRARIES})
+# add_test(AllTestsInFoo macaulay2-test)
 
-target_include_directories(engine PUBLIC
-  ${BOOTSTRAP}/include
-  ${BOOTSTRAP}/Macaulay2/d
-  ${BOOTSTRAP}/Macaulay2/e-includes
-  ${BOOTSTRAP}/usr-host/include
-  ../../submodules/memtailor/src
-  ../../submodules/mathic/src
-  ../../submodules/mathicgb/src
-  ../../include
-  .
-  ../c
-  )                            
 
-#target_link_libraries(engine STATIC )
+# add_executable(proj-test
+#   ${source_files}
+#   ${test_files}
+#   )
+
+# set(GTEST_INCLUDE_DIRS
+#   gtest-1.7.0/include
+#   gtest-1.7.0
+#   )
+
+# target_include_directories(proj-test PUBLIC
+#   ${GTEST_INCLUDE_DIRS}
+#   include
+#   )
+endif()
