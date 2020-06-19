@@ -209,7 +209,7 @@ makeSliceSystem (GateSystem, VariableGroup, Sequence) := (F, G, SCseq) -> (
 populate = method(
     Options=>{AugmentEdgeCount=>0, AugmentNodeCount=> 1, NumberOfEdges => 1,
        NumberOfRepeats => 10, BatchSize => infinity, Potential => null,
-       EdgesSaturated => false, Randomizer => null, SelectEdgeAndDirection =>selectBestEdgeAndDirection,
+       EdgesSaturated => false, Randomizer => (p->p), SelectEdgeAndDirection =>selectBestEdgeAndDirection,
        Potential => potentialLowerBound,
        Verbose => false, FilterCondition => null, TargetSolutionCount =>
        null, "new tracking routine" => true,
@@ -219,7 +219,7 @@ populate WitnessCurve := o -> W -> (
     p1 := W.cache#"SpecializationParameters";
     x0 := first W.cache#"WitnessPoints";
     n := # coordinates x0;
-    G := homotopyGraph(W#"system with slices", Potential=>o.Potential);
+    G := homotopyGraph(W#"system with slices", Potential=>o.Potential, Randomizer=>o.Randomizer);
     addNode(G, p1, W.cache#"WitnessPoints");
     -- assume complete graph
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
@@ -344,6 +344,7 @@ F = gateSystem(
     )
 pt = point{{2.00000001,-3+0.0000001*ii}}
 assert(norm evaluate(F,pt)<0.0001)
+setRandomSeed 0
 W = witnessCurve(F, {{x,y}}, pt)
 populate W
 points W
@@ -358,29 +359,42 @@ F = gateSystem(
     )
 pt = point{{2.00000001,-3+0.0000001*ii}}
 assert(norm evaluate(F,pt)<0.0001)
+setRandomSeed 0
 W = witnessCurve(F, {{x},{y}}, pt)
 populate W
 points W
 ///
 
 TEST /// -- one factor of dim=4 with parameters
+restart
 needsPackage "NumericalDecomposition"
-declareVariable \ {x0,x1,y0,y1,ax,ay}
-F = gateSystem(
-    gateMatrix{{ax,ay}},
-    gateMatrix{{x0,x1,y0,y1}},    
-    gateMatrix{{y1^2+y0^2*(-x1^3-x1*x0^2+x0^3)},
-	    {ax*x1+x0-1},
-	    {ay*y1+y0-1}}
-    )
-pt'a = point{{0,0}}
+needs "./NumericalDecomposition/nag_supplemental.m2"
+vars(x0,x1,y0,y1,ax,ay) -- x0 & y0 are homogenizing variables
+fs={x0^3*y1^2+y0^2*(-x1^3-x1*x0^2+x0^3),ax*x1+x0-1,ay*y1+y0-1}
+F = gateSystem({ax,ay},{x0,x1,y0,y1},fs)
+pt'a = point{{0_CC,0}}
 pt = point{{1,2.00000001,1,-3+0.0000001*ii}}
-assert(norm evaluate(F,pt'a,pt) < 0.0001)
+setRandomSeed 0
 W = witnessCurve(F, {{x0,y0,x1,y1}}, pt)
-populate W
-error "note: trace test fails"
 points W
+errorDepth = 0
+populate(W,Verbose=>true)
+GS = W#"system with slices"
+p0 = W.cache#"SpecializationParameters"
+x0 = first W.cache#"WitnessPoints"
+assert areEqual(0, norm evaluate(GS,p0,x0))
+monodromySolve(GS,p0,{x0},Verbose=>true, NumberOfNodes=>4, NumberOfEdges=>1, Randomizer=>(p->p))
 ///
+
+-*
+-- symbolic 
+restart
+R=QQ[x0,x1,y1,y0]
+ax = random QQ
+ay = random QQ
+I=ideal(x0^3*y1^2+y0^2*(-x1^3-x1*x0^2+x0^3),ax*x1+x0-1,ay*y1+y0-1, random(1,R)-random QQ)
+degree I
+*-
 
 -- IN: a list of points
 -- OUT: a hash table of 
