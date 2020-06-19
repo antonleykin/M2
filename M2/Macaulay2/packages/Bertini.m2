@@ -1606,6 +1606,7 @@ PWD#"WS"#1//toList/(i->i#"ComponentNumber")
 PWD#"WS"#1//toList/(i->i#"Multiplicity")
 PWD#"WS"#0//toList/(i->i#"Multiplicity")
 *-
+--This method is used for debugging parsing witness data files. 
 parseWitnessDataFile = method(TypicalValue=>MutableHashTable)
 parseWitnessDataFile (MutableHashTable,String,String) := (PWD,dir,name) -> (
     --PWD :=new MutableHashTable from {};
