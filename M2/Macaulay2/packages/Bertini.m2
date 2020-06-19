@@ -1395,7 +1395,7 @@ readSolutionsBertini (String,List) := o -> (dir,F) -> (
         rw = {};
         );
     
-    M = matrix(mat);
+    M = transpose matrix(mat);
 
     -- Finally, we can cycle through the witness sets in nv 
     -- and add the slice data.
