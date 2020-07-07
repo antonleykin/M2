@@ -5,7 +5,7 @@ newPackage(
     	Authors => {
 	     {Name => "Timothy Duff", Email => "tduff3@gatech.edu"},
 	     {Name => "Anton Leykin", Email => "leykin@math.gatech.edu"},
-	     {Name => "Jose Rodriguez", Email => "???"}
+	     {Name => "Jose Rodriguez", Email => "jrodriguez43@wisc.edu"}
 	     },
     	Headline => "numerical decomposition of varieties",
 	PackageImports => {},
@@ -111,8 +111,10 @@ multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynom
     return P
     )
 
+
+
 -- STEP 2 --
-getSequenceSC = method(TypicalValue=>Thing)
+getSequenceSC = method(TypicalValue=>Sequence)
 --TODO: have an option Strategy => ZZ
 getSequenceSC (Polyhedron) := (P)->(
     SCS := ();
@@ -136,12 +138,10 @@ getSequenceSC (Polyhedron) := (P)->(
 		    Q :=polyhedronFromHData(-matrix{ei},-matrix {{bfe#i}}); -- newM \leq e_I
     	    	    ---newP on the lhs consists of integer vectors in newP on the rhs that are greater than or equal to bfe (coordinatewise).
   	    	    newP = intersection(newP,Q);
---  	    	    print latticePoints newP;
 	    	    ))
 	    else bfe#i = 0));
-    --print ("bfe"=>bfe);
     idMatrix:= diagonalMatrix(apply(k,i->1));
-    --newP is now a matroid polytope by shifting by -bfe
+    --newP becomes a matroid polytope by shifting by -bfe
     newP=affineImage(idMatrix,newP,-matrix transpose {toList bfe});
     scan(#bfe,i->scan(bfe#i,j -> SCS=append(SCS, i)));
     --print("SCS"=>SCS);
@@ -164,8 +164,32 @@ getSequenceSC (Polyhedron) := (P)->(
 	    dimLowerBound = max(maxAi,dimLowerBound)));
     assert(numFactors ==1);
     SCS=append(SCS,0);
-    return  SCS
+    SCS
     )
+
+describeSCS = method()
+--V is a list of variables
+--G is a 2D-List of integers giving the variables by grouping
+--SCSeq is a slice coarsening sequence
+--Convention choice: for {a,b,c} in SCseq we coarsen by putting the variables in groups a b c all in group a and delete the old groups b c.
+describeSCS (List,List,Sequence) := (V,G,SCseq) -> (    
+    G = new MutableList from G;
+    scan(SCseq,i->(
+	    if instance(i,ZZ) 
+	    then print ("slice in "|toString apply(G#i,j->V#j))
+	    else if instance(i,List)
+	    then (
+		CG:=apply(i, j -> G#j );
+		print ("coarsen:  "|toString apply(CG,X->apply(X,x ->V#x)));
+		G#(i#0) = flatten CG;
+		scan(drop(i,1), j -> G#j = null);
+		G = new MutableList from delete(null,toList G);		
+		)
+	    )
+	)
+    )
+
+
 
 -- STEP 3 --
 makeSliceSystem = method()
