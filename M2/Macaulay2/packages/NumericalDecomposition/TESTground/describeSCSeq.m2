@@ -27,10 +27,25 @@ slice in {x1, x2, x3, y}
      describeSCS  (V,G,scs)
 
 
-     F = gateSystem polySystem {x1-1};
+     V= gens R
+     F = gateSystem polySystem {x1-2};
      G= {{0},{1},{2},{3}}
      scs =  getSequenceSC (F,G,pt)
      describeSCS  (V,G,scs)
+
+
+     R = CC[x_0..x_9];
+
+     V= gens R
+     F = gateSystem polySystem {x_0-1};
+     G= apply(10,i->{i})
+     pt = point{{1}|apply(#gens R-1,i->random CC)};
+     #gens R
+     #flatten G
+     #coordinates pt
+     scs =  getSequenceSC (F,G,pt)
+     describeSCS  (V,G,scs)
+
 
 end
 restart

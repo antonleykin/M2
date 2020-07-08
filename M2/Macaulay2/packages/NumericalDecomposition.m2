@@ -180,9 +180,10 @@ getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial sys
     intrinsicCodimension :=  useRank  Jpt;
     -- We project onto the last coordinate, last two coordinates, etc, and determine the dimension of the image. 
     imageDimensions :=  apply(#G-1,i->(
-	Icomplement := for j to #G-1-i list j;
+	Icomplement := for j to #G-1-i-1 list j;
 	--print Icomplement;
 	varsInIcom := flatten G_Icomplement;
+	--print ((n-intrinsicCodimension) - (#varsInIcom -useRank Jpt_varsInIcom)=>Jpt_varsInIcom);
 	(n-intrinsicCodimension) - (#varsInIcom -useRank Jpt_varsInIcom)	
 	));
     imageDimensions=append(imageDimensions,(n-intrinsicCodimension));
@@ -190,6 +191,7 @@ getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial sys
     D:=0;
     k:=#G-1;
     numSlices:=0;
+    --print ("imageDimensions",imageDimensions);
     scan(imageDimensions,i->(
 	    scan(i-numSlices-1, j->(
 		    scs = append(scs, k);
