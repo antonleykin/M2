@@ -168,7 +168,8 @@ getSequenceSC (Polyhedron) := (P)->(
     )
 
 -- Step 2 without needing Step 1. 
-getSequenceSC(GateSystem, List, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
+getSequenceSC(GateSystem, List, Point) := (F,G,pt)->getSequenceSC(F,new VariableGroup from G,pt)
+getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
     (m,n,JF) := createJacobian F; --JF is a m by n matrix
     Jpt := evaluateJacobian(pt,m,n,JF);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
