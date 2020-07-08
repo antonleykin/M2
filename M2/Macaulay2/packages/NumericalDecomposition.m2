@@ -167,6 +167,43 @@ getSequenceSC (Polyhedron) := (P)->(
     SCS
     )
 
+-- Step 2 without needing Step 1. 
+getSequenceSC(GateSystem, List, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
+    (m,n,JF) := createJacobian F; --JF is a m by n matrix
+    Jpt := evaluateJacobian(pt,m,n,JF);
+    thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
+    --all nonempty subsets of [0,1,..,#G-1]
+    if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField)
+    then useRank :=  numericalRank
+    else useRank =  rank;
+    intrinsicCodimension :=  useRank  Jpt;
+    -- We project onto the last coordinate, last two coordinates, etc, and determine the dimension of the image. 
+    imageDimensions :=  apply(#G-1,i->(
+	Icomplement := for j to #G-1-i list j;
+	--print Icomplement;
+	varsInIcom := flatten G_Icomplement;
+	(n-intrinsicCodimension) - (#varsInIcom -useRank Jpt_varsInIcom)	
+	));
+    imageDimensions=append(imageDimensions,(n-intrinsicCodimension));
+    scs :={};
+    D:=0;
+    k:=#G-1;
+    numSlices:=0;
+    scan(imageDimensions,i->(
+	    scan(i-numSlices-1, j->(
+		    scs = append(scs, k);
+		    numSlices = numSlices +1
+		    )
+		);
+	    if k>0 then (
+		scs = append(scs,{k-1,k});
+		k=k-1)	    
+	    )
+	);
+    toSequence scs
+    )
+
+
 describeSCS = method()
 --V is a list of variables
 --G is a 2D-List of integers giving the variables by grouping
@@ -188,6 +225,9 @@ describeSCS (List,List,Sequence) := (V,G,SCseq) -> (
 	    )
 	)
     )
+
+
+
 
 
 
