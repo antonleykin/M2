@@ -85,7 +85,6 @@ export {
 	"runExternalM2ReturnAnswer",
 	-- Various Options:
 	"M2Location",
-	"KeepFiles",
 	"KeepStatistics",
 	"KeepStatisticsCommand",
 	"PreRunScript"
@@ -334,10 +333,12 @@ Node
 -*
   These are the options to automatically provide when calling the M2 executable.
   We would use --script (=--stop --no-debug --silent -q ), but we do NOT want
-  -q so that our child processes can find installed packages, namely, this package.
+  -q so that our child processes can find installed packages, namely, this package,
+  unless the parent M2 was also called with -q.
 *-
 M2Options:=" --stop --no-debug --silent ";
-
+debug Core
+if noinitfile then M2Options = M2Options | " -q ";
 
 mydoc=concatenate(mydoc,///
 Node
@@ -477,7 +478,6 @@ safelyRemoveFile := (s,f) -> (
 mydoc=concatenate(mydoc,///
 Node
 	Key
-		KeepFiles
 		[runExternalM2,KeepFiles]
 	Headline
 		indicate whether or not temporary files should be saved
@@ -1058,11 +1058,11 @@ spin = (x,t) -> (
 ////<<endl<<close;
 
 r=runExternalM2(fn,"spin",(5,6),PreRunScript=>"ulimit -t 2");
-assert(not(r#"exit code"===0));
+assert(not(r#"return code"===0));
 assert(r#value===null);
 
 r=runExternalM2(fn,"spin",(5,2),KeepStatistics=>true);
-assert(r#"exit code"===0);
+assert(r#"return code"===0);
 assert(r#value===5);
 assert(instance(r#"statistics",String));
 assert(length(r#"statistics")>0);

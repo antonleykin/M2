@@ -1,6 +1,6 @@
 Style
-Macaulay2Doc
 FirstPackage
+Macaulay2Doc
 Parsing
 Classic
 Browse
@@ -195,3 +195,12 @@ FGLM
 SpechtModule
 SpecialFanoFourfolds
 SchurComplexes
+SimplicialPosets
+SlackIdeals
+PositivityToricBundles
+SparseResultants
+DecomposableSparseSystems
+MixedMultiplicity
+PencilsOfQuadrics
+ThreadedGB
+VectorGraphics

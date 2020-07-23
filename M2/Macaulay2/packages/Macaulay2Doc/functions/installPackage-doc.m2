@@ -1,7 +1,7 @@
 document { Key => "epkg",
      "The program ", TT "epkg", " is used to ", EM "encapsulate", " the files of a package
      in a subdirectory for easy later removal.  Symbolic links make it look like they have
-     been installed in the right place.  See ", HREF "http://www.encap.org/epkg/", "."
+     been installed in the right place.  See ", HREF "https://github.com/DanGrayson/epkg", "."
      }
 
 document {
@@ -70,6 +70,9 @@ document {
 	       "whether to display some details of the installation procedure.  For even more information set ", TO "debugLevel", " to
 	       a number greater than 0 or a number greater than 5."
 	       }
+	  },
+     Outputs => {
+	  Package => { "the package that was installed" }
 	  },
      Consequences => {
 	  {"The package is installed in a local directory, so that in the future, one may simply use ", TO "loadPackage", ".  Documentation for the
