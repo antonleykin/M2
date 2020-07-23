@@ -121,7 +121,9 @@ jacobian PolySystem := P -> (
     if P.?Jacobian then P.Jacobian
     else P.Jacobian = transpose jacobian(transpose P.PolyMap) -- TO DO: make "jacobian" work for SLPs
     )
-evaluateJacobian (PolySystem,Point) := (P,p) -> sub(jacobian P,sub(matrix p,coefficientRing ring P))
+evaluateJacobian (PolySystem,Matrix) := (P,p) -> sub(jacobian P,sub(p,coefficientRing ring P))
+evaluateJacobian (PolySystem,Point) := (P,p) -> evaluateJacobian(P,matrix p)
+
 TEST /// 
 CC[x,y]
 S = polySystem {x^2+y^2-6, 2*x^2-y}

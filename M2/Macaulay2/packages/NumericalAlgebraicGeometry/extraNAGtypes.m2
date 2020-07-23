@@ -66,12 +66,14 @@ gateMatrix GateSystem := F -> F#GateMatrix
 numVariables GateSystem := F -> numcols vars F
 numFunctions GateSystem := F -> numrows gateMatrix F
 numParameters GateSystem := F -> numcols parameters F
+isSquare GateSystem := F -> numFunctions F === numVariables F
 
-evaluate (GateSystem,Matrix,Matrix) := (F,p,x) -> (
-    if numrows x =!= 1 or numrows p != 1 then "expected a 1-row matrix of values";
+evaluate (GateSystem,Matrix,Matrix) := (F,p',x') -> ( -- TODO: eliminate this 
+    x := matrix {flatten entries x'};
+    p := matrix {flatten entries p'};
     if numVariables F =!= numcols x then error "wrong number of variables values";
     if numParameters F =!= numcols p then error "wrong number of parameter values";
-    evaluate(F#"SLP", matrix p | matrix x)
+    transpose evaluate(F#"SLP", matrix p | matrix x)
     )
 
 TEST ///

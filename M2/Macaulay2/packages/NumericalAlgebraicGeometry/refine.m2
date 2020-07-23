@@ -7,26 +7,23 @@ export {"refine", "newton", "endGameCauchy"}
 newton = method()
 -- assumes F has coefficients in field RR_prec or CC_prec 
 --         P has coordinates in that can be promoted to the above field 
-newton (PolySystem, Point) := (F,P) -> (
+newton (System, Point) := (F,P) -> (
     X := transpose matrix P;
-    X' := newton(F,X); 
-    P' := point X';
-    P'.ErrorBoundEstimate = norm(X'-X);
-    P'
-    )
-newton (PolySystem, Matrix) := (F,X) -> (
-    J := jacobian F;
-    dX := if isSquare F then solve(evaluate(J,X), evaluate(F,X))
-    else if F.NumberOfVariables < F.NumberOfPolys then solve(evaluate(J,X), evaluate(F,X), ClosestFit=>true)
+    valueJ := evaluateJacobian(F,P);
+    dX := if isSquare F then solve(valueJ, evaluate(F,P))
+    else if numVariables F < numFunctions F then solve(valueJ, evaluate(F,X), ClosestFit=>true)
     else ( -- underdetermined
-	M := evaluate(J,X);
+	M := valueJ;
 	(S,U,Vt) := SVD M;
 	invJ := conjugate transpose Vt *
 	        diagonalMatrix(numColumns M, numRows M, apply(S, s->if s==0 then 0 else 1/s)) * 
 		conjugate transpose U; -- pseudo-inverse
 	invJ*evaluate(F,X) 
 	); 
-    X-dX
+    X':=X-dX;
+    P' := point X';
+    P'.ErrorBoundEstimate = norm(X'-X);
+    P'
     )
 
 TEST ///
@@ -67,6 +64,19 @@ for i from 1 to 10 do (
     print coordinates P;
     )
 assert( norm evaluate(F,P) < 0.000001 ) 
+///
+
+
+TEST /// -- with GateSystem
+errorDepth = 2
+declareVariable \ {x,y}
+F = gateSystem(matrix{{x,y}},matrix{{x^2+y^2-2},{x+y-2}})
+P = point {{1.2,1.2+0.2*ii}} 
+for i from 1 to 10 do (
+    P = newton(F,P);
+    print coordinates P;
+    )
+
 ///
 
 refine = method(TypicalValue => List, Options =>{
