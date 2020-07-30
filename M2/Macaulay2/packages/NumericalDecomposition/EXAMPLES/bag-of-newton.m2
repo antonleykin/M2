@@ -34,6 +34,17 @@ peek W.cache
 equations W
 methods populate
 
+-*
+Given: a bag of points
+Want: 
+(1) create a WitnessCurve from each point, if possible (if a random slice is transverse)
+(2) for each point, say on which component(s) it is 
+
+Methods to create: 
+
+membershipTest(Point,WitnessCurve)
+
+*-
 
 uninstallPackage "MonodromySolver"
 restart
