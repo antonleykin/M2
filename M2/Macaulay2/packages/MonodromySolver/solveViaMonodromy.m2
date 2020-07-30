@@ -204,8 +204,8 @@ createSeedPair (System, Point) := o -> (P, x0) -> (
     if o.Verbose then << "auto-seeding linear family" << endl;
     I := id_(CC^m);
     A := random(CC^N,CC^0);
-    b := transpose evaluate(GS, point matrix 0_(CC^m), x0);
-    scan(m, i -> A = A | transpose evaluate(GS, point I_{i}, x0) - b);
+    b := evaluate(GS, point matrix 0_(CC^m), x0);
+    scan(m, i -> A = A | evaluate(GS, point I_{i}, x0) - b);
     xp := solve(A, -b, ClosestFit => true);
     K := numericalKernel(A, 1e-5);
     xh := K * random(CC^(numcols K), CC^1);
