@@ -56,62 +56,93 @@ newSliceParam = () -> (
     ret
     )
 
--- override buggy code in MonodromySolver
-createSeedPair (System, Point) := o -> (P, x0) -> (
-    G := if instance(P, GateSystem) then P else gateSystem P.PolyMap;
-    n := numVariables G;
-    m := numParameters G;
-    N := numFunctions G;
-    I := id_(CC^m);
-    A := random(CC^0,CC^N);
-    scan(m, i -> A = A || evaluate(G, point I_{i}, x0));
-    b := evaluate(G, point matrix 0_(CC^m), x0);
-    K := numericalKernel(transpose A, 1e-5) ;
-    offset := solve(transpose A,transpose b,ClosestFit=>true);
-    p0 := point(K* random(CC^(numcols K), CC^1) - offset);
-    (p0, x0)
+
+-- orthonormal basis for col(L) using SVD
+ONB = L -> (
+    (S,U,Vt) := SVD L;
+    r := # select(S,s->not areEqual(s,0));
+    U_{0..r-1}
+    )
+-- component of col(L) that is perpendicular to M
+perp = method(Options=>{})
+perp (Matrix, Matrix) := o -> (M, L) -> if areEqual(norm L, 0) then M else (
+    Lortho := ONB L;
+    Lperp := M-Lortho*conjugate transpose Lortho * M;
+    ONB Lperp
     )
 
 -- STEP 1 --
 
 --This function returns a polyhedron.
 
-multiaffineDimension = method(TypicalValue=>Thing)
-multiaffineDimension(GateSystem, List, Point) := (F,G,pt)->multiaffineDimension(F,new VariableGroup from G,pt)
-multiaffineDimension(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
+multiaffineDimension = method(Options=>{Strategy=>"Facets"},TypicalValue=>Thing)
+multiaffineDimension(GateSystem, List, Point) := o -> (F,G,pt)->multiaffineDimension(F,new VariableGroup from G,pt, o)
+multiaffineDimension(GateSystem, VariableGroup, Point) := o -> (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
     (m,n,JF) := createJacobian F; --JF is a m by n matrix
     Jpt := evaluateJacobian(pt,m,n,JF);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
-    --all nonempty subsets of [0,1,..,#G-1]
-		if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField)
-		then useRank :=  numericalRank
-		else useRank =  rank;
-		intrinsicCodimension :=  useRank  Jpt;
-    subsetsIV := drop(subsets(#G),1);
-    M := {};
-    v := {};
-    scan(subsetsIV, Icomplement->(
-    	    M = append(M,apply(#G,i->if member(i,Icomplement) then 0 else 1 ));
-    	    varsInIcom := flatten G_Icomplement;
-	    v = append(v,
-		n-intrinsicCodimension +
-		-#varsInIcom +useRank Jpt_varsInIcom
-	    )));
-    --Inequalities.
-    M = matrix M;
-    v = transpose matrix {v};
---    print (M,v);
-    --Equalities
-    N := matrix {apply(#G,i->1)};
-    w := matrix{{n -intrinsicCodimension}};
-    --  print (N,w);
-    --M*matrix{{e_1},...,{e_k}} \leq v
-    --N*matrix{{e_1},...,{e_k}} = w
-    P:=polyhedronFromHData(M,v,N,w);
+    useRank := if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField) then numericalRank else rank;
+    intrinsicCodimension :=  useRank  Jpt;
+    P := if (o.Strategy == "Facets") then (
+        --all nonempty subsets of [0,1,..,#G-1]
+        subsetsIV := drop(subsets(#G),1);
+        M := {};
+        v := {};
+        scan(subsetsIV, Icomplement->(
+    	        M = append(M,apply(#G,i->if member(i,Icomplement) then 0 else 1 ));
+    	        varsInIcom := flatten G_Icomplement;
+	        v = append(v,
+		    n-intrinsicCodimension +
+		    -#varsInIcom +useRank Jpt_varsInIcom
+	            )));
+        --Inequalities.
+        M = matrix M;
+        v = transpose matrix {v};
+        --    print (M,v);
+        --Equalities
+        N := matrix {apply(#G,i->1)};
+        w := matrix{{n -intrinsicCodimension}};
+        --  print (N,w);
+        --M*matrix{{e_1},...,{e_k}} \leq v
+        --N*matrix{{e_1},...,{e_k}} = w
+        polyhedronFromHData(M,v,N,w)
+        ) 
+    else if (o.Strategy == "Vertices") then (
+        perms := permutations(#G);
+        mutV := new MutableList from {};
+        nV := 0;
+        scan(perms, perm -> (
+                J := random(CC^(numFunctions F),CC^0);
+                JONB := random(CC^(numFunctions F),CC^0);
+                nAdded := 0;
+                mutV#nV = new MutableList from {};
+                scan(perm, i -> (
+                        Ji := perp(thePartialJacs#(perm#i), JONB);
+                        mutV#nV#i = numcols Ji;
+                        JONB = JONB | Ji;
+                        )
+                    );
+                nV = nV + 1;
+                )
+            );
+        convexHull transpose matrix(toList \ (toList mutV))
+        );
     return P
     )
 
 
+TEST /// -- one factor of dim=4 with parameters
+restart
+needsPackage "NumericalDecomposition"
+needs "./NumericalDecomposition/nag_supplemental.m2"
+declareVariable \ {x,y}
+F = gateSystem(
+    gateMatrix{{x,y}},
+    gateMatrix{{y^2-x^3-x+1}}
+    )
+pt = point{{2.00000001,-3+0.0000001*ii}}
+vertices multiaffineDimension(F, {{0},{1}}, pt,Strategy=>"Vertices")
+///
 
 -- STEP 2 --
 getSequenceSC = method(TypicalValue=>Sequence)
@@ -278,6 +309,7 @@ populate = method(
        NumberOfRepeats => 10, BatchSize => infinity, Potential => null,
        EdgesSaturated => false, Randomizer => (p->p), SelectEdgeAndDirection =>selectBestEdgeAndDirection,
        Potential => potentialLowerBound,
+       Equivalencer=>(x->x),
        Verbose => false, FilterCondition => null, TargetSolutionCount =>
        null, "new tracking routine" => true,
        NumberOfNodes => 2, MaxNumTraceTests => 3, TraceTolerance => 1e-4})
@@ -286,7 +318,7 @@ populate WitnessCurve := o -> W -> (
     p1 := W.cache#"SpecializationParameters";
     x0 := first W.cache#"WitnessPoints";
     n := # coordinates x0;
-    G := homotopyGraph(W#"system with slices", Potential=>o.Potential, Randomizer=>o.Randomizer);
+    G := homotopyGraph(W#"system with slices", Potential=>o.Potential, Randomizer=>o.Randomizer, Equivalencer=>o.Equivalencer, Verbose=>o.Verbose);
     addNode(G, p1, W.cache#"WitnessPoints");
     -- assume complete graph
     completeGraphInit(G,p1,first G.Vertices,o.NumberOfNodes,o.NumberOfEdges);
@@ -461,6 +493,11 @@ ax = random QQ
 ay = random QQ
 I=ideal(x0^3*y1^2+y0^2*(-x1^3-x1*x0^2+x0^3),ax*x1+x0-1,ay*y1+y0-1, random(1,R)-random QQ)
 degree I
+
+ax = 0
+ay = 0
+I=ideal(x0^3*y1^2+y0^2*(-x1^3-x1*x0^2+x0^3),ax*x1+x0-1,ay*y1+y0-1, random(1,R)-random QQ)
+degree I
 *-
 
 -- IN: a list of points
@@ -485,9 +522,83 @@ needs "./NumericalDecomposition/Documentation/doc12.m2"
 needs "./NumericalDecomposition/Documentation/doc3456.m2"
 end
 
-restart
 uninstallPackage "NumericalDecomposition"
+restart
 installPackage "NumericalDecomposition"
-installPackage("NumericalDecomposition", RemakeAllDocumentation=>true)
 check "NumericalDecomposition"
-peek NumericalDecomposition
+
+-- x^5+ax+b=0 -> (a,b) 
+restart
+FF=QQ--ZZ/101
+needsPackage "MinimalPrimes"
+R=FF[a,b,x_1..x_5] -- 5 is the degree
+I=ideal(for i from 1 to 5 list x_i^5+a*x_i+b)
+elapsedTime mp= minprimes I;
+#mp
+(a0, b0) = (random FF, random FF)
+apply(mp,p->(dim p, degree p))
+apply(mp,p->(p0 := p + ideal(a-a0,b-b0); (dim p0, degree p0)))
+sum(oo/last)
+
+restart
+needsPackage "NumericalDecomposition"
+
+--equations of variety to decompose
+needs "./NumericalDecomposition/nag_supplemental.m2"
+X = matrix{toList vars(x_0..x_4,a,b)}
+(a1, b1) = (random CC, random CC)
+F=transpose matrix{(toList apply(5, i -> x_i^5+a*x_i+b)) | {a-a1,b-b1}}
+G = gateSystem(X, F)
+
+--step 1: obtain witness point superset / "bag of points"
+P = matrix{toList vars(c_0..c_6,d_0..d_6)}
+G' = gateSystem(P, X, transpose matrix{(toList apply(7, i -> c_i*F_(i,0)-d_i))} )
+eq = (x -> point{{first coordinates x}})
+rnd = (p -> (
+              mults := apply(7, i -> random CC);
+              transpose matrix{
+                  apply(7,i->mults#i * p_(i, 0)) | 
+            apply(7,i->mults#i * p_(i+7, 0))
+                        }
+              )
+          )
+setRandomSeed 0
+elapsedTime (p0,x0s) = solveFamily(G',NumberOfNodes=>4,Verbose=>true,TargetSolutionCount=>3125);
+x0List = x0s; -- points x0s
+PH=parametricSegmentHomotopy(G')
+p1 = point{toList(7:1)|toList(7:0)}
+P01 = specialize(PH, transpose(matrix p0|matrix p1))
+elapsedTime x1s=trackHomotopy(P01,x0List);
+
+-- STEP 2: our bag of points is a witness point set for multidimension (0,0,0,0,0,2) w grouping (x0|x1|x2|x3|x4|a,b)
+-- let's find the dimension polytope at each point
+Grp={{0},{1},{2},{3},{4},{5},{6}}
+F0 = F^{0..4};
+netList flatten entries F0
+G0 = gateSystem(X, F0);
+elapsedTime allPolyhedrons = apply(take(x1s,1), x1 -> multiaffineDimension(G0, Grp, x1));
+elapsedTime allPolyhedrons = apply(take(x1s,1), x1 -> multiaffineDimension(G0, Grp, x1, Strategy=>"Vertices"));
+tP = tally allPolyhedrons -- dim polytope => number of points with that polytope
+# tP -- 
+netList keys tP
+
+-- symbolic verification
+FF=QQ--ZZ/101
+needsPackage "MinimalPrimes"
+R=FF[A,B,y_1..y_5] -- 5 is the degree
+I=ideal(for i from 1 to 5 list y_i^5+A*y_i+B)
+elapsedTime mp= minprimes I;
+tally(mp/degree)
+
+-* todo
+  1) check that monodromy correctly partitions the bag of points (including trace test)
+  2) can we detect which components are CARTESIAN PRODUCTS?
+*-
+
+x1Reps = apply(keys tP, P -> select(1, x1s, x1 -> P==vertices multiaffineDimension(G0, Grp, x1)))
+
+
+uninstallPackage "NumericalDecomposition"
+restart
+installPackage "NumericalDecomposition"
+check "NumericalDecomposition"

@@ -194,23 +194,6 @@ evaluate (GateMatrix, VisibleList, Matrix) := (GM, xVars, xVals) -> (
     )
 evaluate (Matrix, Thing, Thing) := (M, thing1, thing2) -> evaluate(gateMatrix M, thing1, thing2)
 
---todo: think about differentiating wrt. a subset of variables
-initJacobian = method()
-initJacobian (List, GateSystem) := (inds, GS) -> (
-    if not GS#?"JSLP" then (
-    	F := gateMatrix GS;
-    	I := (vars GS)_inds;
-    	J := diff(I,F);
-    	GS#"JSLP" = makeSLProgram(parameters GS | vars GS, J);
-	);
-    )
-initJacobian GateSystem := GS -> initJacobian(toList(0..numVariables GS-1), GS)
-evaluateJacobian (GateSystem, Matrix, Matrix) := (GS, p0, x0) -> (
-    initJacobian GS;
-    out := evaluate(GS#"JSLP", p0 | x0); -- NB: parameters first
-    matrix(out, numFunctions GS, numVariables GS)
-    )
-evaluateJacobian (GateSystem, Point, Point) := (GS, p0, x0) -> evaluateJacobian(GS,matrix p0, matrix x0)
 
 newton (GateSystem, Matrix, Matrix) := (GS, p0, x0) -> (
     D0 := evaluateJacobian(GS, p0, x0);
@@ -275,7 +258,7 @@ newton(G,p0,newton(G,p0,newton(G,p0,newton(G,p0,newton(G,p0,newton(G,p0,newton(G
 (p1, x1)=seedNewton(p0,x0,G)
 evaluate(G,p0,x0)
 assert(areEqual(
-	norm evaluate(G,p0,x0)
+	norm evaluate(G,p1,x1)
 	,0))
 ///
 
@@ -308,6 +291,7 @@ rowSelector (Point, Point, GateSystem) := o -> (y0, c0, GS) -> (
     goodRows
     )
 
+-- candidate
 squareDown = method(Options=>{BlockSize=>1, Verbose=>false})
 squareDown (Point, Point, GateSystem) := o -> (y0, c0, F) -> F^(rowSelector(y0, c0, F, BlockSize => o.BlockSize, Verbose=>o.Verbose))
 
@@ -408,3 +392,13 @@ computeMixedVolume gateSystem({x,y}, {x^2*y+2*x*y^2+x*y-1, x^2*y-x*y^2-x*y+p})
 end--
 restart
 needs "nag_supplemental.m2"
+needsPackage "MonodromySolver"
+(M, N) = (3, 4)
+assert(D==0)
+vars(T_(M+1)..T_(M+N))
+for j from M+1 to M+N do S_j = inputGate(1)/T_j
+-- unknowns: G1,G2, (links) z1,z2 (pivots ) + conjugates (8) and T1..TN for pose requirements
+vars(T_(M+1)..T_(M+N))
+-- parameters: D1..D(M+N) and conjugates (precision 
+vars(d_(1,1)..d_(M+N,2))
+for j from 1 to M+N do D_j = matrix{{d_(j,1)},{d_(j,2)}}

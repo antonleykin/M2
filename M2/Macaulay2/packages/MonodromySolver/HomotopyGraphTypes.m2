@@ -322,14 +322,14 @@ completeGraphAugment = (HG, p, node1, nStartingEdges, nNewEdges, nNewNodes) -> (
         for j from 0 to #(HG.Vertices) - 2 do (
             apply(nStartingEdges, k -> addEdge(HG, newNode, HG.Vertices#j));
             );
-	);
-	
+	);	
 	nNodes := #(HG.Vertices);
 	for i from 0 to nNodes-1 do (
 		for j from i+1 to nNodes-1 do (
 			apply(nNewEdges, k -> addEdge(HG, HG.Vertices#i, HG.Vertices#j));
 		);
 	);
+    updateFirstDirectedEdge HG;
 );
 
 -- gives HG a "flower" shape

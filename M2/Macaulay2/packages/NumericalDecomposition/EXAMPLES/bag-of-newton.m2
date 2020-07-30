@@ -19,10 +19,23 @@ newtonBag = (F,k) -> (
 
 end
 
+restart
 load "bag-of-newton.m2"
+equations WitnessCurve := W -> netList flatten entries gateMatrix W#"system with slices"
 declareVariable \ {x,y,z,w}
 f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
 h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
 F = gateSystem(matrix{{x,y,z,w}},transpose gateMatrix{{f,h}})
 k = 10
-newtonBag(F,k)
+xs=newtonBag(F,k)
+W=witnessCurve(F, entries transpose vars F, first xs)
+populate W
+peek W.cache
+equations W
+methods populate
+
+
+uninstallPackage "MonodromySolver"
+restart
+installPackage "MonodromySolver"
+check "MonodromySolver"
