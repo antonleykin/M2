@@ -1,3 +1,5 @@
+setRandomSeed 0
+path = prepend("../../", path)
 debug needsPackage "NumericalDecomposition"
 -- k points close to V(F)
 newtonBag = (F,k) -> (
@@ -21,18 +23,22 @@ end
 
 restart
 load "bag-of-newton.m2"
-equations WitnessCurve := W -> netList flatten entries gateMatrix W#"system with slices"
+
 declareVariable \ {x,y,z,w}
-f = 1 + 2*x + 3*y^2+4*z^3+5*w^4
-h = 1 + 2*x + 3*y+ 5*z + 7*w + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
-F = gateSystem(matrix{{x,y,z,w}},transpose gateMatrix{{f,h}})
-k = 10
+f = 1 + 2*x + 3*y^2 + 4*z^3 + 5*w^4
+g = 1 + 2*x + 3*y+ 5*z + 7*w 
+h = g + 11*z*y + 13 * x* z + 17*x*w + 19*y*z+23*y*w +29*z*w+31*x*y*z+37*x*y*w+41*x*z*w+43*y*z*w+47*x*y*z*w
+F = gateSystem({x,y,z,w},transpose gateMatrix{{f,h}})
+k = 100
 xs=newtonBag(F,k)
-W=witnessCurve(F, entries transpose vars F, first xs)
-populate W
-peek W.cache
-equations W
-methods populate
+x0 = first xs
+W0 = witnessCurve(F, entries transpose vars F, x0)
+populate W0
+degree W0
+membershipTest(x0, W0)
+tally for x in xs list membershipTest(x, W0)
+tally for i from 1 to 100 list membershipTest(point random(CC^1,CC^4), W0)
+
 
 -*
 Given: a bag of points

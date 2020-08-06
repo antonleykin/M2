@@ -142,6 +142,7 @@ F = gateSystem(
     )
 pt = point{{2.00000001,-3+0.0000001*ii}}
 vertices multiaffineDimension(F, {{0},{1}}, pt,Strategy=>"Vertices")
+vertices multiaffineDimension(F, {{0},{1}}, pt)
 ///
 
 -- STEP 2 --
@@ -381,19 +382,29 @@ populate WitnessCurve := o -> W -> (
 	);
 --    G
     )
+degree WitnessCurve := W -> length points W.cache#"WitnessPoints"
 
-membershipTest = method(Options=>{Backtrack=>false})
-membershipTest (Point, GateSystem, Sequence) := o -> (x1, F, MonodromyResult) -> (
-    (masterGS, p1, p1Sols) := MonodromyResult;
-    assert(instance(masterGS,GateSystem) and instance(p1,Point));
-    sliceTargParams := first createSeedPair(masterGS, x1);
-    specializationParameters := if o.Backtrack then transpose((matrix sliceTargParams)|(matrix p1)) else transpose((matrix p1)|(matrix sliceTargParams));
-    MembershipHomotopy := specialize(parametricSegmentHomotopy masterGS, specializationParameters);
-    startSols := if o.Backtrack then pointArray{x1} else p1Sols;
-    -- in the line below: it would be nice if trackHomotopy could take a PointArray of solutions
-    targetSols := pointArray trackHomotopy(MembershipHomotopy,points startSols);
-    if o.Backtrack then member(first points targetSols, p1Sols) else member(x1, targetSols)
+
+-- does a point x1 lie on the IrrComp tagged by W?
+membershipTest = method(Options=>{Backtrack=>false,Tolerance=>1e-6})
+membershipTest (Point, WitnessCurve) := o -> (x1, W) -> (
+    F := W#"original system";
+    assert(numParameters F == 0);
+    if not areEqual(0, norm evaluate(F, x1), Tolerance => o.Tolerance) then false else (
+        GS := W#"system with slices";
+        p0 := W.cache#"SpecializationParameters";
+        p1 := first createSeedPair(GS, x1);
+        specializationParameters := if o.Backtrack then transpose(matrix p1 | matrix p0) else transpose(matrix p0 | matrix p1);
+        membershipHomotopy := specialize(parametricSegmentHomotopy GS, specializationParameters);
+        x1s := W.cache#"WitnessPoints";
+        startSols := if o.Backtrack then pointArray{x1} else x1s;
+        -- in the line below: it would be nice if trackHomotopy could take a PointArray of solutions
+        targetSols := pointArray trackHomotopy(membershipHomotopy, points startSols);
+        if o.Backtrack then member(first points targetSols, x1s) else member(x1, targetSols)
+        )
     )
+
+prettyPrint = W -> netList flatten entries gateMatrix W#"system with slices"
 
 -*
  todo:
