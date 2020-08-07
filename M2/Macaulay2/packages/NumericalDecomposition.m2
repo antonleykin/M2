@@ -370,11 +370,11 @@ populate WitnessCurve := o -> W -> (
 	NotZeroMatrix := (max S > o.TraceTolerance);
 	numTraceTests = numTraceTests + 1;
 	if (traceVal < o.TraceTolerance and NotZeroMatrix) then (
-	    << "trace test succeeds :)" << endl;
+	    if o.Verbose then << "trace test succeeds :)" << endl;
 	    done = true;
 	    )
 	else (
-	    << "trace test fails :(" << endl;
+	    if o.Verbose then << "trace test fails :(" << endl;
 	    if (o.MaxNumTraceTests < numTraceTests) then done = true;
 	    );
 	<< "we have tracked " << nMonodromyPaths << " paths so far (includes trace test nodes)" << endl;
@@ -384,6 +384,10 @@ populate WitnessCurve := o -> W -> (
     )
 degree WitnessCurve := W -> length points W.cache#"WitnessPoints"
 
+points WitnessCurve := W -> W.cache#"WitnessPoints"
+
+isSliceExceptional = method(Options=>{})
+isSliceExceptional (Point, WitnessCurve) := (x, W) -> error "not implemented"
 
 -- does a point x1 lie on the IrrComp tagged by W?
 membershipTest = method(Options=>{Backtrack=>false,Tolerance=>1e-6})
@@ -596,11 +600,11 @@ netList keys tP
 -- symbolic verification
 FF=QQ--ZZ/101
 needsPackage "MinimalPrimes"
-R=FF[A,B,y_1..y_5] -- 5 is the degree
-I=ideal(for i from 1 to 5 list y_i^5+A*y_i+B)
+R=FF[a,b,y_1..y_5] -- 5 is the degree
+I=ideal(for i from 1 to 5 list y_i^5+a*y_i+b)
 elapsedTime mp= minprimes I;
 tally(mp/degree)
-
+tally(mp/dim)
 -* todo
   1) check that monodromy correctly partitions the bag of points (including trace test)
   2) can we detect which components are CARTESIAN PRODUCTS?
