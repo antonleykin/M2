@@ -2,22 +2,42 @@ setRandomSeed 0
 path = prepend("../../", path)
 debug needsPackage "NumericalDecomposition"
 -- k points close to V(F)
-newtonBag = (F,k) -> (
+
+newtonBag = method(Options=>{Verbose=>false})
+newtonBag (Thing, ZZ, Function,Function) := o ->  (F,k,generatePoint,isGoodPoint) -> (
     ret := new MutableList;
     i := 0;
     numIterations := 5;
+    --Statistics are printed when Verbose=>true
+    totalSeedsUsed := 0;
     while i < k do (
-	p := point random(CC^1,CC^(numVariables F));
+	totalSeedsUsed=totalSeedsUsed+1;
+	--p := point random(CC^1,CC^(numVariables F));
+	p := generatePoint();
 	for iteration to numIterations do (
 	    p = newton(F,p);	   
 	    );
-       	if p.ErrorBoundEstimate < getDefault(CorrectorTolerance) then (
+    	if isGoodPoint p then (
 	    ret#i = p;
 	    i = i + 1;
-	    )
-	);	
+	    )	    
+    	);
+    if o.Verbose then print("Number of seeds used: "|totalSeedsUsed);	
+    if o.Verbose then print("Convergence percentage: "|toString sub(#ret/totalSeedsUsed,RR));	
     return toList ret
     )
+
+newtonBag(Thing, ZZ, Function) := o -> (F,k,generatePoint) ->(
+    isGoodPoint :=    p -> p.ErrorBoundEstimate < getDefault(CorrectorTolerance);
+    newtonBag(F,k,generatePoint,isGoodPoint,o)
+    )
+
+newtonBag(Thing, ZZ) := o ->  (F,k) ->(
+    generatePoint := () -> point random(CC^1,CC^(numVariables F));
+    newtonBag(F,k,generatePoint,o)
+    )
+
+
 
 end
 
@@ -108,3 +128,5 @@ Methods to create:
 membershipTest(Point,WitnessCurve)
 
 *-
+
+
