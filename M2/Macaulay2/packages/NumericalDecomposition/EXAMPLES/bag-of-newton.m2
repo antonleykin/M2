@@ -130,3 +130,97 @@ membershipTest(Point,WitnessCurve)
 *-
 
 
+--Example of Newton Bag for isolated points. 
+
+--Case v=4
+v=4;
+R = CC[X_0, X_1, X_2, X_3, nLittle]
+sys = {2*X_0*X_1+2*X_2*X_3,
+    X_1^2+2*X_0*X_2+X_3^2,
+    2*X_1*X_2+2*X_0*X_3,
+    .0625*X_0^2+.75*nLittle-1,
+    X_1*X_3-4*nLittle}
+
+
+--Using the standard method we have a poor convergence percentage to find five solutions.
+B = newtonBag(polySystem (sys),5,Verbose=>true);
+--Number of seeds used: 3735
+--Convergence percentage: .00133869
+
+--Let's generate our points in a structured manner to capture structure of the problem. 
+--Specifically, we fix nLittle, and fix the first half of X_1...,X_v rounded down (A)
+--The remaining variables can be sovled for in terms of the fixed ones (x0 and B).
+generatePoint = ()->(
+    chooseN:=random CC;
+    x0:=sqrt(    (v)^2-4*chooseN*(v-1));
+    if v%2==1 then(
+	A := apply(sub((v-1)/2,ZZ),o->random CC	);
+	B := apply(A,i->4*chooseN/i) ;
+	);
+    if v%2==0 then(
+	A := apply(sub((v)/2,ZZ)-1,o->random CC	);
+	B := {sqrt(4*chooseN)}|apply(A,i->4*chooseN/i) ;
+	);
+    point(matrix{{x0}|A|B|{chooseN}})
+    )
+
+--We see a much better convergence percentage by generating the points in the structured manner.
+
+B = newtonBag(polySystem sys,5,generatePoint,Verbose=>true);netList B
+--Number of seeds used: 13
+--Convergence percentage: .384615
+
+--Looking at the solutions we find some with non-positive integer last coordinates. 
+-* 
+ii53 : B = newtonBag(polySystem sys,5,generatePoint,Verbose=>true);netList B
+
+       +----------------------------------------------------------------------------------------------------------------------+
+oo54 = |{2, -2*ii, 2, 2*ii, 1}                                                                                                |
+       +----------------------------------------------------------------------------------------------------------------------+
+       |{4, -5.65967e-14+6.90155e-15*ii, -5.65967e-14+6.90126e-15*ii, -5.65969e-14+6.90128e-15*ii, 2.82395e-14-3.58282e-15*ii}|
+       +----------------------------------------------------------------------------------------------------------------------+
+       |{2, -2*ii, 2, 2*ii, 1}                                                                                                |
+       +----------------------------------------------------------------------------------------------------------------------+
+       |{4, 1.35052e-14+1.82267e-14*ii, -1.45392e-14-1.81778e-14*ii, 1.45071e-14+1.71347e-14*ii, 7.03564e-15+7.59842e-15*ii}  |
+       +----------------------------------------------------------------------------------------------------------------------+
+       |{4, -2.28908e-16-1.06978e-16*ii, -2.28911e-16-1.06978e-16*ii, -2.2891e-16-1.06976e-16*ii, 1.133e-16+5.30256e-17*ii}   |
+       +----------------------------------------------------------------------------------------------------------------------+
+*-
+
+--If we only care about solutions with a positive integer in the last coordinate,
+--then we can set isGoodPoint as follows
+
+isGoodPoint=p->(
+    nLittle:=(coordinates p)#-1;
+    --Check tolerance
+    if p.ErrorBoundEstimate < getDefault(CorrectorTolerance) 
+    --check last coordinate is greater than or equal to 1
+    then if abs(imaginaryPart(nLittle))<getDefault(CorrectorTolerance) and realPart( nLittle)>1-getDefault(CorrectorTolerance) 
+    then (
+    	--check last coordinate is a positive integer
+	while nLittle>1+getDefault(CorrectorTolerance) do nLittle =nLittle-1; 
+	if min{abs(nLittle), abs(nLittle-1)}<getDefault(CorrectorTolerance) 
+	then return true
+	);
+    return false
+    )
+
+B = newtonBag(polySystem (sys),5,generatePoint,isGoodPoint,Verbose=>true);
+netList B
+--Number of seeds used: 21
+--Convergence percentage: .238095
+
+-*
+
+       +----------------------+
+oo63 = |{2, -2*ii, 2, 2*ii, 1}|
+       +----------------------+
+       |{2, 2*ii, 2, -2*ii, 1}|
+       +----------------------+
+       |{2, -2*ii, 2, 2*ii, 1}|
+       +----------------------+
+       |{2, 2*ii, 2, -2*ii, 1}|
+       +----------------------+
+       |{2, 2*ii, 2, -2*ii, 1}|
+       +----------------------+
+*-
