@@ -63,7 +63,11 @@ det3 = M -> M_(0,0)*det2(M^{1,2}_{1,2})-M_(0,1)*det2(M^{1,2}_{0,2})+M_(0,2)*det2
 laplaceDet = M -> (
     (m, n) := dimensions M;
     assert(m==n);
-    if (m==2) then det2 M else if (m==3) then det3 M else error "not implemented"
+    if (m==2) then det2 M else if (m==3) then det3 M else sum(m,i-> (
+            inds := delete(i, toList(0..m-1));
+            (-1)^i*M_(0,i) * laplaceDet(M_inds^inds)
+            )
+        )
     )
 -- convenience functions for minors
 minors (GateMatrix, ZZ, Sequence, Boolean) := o ->  (M, k, S, laplace) -> (
@@ -144,6 +148,7 @@ GateMatrix * Gate := (M, a) -> a*M
 
 gateSystem (BasicList, BasicList, GateMatrix) := (P, X, F) -> gateSystem(gateMatrix{toList P}, gateMatrix{toList X}, columnize F)
 gateSystem (BasicList, BasicList, BasicList) := (P, X, Fs) -> foldVert apply(toList Fs, f -> gateSystem(P, X, gateMatrix f))
+gateSystem (BasicList, BasicList) := (X, Fs) -> foldVert apply(toList Fs, f -> gateSystem({}, X, gateMatrix f))
 gateSystem (Thing, Thing, Gate) := (X, P, g) -> gateSystem(X, P, gateMatrix{{g}})
 gateSystem (List, Thing) := (X, F) -> gateSystem({}, X, F)
 
