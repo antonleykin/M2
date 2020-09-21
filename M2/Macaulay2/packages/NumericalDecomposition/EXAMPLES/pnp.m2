@@ -10,7 +10,7 @@ f2 = a_4*(z^2 + x^2) - a_5 *x*z - a_6
 f3 = a_7*(y^2 + x^2) - a_8 *x*y - a_9
 F=transpose gateMatrix{{f1,f2,f3}}
 J=diff(X,F)
-M=allMinors(J,3,Laplace => true); -- I get an error w/ false
+M=allMinors(J,3);
 D=gateSystem(P|X,F||transpose M)
 elapsedTime x0 = first newtonBag(D,1)
 elapsedTime Polymatroid = multiaffineDimension(D,{toList(3..11),toList(0..2)},x0)
@@ -23,6 +23,21 @@ Vg=squareDown(p0,x0,D)
 -- witness
 wc = witnessCurve(Vg, blocks, x0)
 populate(wc,Verbose=>true)
+
+-- witness set w/ finer blocks
+blocks = {{a_1,a_2,a_3}, {a_4,a_5,a_6},{a_7,a_8,a_9}, flatten entries X}
+p0 = point random(CC^0,CC^1)
+Vg=squareDown(p0,x0,D)
+-- witness
+setRandomSeed 0
+wc = witnessCurve(Vg, blocks, x0)
+populate(wc,Verbose=>true)
+-*
+trace test succeeds :)
+we have tracked 728 paths...
+that's a lot!
+*-
+
 --pseudo-witness
 wc = witnessCurve(Vg, blocks, x0)
 populate(wc,Verbose=>true, Equivalencer=>x->(m:=matrix x; point(m_{3..11})));
