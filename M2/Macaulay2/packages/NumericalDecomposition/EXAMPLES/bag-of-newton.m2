@@ -93,29 +93,11 @@ restart
 load "bag-of-newton.m2"
 V=toList vars(X_1..X_5,A,B)
 F = gateSystem(V,transpose gateMatrix{for i from 1 to 5 list X_i^5+A*X_i+B})
-k = 100
+k = 20
 elapsedTime xs=newtonBag(F,k);
-
-witnessCurves = new MutableList 
-nWitnessCurves = 0
-elapsedTime witnessLabels = apply(xs, x -> (
-    xWitnesses := toList positions(witnessCurves, W -> membershipTest(x, W, Backtrack=>true));
-    if (length xWitnesses == 0) then (
-        << " making witness curve" << endl;
-        elapsedTime witnessCurves#nWitnessCurves = witnessCurve(F, {flatten entries transpose vars F}, x);
-        << "populating witness curve" << endl;
-        elapsedTime populate(witnessCurves#nWitnessCurves, Verbose=>false, NumberOfNodes=>3);
-        xWitnesses = {nWitnessCurves};
-        nWitnessCurves = nWitnessCurves + 1;
-        << "now we've got " << nWitnessCurves << " components" << endl;
-    );
-    xWitnesses
-    )
-);
-tally witnessLabels
-toList apply(witnessCurves, w -> degree w)
-first positions(witnessLabels, i -> i == {14})
-
+varParts = {flatten entries transpose vars F}
+(witCurves, labels)=decompose(xs,F,varParts)
+for i from 0 to k-1 list membershipTest(xs#i, witCurves#(first labels#i))
 
 -*
 Given: a bag of points

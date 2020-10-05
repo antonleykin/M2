@@ -28,23 +28,13 @@ MaxNumTraceTests
 TraceTolerance
 witnessCurve
 populate///
+
 -- TYPES --
 VariableGroup = new Type of List
 WitnessCurve = new Type of HashTable
 
--- SERVICE FUNCTIONS
 
--- these should be handled in NumericalAG
-createJacobian = method()
-createJacobian GateSystem := GS -> (
-    F := gateMatrix GS;
-    I := vars GS;
-    J := diff(I,F);
-    (m,n) := (numrows J,numcols J);
-    JGS := gateSystem(I, transpose gateMatrix{flatten entries J});
-    (m,n,JGS)
-    )
-evaluateJacobian (Point, ZZ, ZZ, GateSystem) := (pt, m,n,JGS) -> matrix(evaluate(JGS,matrix pt),m,n)
+-- SERVICE FUNCTIONS
 
 -- TO DO: find a better way to generate unique symbols
 protect sP
@@ -78,8 +68,9 @@ perp (Matrix, Matrix) := o -> (M, L) -> if areEqual(norm L, 0) then M else (
 multiaffineDimension = method(Options=>{Strategy=>"Facets"},TypicalValue=>Thing)
 multiaffineDimension(GateSystem, List, Point) := o -> (F,G,pt)->multiaffineDimension(F,new VariableGroup from G,pt, o)
 multiaffineDimension(GateSystem, VariableGroup, Point) := o -> (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
-    (m,n,JF) := createJacobian F; --JF is a m by n matrix
-    Jpt := evaluateJacobian(pt,m,n,JF);
+    m := numFunctions F;
+    n := numVariables F;
+    Jpt := evaluateJacobian(F, pt);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
     useRank := if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField) then numericalRank else rank;
     intrinsicCodimension :=  useRank  Jpt;
@@ -202,8 +193,9 @@ getSequenceSC (Polyhedron) := (P)->(
 -- Step 2 without needing Step 1. 
 getSequenceSC(GateSystem, List, Point) := (F,G,pt)->getSequenceSC(F,new VariableGroup from G,pt)
 getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial system, k variable groups, a general witness point)
-    (m,n,JF) := createJacobian F; --JF is a m by n matrix
-    Jpt := evaluateJacobian(pt,m,n,JF);
+    m := numFunctions F;
+    n := numVariables F;
+    Jpt := evaluateJacobian(F, pt);
     thePartialJacs:= apply(G, vg -> Jpt_vg); -- Jpt^vg takes rows
     --all nonempty subsets of [0,1,..,#G-1]
     if instance(ring matrix pt,InexactFieldFamily) or instance(ring matrix pt,InexactField)
@@ -260,11 +252,6 @@ describeSCS (List,List,Sequence) := (V,G,SCseq) -> (
 	    )
 	)
     )
-
-
-
-
-
 
 -- STEP 3 --
 makeSliceSystem = method()
@@ -377,8 +364,10 @@ populate WitnessCurve := o -> W -> (
 	    if o.Verbose then << "trace test fails :(" << endl;
 	    if (o.MaxNumTraceTests < numTraceTests) then done = true;
 	    );
-	<< "we have tracked " << nMonodromyPaths << " paths so far (includes trace test nodes)" << endl;
-	<< " and we ran " << numTraceTests << " trace test(s)" << endl;
+	if o.Verbose then (
+            << "we have tracked " << nMonodromyPaths << " paths so far (includes trace test nodes)" << endl;
+	    << " and we ran " << numTraceTests << " trace test(s)" << endl;
+            );
 	);
 --    G
     )
@@ -388,6 +377,7 @@ points WitnessCurve := W -> W.cache#"WitnessPoints"
 
 isSliceExceptional = method(Options=>{})
 isSliceExceptional (Point, WitnessCurve) := (x, W) -> error "not implemented"
+
 
 -- does a point x1 lie on the IrrComp tagged by W?
 membershipTest = method(Options=>{Backtrack=>false,Tolerance=>1e-6})
@@ -515,22 +505,27 @@ I=ideal(x0^3*y1^2+y0^2*(-x1^3-x1*x0^2+x0^3),ax*x1+x0-1,ay*y1+y0-1, random(1,R)-r
 degree I
 *-
 
--- IN: a list of points
--- OUT: a hash table of 
---      WitnessCurve => list of points (that belong to the component witnessed by the key)
-decompose(List, System, List) := (pts,system,varParts) -> (
-    F := gateSystem system;
-    curves := new MutableHashTable;
-    for pt in pts do (
-	C := select(1,keys curves,c->"is0n"(pt,c)); -- TODO: implement isOn (replaces membershipTest)
-	if C=!=null then curves#C = append(curves#C,pt) else (
-	    C = witnessCurve(F,varParts,pt);
-	    populate C;
-	    curves#C = {pt};
-	    )
-	); 
-    new HashTable from curves
-    )
+-- IN: a list of points xs, a system, a multiprojective structure
+-- OUT: witness curves, and labels for the witness points
+-- how should we pass monodromySolve options to decompose???
+decompose (List, System, List) := (xs, F, varParts) -> (
+    witnessCurves := new MutableList;
+    nWitnessCurves := 0;
+    witnessLabels := apply(xs, x -> (
+        xWitnesses := toList positions(witnessCurves, W -> membershipTest(x, W, Backtrack=>true));
+        if (length xWitnesses == 0) then (
+            witnessCurves#nWitnessCurves = witnessCurve(F, varParts, x);
+            -- we might want to control monodromy options on next line...
+            populate witnessCurves#nWitnessCurves;
+            xWitnesses = {nWitnessCurves};
+            nWitnessCurves = nWitnessCurves + 1;
+            );
+        xWitnesses
+        )
+    );
+    (witnessCurves, witnessLabels)
+)
+
 
 beginDocumentation()
 needs "./NumericalDecomposition/Documentation/doc12.m2"
