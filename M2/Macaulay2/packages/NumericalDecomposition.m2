@@ -227,7 +227,7 @@ getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial sys
 		k=k-1)	    
 	    )
 	);
-    toSequence scs
+    append(toSequence scs,0)
     )
 
 
@@ -238,13 +238,14 @@ describeSCS = method()
 --Convention choice: for {a,b,c} in SCseq we coarsen by putting the variables in groups a b c all in group a and delete the old groups b c.
 describeSCS (List,List,Sequence) := (V,G,SCseq) -> (    
     G = new MutableList from G;
+    displayVar := v -> if instance(v, InputGate) then v.Name else v;
     scan(SCseq,i->(
 	    if instance(i,ZZ) 
-	    then print ("slice in "|toString apply(G#i,j->V#j))
+	    then print ("slice in "|toString apply(G#i,j-> displayVar V#j))
 	    else if instance(i,List)
 	    then (
 		CG:=apply(i, j -> G#j );
-		print ("coarsen:  "|toString apply(CG,X->apply(X,x ->V#x)));
+		print ("coarsen:  "|toString apply(CG,X->apply(X,x -> displayVar V#x)));
 		G#(i#0) = flatten CG;
 		scan(drop(i,1), j -> G#j = null);
 		G = new MutableList from delete(null,toList G);		
@@ -417,8 +418,8 @@ witnessCurve (GateSystem, List, Point) := o -> (F, Blocks, pt) -> (
     G := new VariableGroup from for b in Blocks list(b/(v->position(V,x->x===v)));
     V/(v->position(Blocks,B->member(v,B)));
     m := numcols parameters F;
-    P := multiaffineDimension(F,G,pt);
-    SCseq := getSequenceSC P;
+--    P := multiaffineDimension(F,G,pt);
+    SCseq := getSequenceSC(F,G,pt);
     masterGS := makeSliceSystem(F,G,SCseq); -- this should always take the point, have the default of returning a square subsystem, and allow for parameters in F
     new WitnessCurve from {
 	-- unnecessary keys (for keeping record)
