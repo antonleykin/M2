@@ -227,7 +227,7 @@ getSequenceSC(GateSystem, VariableGroup, Point) := (F,G,pt)->( --(polynomial sys
 		k=k-1)	    
 	    )
 	);
-    append(toSequence scs,0)
+    if n-intrinsicCodimension != 0 then append(toSequence scs,0) else sequence()
     )
 
 
@@ -362,7 +362,7 @@ populate WitnessCurve := o -> W -> (
 	    done = true;
 	    )
 	else (
-	    if o.Verbose then << "trace test fails :(" << endl;
+	    if o.Verbose then << "trace test fails :( w/ singular value " << toString traceVal << endl;
 	    if (o.MaxNumTraceTests < numTraceTests) then done = true;
 	    );
 	if o.Verbose then (
