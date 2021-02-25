@@ -74,7 +74,7 @@ int main(/* const */ int argc, /* const */ char *argv[], /* const */ char *env[]
   std::cout << "Hello world from process " << world_rank
 	    << " out of " << world_size << " processes" << std::endl;
 
-  if (world_rank == 0) {
+  //!!! delete (together with `else`) !!! if (world_rank == 0) {
     
   /* find the number of environment variables defined */
   int envc = -1;
@@ -123,7 +123,7 @@ int main(/* const */ int argc, /* const */ char *argv[], /* const */ char *env[]
     pushTask(interpTask);
     waitOnTask(interpTask);
   }
-  
+  /*  
   } else {
     bool done = false;
     while(not done) {
@@ -147,6 +147,7 @@ int main(/* const */ int argc, /* const */ char *argv[], /* const */ char *env[]
 	    << " out of " << world_size << " processes" << std::endl;
     MPI_Finalize();
   } 
+  */
   return 0;
 } //end// main
 
