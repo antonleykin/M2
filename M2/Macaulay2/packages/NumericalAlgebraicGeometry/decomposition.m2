@@ -3,7 +3,7 @@
 -- (loaded by  ../NumericalAlgebraicGeometry.m2)
 ------------------------------------------------------
 
-regeneration = method(TypicalValue=>numericalVariety, Options =>{Software=>null, Output=>Singular})
+regeneration = method(TypicalValue=>NumericalVariety, Options =>{Software=>null, Output=>Singular})
 regeneration List := List => o -> F -> (
 -- solves a system of polynomial Equations via regeneration     
 -- IN:  F = list of polynomials
@@ -33,7 +33,7 @@ assert(numericalRank evaluate(jacobian p.SolutionSystem,p) == 2)
 
 -----------------------------------------------------------------------
 -- DECOMPOSITION
-decompose WitnessSet := (W) -> (
+decompose WitnessSet := {} >> unusedOpts -> (W) -> (
      R := ring W;
      n := numgens R;
      k := dim W;
@@ -78,15 +78,15 @@ decompose WitnessSet := (W) -> (
 	  );
      incomplete := select(new List from cs, c->#c!=0);
      if #incomplete>0 then print "-- decompose: some witness points were not classified";
-     irred := apply(i'cs, c->new WitnessSet from {Equations=>W.Equations, Slice=>W.Slice, Points=>(W.Points)_c});
-     scan(irred, c->c.IsIrreducible = true);
+     irred := apply(i'cs, c->witnessSet(W.Equations, W.Slice, (W.Points)_c));
+     scan(irred, c->c.cache.IsIrreducible = true);
      irred | if #incomplete == 0 then {} 
              else {
-		 new WitnessSet from {
-		     Equations=>W.Equations, 
-		     Slice=>W.Slice, 
-		     Points=>(W.Points)_(flatten(incomplete))
-		     }
+		 witnessSet(
+		     W.Equations, 
+		     W.Slice, 
+		     (W.Points)_(flatten(incomplete))
+		     )
 		 }
      ) 
 
@@ -148,8 +148,7 @@ for i to 5 do (
 ///
 
 
-numericalIrreducibleDecompositionM2 = I -> numericalVariety flatten (components regeneration (I_*,Software=>M2engine) / decompose)
-numericalIrreducibleDecompositionBertini = I -> bertiniPosDimSolve I_*
+numericalIrreducibleDecompositionM2 = (I,o) -> numericalVariety flatten (components regeneration (I_*,Software=>M2engine) / decompose)
 numericalIrreducibleDecomposition = method(Options=>{Software=>null})
 numericalIrreducibleDecomposition Ideal := o -> I -> (
     o = fillInDefaultOptions o;   
@@ -161,7 +160,7 @@ numericalIrreducibleDecomposition Ideal := o -> I -> (
     	else if member(o.Software,{M2,M2engine})  
 	then numericalIrreducibleDecompositionM2
     	else error "allowed values for Software: M2engine, M2, BERTINI, PHCPACK"
-    	) I
+    	) (I,o)
     )
 
 TEST /// -- example with one nonreduced component

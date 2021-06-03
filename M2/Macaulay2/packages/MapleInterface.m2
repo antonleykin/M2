@@ -3,10 +3,11 @@ newPackage(
     	Version => "0.3", 
     	Date => "June 14, 2010",
     	Authors => {{Name => "Janko Boehm", 
-		  Email => "boehm@math.uni-sb.de", 
+		  Email => "boehm@mathematik.uni-kl.de", 
 		  HomePage => "http://www.math.uni-sb.de/ag/schreyer/jb/"}
                   },
-    	Headline => "Interface to Maple",
+    	Headline => "interface to Maple",
+	Keywords => {"Interfaces"},
     	DebuggingMode => false,
         Configuration => {"MapleCommand"=>"maple"},
 	CacheExampleOutput => true,
@@ -15,7 +16,7 @@ newPackage(
 
 -- For information see documentation key "MapleInterface" below.
 
-export({"callMaple","store","readMaple","msqrt","integralBasis"})
+export {"callMaple","store","readMaple","msqrt","integralBasis"}
 
 getFilename = () -> (
      filename := temporaryFileName();
@@ -102,7 +103,7 @@ matrix {L})
 
 ----------------------------------------------------------------------
 
-{*
+-*
 Copyright (C) [2009] [Janko Boehm]
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -110,7 +111,7 @@ This program is free software; you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with this program; if not, see <http://www.gnu.org/licenses/>
-*}
+*-
 
 
 beginDocumentation()
@@ -166,7 +167,7 @@ doc ///
 
       If you are using Macaulay 2 in cygwin and the Windows native Maple version
       best put the complete path to the Maple command line
-      executeable, e.g., StringWithMapleCommand could be (depending on the Maple version)
+      executable, e.g., StringWithMapleCommand could be (depending on the Maple version)
       
       "C:/Program Files/Maple 9.5/bin.win/cmaple9.5.exe"
 
@@ -361,7 +362,7 @@ doc ///
 
 
 
-{*
+-*
 uninstallPackage("MapleInterface")
 installPackage("MapleInterface",RerunExamples=>true);
-*}
+*-

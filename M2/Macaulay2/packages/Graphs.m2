@@ -1,15 +1,15 @@
- {*
+ -*
 Copyright 2010 Amelia Taylor and Augustine O'Keefe.
 You may redistribute this file under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 2 of
 the License, or any later version.
-*}
 
--- Copyright 2014: Jack Burkart, David Cook II, Caroline Jansen
--- You may redistribute this file under the terms of the GNU General Public
--- License as published by the Free Software Foundation, either version 2
--- of the License, or any later version.
 
+Copyright 2014: Jack Burkart, David Cook II, Caroline Jansen
+You may redistribute this file under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 2
+of the License, or any later version.
+*-
 ------------------------------------------
 ------------------------------------------
 -- To Do List
@@ -26,30 +26,35 @@ the License, or any later version.
 
 newPackage select((
     "Graphs",
-        Version => "0.3.1",
-        Date => "07. August 2014",
+        Version => "0.3.4",
+        Date => "May 15, 2021",
         Authors => {
             {Name => "Jack Burkart", Email => "jburkar1@nd.edu"},
             {Name => "David Cook II", Email => "dwcook@eiu.edu", HomePage => "http://ux1.eiu.edu/~dwcook/"},
             {Name => "Caroline Jansen", Email => "cjansen@nd.edu"},
             	{Name => "Amelia Taylor", Email => "originalbrickhouse@gmail.com"},
             {Name => "Augustine O'Keefe", Email => "aokeefe@tulane.edu"},
-            {Name => "Contributers of note: Alex Diaz, Luis Garcia, Shaowei Lin, Sonja Mapes, Mike Stillman, Doug Torrance"}
+            {Name => "Contributors of note: Carlos Amendola, Alex Diaz, Luis David Garcia Puente, Roser Homs Pons, Olga Kuznetsova,  Shaowei Lin, Sonja Mapes, Harshit J Motwani, Mike Stillman, Doug Torrance"}
         },
-        Headline => "Package for processing graphs and directed graphs (digraphs)",
+        Headline => "graphs and directed graphs (digraphs)",
+	Keywords => {"Graph Theory"},
         Configuration => {
             "DotBinary" => "dot",
-            "JpgViewer" => "display"
+            "JpgViewer" => ""
             },
+	PackageImports => { "PrimaryDecomposition" },
         PackageExports => {
             "SimplicialComplexes"
             },
-        DebuggingMode => true,
+        DebuggingMode => false,
         ), x -> x =!= null)
 
 -- Load configurations
 graphs'DotBinary = if instance((options Graphs).Configuration#"DotBinary", String) then (options Graphs).Configuration#"DotBinary" else "dot";
-graphs'JpgViewer = if instance((options Graphs).Configuration#"JpgViewer", String) then (options Graphs).Configuration#"JpgViewer" else "display";
+
+importFrom_Core {"printerr"}
+if (options Graphs).Configuration#"JpgViewer" != "" then
+    printerr "warning: the \"JpgViewer\" configuration option is deprecated"
 
 -- Exports
 export {
@@ -73,14 +78,15 @@ export {
   --"vertices",
     --
     -- Display Methods
-    displayGraph,
-    showTikZ,
-    writeDotFile,
+    "displayGraph",
+    "showTikZ",
+    "writeDotFile",
     --
     -- Derivative graphs
     "barycenter",
     "complementGraph",
     "digraphTranspose",
+    "lineGraph",
     "underlyingGraph",
     --
     -- Enumerators
@@ -138,11 +144,11 @@ export {
     "DFS",
     "descendants",
     "descendents",
-    "diameter",
     "distance",
     "distanceMatrix",
     "eccentricity",
     "edgeIdeal",
+    "expansion",
     "findPaths",
     "floydWarshall",
     "forefathers",
@@ -152,6 +158,7 @@ export {
     "independenceNumber",
     "leaves",
     "lowestCommonAncestors",
+    "minimalDegree",
     "neighbors",
     "nondescendants",
     "nondescendents",
@@ -165,7 +172,6 @@ export {
     "sinks",
     "sources",
     "spectrum",
-    "topologicalSort",
     "vertexCoverNumber",
     "vertexCovers",
     --
@@ -183,6 +189,7 @@ export {
     "isPerfect",
     "isReachable",
     "isRegular",
+    "isRigid",
     "isSimple",
     "isSink",
     "isSource",
@@ -215,18 +222,13 @@ export {
     "removeNodes",
     "spanningForest",
     "vertexMultiplication",
-    -- 
-    -- Things that probably should not be in this package.
+    
+      -- "LabeledGraph",
+    --"labeledGraph",
+     "topologicalSort",
     "topSort",
-        "newDigraph",
-        "SortedDigraph",
-    "Bigraph",
-    "bigraph",
-    "LabeledGraph",
-    "labeledGraph",
-    "MixedGraph",
-    "mixedGraph",
-    "collateVertices"
+    "SortedDigraph",
+    "newDigraph"
     }
 
 ------------------------------------------
@@ -273,6 +275,7 @@ digraph (List, List) := Digraph => opts -> (V, L) -> (
     digraph(V, A)
     )
 digraph (List, Matrix) := Digraph => opts -> (V, A) -> (
+    if ( sort unique join( {0,1}, flatten entries A) != {0,1} ) then error "The given matrix is not an adjacency matrix.";
     if #V != numrows A or numrows A != numcols A then error "The given vertex set and matrix are incompatible.";
     V' := if instance(opts.Singletons, List) then opts.Singletons - set V else {};
     A' := matrix {{A, map(ZZ^(#V), ZZ^(#V'), 0)}, {map(ZZ^(#V'), ZZ^(#V), 0), 0}};
@@ -305,6 +308,7 @@ graph List := Graph => opts -> L -> (
     )
 graph HashTable := Graph => opts -> g -> graph(unique join(keys g, flatten (toList \ values g)), flatten apply(keys g, v -> apply(toList g#v, u -> {v, u})), Singletons => opts.Singletons, EntryMode => "edges")
 graph (List, Matrix) := Graph => opts -> (V,A) -> (
+    if ( sort unique join( {0,1}, flatten entries A) != {0,1} ) then error "The given matrix is not an adjacency matrix.";
     if #V != numrows A or numrows A != numcols A then error "The given vertex set and matrix are incompatible.";
     V' := if instance(opts.Singletons, List) then opts.Singletons - set V else {};
     A' := matrix {{A, map(ZZ^(#V), ZZ^(#V'), 0)}, {map(ZZ^(#V'), ZZ^(#V), 0), 0}};
@@ -337,7 +341,8 @@ net Digraph := Net => G -> (
     ))
 
 toString Digraph := String => D -> (
-    horizontalJoin(
+       concatenate( -- issue #1473 in github
+ --   horizontalJoin(
         toLower toString class D, 
         " (",
         toString vertexSet D,
@@ -392,7 +397,7 @@ displayGraph = method()
 displayGraph (String, String, Digraph) := (dotfilename, jpgfilename, G) -> (
      writeDotFile(dotfilename, G);
      runcmd(graphs'DotBinary  | " -Tjpg " | dotfilename | " -o " | jpgfilename);
-     runcmd(graphs'JpgViewer  | " " | jpgfilename|" &");
+     show URL("file://" | toAbsolutePath jpgfilename);
      )
 displayGraph (String, Digraph) := (dotfilename, G) -> (
      jpgfilename := temporaryFileName() | ".jpg";
@@ -412,15 +417,29 @@ showTikZ Digraph := opt -> G -> (
      get output
      )
 
+html Digraph := G -> if G.cache#?"svg" then G.cache#"svg" else (
+     dotfilename := temporaryFileName() | ".dot";
+     writeDotFile(dotfilename, G);
+     svgfilename := temporaryFileName() | ".svg";
+     runcmd(graphs'DotBinary  | " -Tsvg " | dotfilename | " -o " | svgfilename);
+     G.cache#"svg" = get svgfilename
+     )
+
 writeDotFile = method()
-writeDotFile (String, Graph) := (filename, G) -> (
+writeDotFile (String, Graph) := (filename, G) ->
+    writeDotFileHelper(filename, G, "graph", "--")
+writeDotFile (String, Digraph) := (filename, G) ->
+    writeDotFileHelper(filename, G, "digraph", "->")
+
+writeDotFileHelper = (filename, G, type, op) -> (
     fil := openOut filename;
-    fil << "graph G {" << endl;
+    fil << type << " G {" << endl;
     V := vertexSet G;
-    scan(#V, i -> fil << "\t" | toString i | " [label=\""|toString V_i|"\"];" << endl);
-    A := adjacencyMatrix G;
-    E := flatten for i from 0 to #V - 1 list for j from i+1 to #V - 1 list if A_(i,j) == 1 or A_(j,i) == 1 then {i, j} else continue;
-    scan(E, e -> fil << "\t" | toString e_0 | " -- " | toString e_1 | ";" << endl);
+    I := hashTable apply(#V, i -> V_i => i);
+    scan(V, v -> fil << "\t" << I#v << " [label=\"" << v << "\"];" << endl);
+    E := toList \ edges G;
+    scan(E, e -> fil << "\t" << I#(e_0) << " " << op << " " << I#(e_1) << ";"
+	<< endl);
     fil << "}" << endl << close;
     )
 
@@ -435,6 +454,29 @@ complementGraph Graph := Graph => G -> graph(vertexSet G, subsets(vertexSet G, 2
 
 digraphTranspose = method()
 digraphTranspose Digraph := Digraph => D -> digraph(vertexSet D, reverse \ edges D, EntryMode => "edges")
+
+
+lineGraph = method()
+lineGraph Graph := Graph => (G) -> (
+   E:=edges(G);
+   if #E==0 then return graph({});
+   EE:={};
+   for e in E do (
+      for f in E do (
+         if not e===f then (
+            if #(e*f)>0 then (
+               EE=EE|{{e,f}};
+               ); 
+            );   
+         ); 
+      );
+   --non-singeltons
+   nS:=unique flatten EE;
+   --singeltons
+   S:=for e in E list if member(e,nS)===false then e else continue;
+   return graph(EE,Singletons=>S);
+)
+
 
 underlyingGraph = method()
 underlyingGraph Digraph := Graph => D -> graph(vertexSet D, edges D, EntryMode => "edges")
@@ -633,11 +675,23 @@ minimalVertexCuts Graph := List => G -> (
         if #VC != 0 then break;
         );
     VC
-    )
+)
+
+minimalDegree = method()
+minimalDegree Graph := ZZ => G -> (
+   return min for v in vertexSet(G) list degree(G,v);
+)
 
 vertexConnectivity = method()
 --returns n-1 for K_n as suggested by West
-vertexConnectivity Graph := ZZ => G -> if cliqueNumber G == #vertexSet G then #vertexSet G - 1 else #first minimalVertexCuts G
+vertexConnectivity Graph := ZZ => G -> (
+if #(vertexSet G)==0 then return 0;
+if cliqueNumber G == #(vertexSet G) then (
+    return #(vertexSet G) - 1;
+    ) else (
+    return #(first minimalVertexCuts G);
+    );
+)
 
 vertexCuts = method()
 --West does not specify, but Wikipedia does, that K_n has no vertex cuts.  
@@ -679,7 +733,7 @@ center Graph := List => G -> select(vertexSet G, i -> eccentricity(G, i) == radi
 
 children = method()
 children (Digraph, Thing) := Set => (G, v) -> (
-    i := position(vertexSet G, u -> u == v);
+    i := position(vertexSet G, u -> u === v);
     if i === null then error "v is not a vertex of G.";
     set (vertexSet G)_(positions(first entries (adjacencyMatrix G)^{i}, j -> j != 0))
     )
@@ -687,10 +741,11 @@ children (Digraph, Thing) := Set => (G, v) -> (
 
 chromaticNumber = method()
 chromaticNumber Graph := ZZ => G -> (
-    if #edges G == 0 and #vertexSet == 0 then 0
+    if #edges G == 0 and #vertexSet G == 0 then 0
     else if #edges G == 0 and #vertexSet G != 0 then 1
+    else if isBipartite G then 2
     else (
-        chi := 2;
+        chi := 3;
         J := coverIdeal G;
         m := product gens ring J;
         while ((m^(chi - 1) % J^chi) != 0) do chi = chi+ 1;
@@ -841,7 +896,6 @@ descendants = method()
 descendants (Digraph, Thing) := Set => (D,v) -> set flatten breadthFirstSearch(D, v)
 descendents = descendants
 
-diameter = method()
 diameter Graph := ZZ => G -> (
     allEntries := flatten entries distanceMatrix G;
     if member(-1, allEntries) then infinity else max allEntries
@@ -872,7 +926,7 @@ distance (Digraph, Thing, Thing) := ZZ => (G,v,u) -> (
 distance (Digraph, Thing) := HashTable => (G, v) -> (
     if not member(v, vertexSet G) then error "The given vertex is not a vertex of G.";
     n := #vertexSet G;
-    v = position(vertexSet G, i -> i == v);
+    v = position(vertexSet G, i -> i === v);
     C := new MutableList from toList(#vertexSet G:infinity);
     Q := {v};
     C#v = 0;
@@ -903,14 +957,37 @@ eccentricity (Graph, Thing) := ZZ => (G,v) ->(
 
 edgeIdeal = method()
 edgeIdeal Graph := Ideal => G -> (
+    G = indexLabelGraph G;
     V := vertexSet G;
     x := local x;
     R := QQ(monoid[x_1..x_(#V)]);
     monomialIdeal (
         if #edges G == 0 then 0_R
-        else apply(toList \ edges G, e -> R_(position(V, i -> i == e_0)) * R_(position(V, i -> i == e_1)))
+        else apply(toList \ edges G, e -> R_(position(V, i -> i === e_0)) * R_(position(V, i -> i === e_1)))
         )
     )
+
+expansion = method ()
+expansion Graph := QQ => G -> (
+   V:=set(vertexSet(G));
+   E:=edges(G);
+   --return 0 if graph is empty graph
+   if #E===0 then return 0;
+   n:=floor((#V)/2);
+   --CS:={};
+   RS:={};
+   qq:=0;
+   ee:=degree(G,(toList(V))_0);
+   for i in 1..n do (
+      for S in subsets(V,i) do (
+           CS:=V-S;
+           qq:=sum for e in edges(G) list if #(e*S)>0 and #(e*CS)>0 then 1 else 0;
+           ee=min(ee,qq/#S);
+           if(ee == qq) then RS=S;
+           );
+      );
+   return ee;
+)
 
 findPaths = method()
 findPaths (Digraph,Thing,ZZ) := List => (G,v,l) -> (
@@ -1016,7 +1093,7 @@ highestCommonDescendant(Digraph,Thing,Thing) := Thing => (D,u,v) -> (
 
 neighbors = method()
 neighbors (Graph, Thing) := Set => (G,v) -> (
-    i := position(vertexSet G, u -> u == v);
+    i := position(vertexSet G, u -> u === v);
     if i === null then error "v is not a vertex of G.";
     set (vertexSet G)_(positions(first entries (adjacencyMatrix G)^{i}, j -> j != 0))
     )
@@ -1036,7 +1113,7 @@ numberOfTriangles Graph := ZZ => G -> number(ass (coverIdeal G)^2, i -> codim i 
 
 parents = method()
 parents (Digraph, Thing) := Set => (G, v) -> (
-    i := position(vertexSet G, u -> u == v);
+    i := position(vertexSet G, u -> u === v);
     if i === null then error "v is not a vertex of G.";
     set (vertexSet G)_(positions(flatten entries (adjacencyMatrix G)_{i}, j -> j != 0))
     )
@@ -1076,7 +1153,9 @@ spec = spectrum
 spectrum = method()
 spectrum Graph := List => G -> sort toList eigenvalues (adjacencyMatrix G, Hermitian => true)
 
-topologicalSort = method()
+
+
+topologicalSort = method(TypicalValue =>List)
 topologicalSort Digraph := List => D -> topologicalSort(D, "")
 topologicalSort (Digraph, String) := List => (D,s) -> (
     if instance(D, Graph) or isCyclic D then error "Topological sorting is only defined for acyclic directed graphs.";
@@ -1091,11 +1170,34 @@ topologicalSort (Digraph, String) := List => (D,s) -> (
     v := null;
     while S != {} do (
         v = S_0;
-        L = append(L, v);
+        L = L|{v};
         S = processor join(drop(S, 1), select(toList children (D, v), c -> isSubset(parents(D, c), L)));
         );
     L
     )
+
+
+
+
+SortedDigraph = new Type of HashTable;
+
+-- Keys:
+--      digraph: the original digraph
+--      NewDigraph: the digraph with vertices labeled as integers obtained from sorting
+--      map: the map giving the sorted order
+
+topSort = method(TypicalValue =>HashTable)
+topSort Digraph := SortedDigraph => D ->  topSort(D,"") 
+topSort (Digraph, String) := SortedDigraph => (D,s) -> ( 
+L := topologicalSort (D,s);
+g := graph D;
+new SortedDigraph from {
+digraph => D,
+newDigraph => digraph hashTable apply(#L, i -> i + 1 => apply(toList g#(L_i), j -> position(L, k -> k == j) + 1)),
+map => hashTable apply(#L, i -> L_i => i + 1)
+}
+)
+
 
 vertexCoverNumber = method()
 vertexCoverNumber Graph := ZZ => G -> min apply(vertexCovers G, i -> #i)
@@ -1148,7 +1250,8 @@ hasOddHole = method()
 hasOddHole Graph := Boolean => G -> any(ass (coverIdeal G)^2, i -> codim i > 3)
 
 isBipartite = method()
-isBipartite Graph := Boolean => G -> chromaticNumber G <= 2
+isBipartite Graph := Boolean => G ->
+    try bipartiteColoring G then true else false
 
 isCM = method()
 isCM Graph := Boolean => G -> (
@@ -1206,6 +1309,29 @@ isRegular Graph := Boolean => G -> (
     n := degree(G, first vertexSet G);
     all(drop(vertexSet G,1), v -> degree(G,v) == n)
     )
+
+
+-- input: A graph G
+-- output: Uses Laman's Theorem to determine if a graph is rigid or not
+-- written by Tom Enkosky
+--
+isRigid = method();
+isRigid Graph := G -> (
+    local rigidity; local i; local j;
+    
+    rigidity=true;
+    
+    if #edges G < 2*#vertices G-3 then rigidity = false
+    else (
+	 for j from 2 to #vertices G-1 do(
+	     for i in subsets(vertices G,j) do(
+		 if #edges inducedSubgraph(G,i)>2*#i-3  then rigidity = false 
+		 );
+	     );
+	 );
+    return rigidity;
+    )
+
 
 isSimple = method()
 isSimple Graph := Boolean => G -> (
@@ -1357,7 +1483,6 @@ bipartiteColoring Graph := List => G -> (
     n := # vertexSet G;
     v := 0;
     if n == 0 then return {{},{}};
-    if not isBipartite G then error "graph must be bipartite";
     D := new MutableList from toList(n: infinity);
     while v != n do (
         uncolored := {position(toList D, i -> i == infinity)};
@@ -1372,7 +1497,8 @@ bipartiteColoring Graph := List => G -> (
                     D#y = 1 + D#x;
                     v = v + 1;
                     uncolored = append(uncolored, y);
-                    );
+                    ) else if (D#x - D#y) % 2 == 0 then
+                        error "graph must be bipartite";
                 );
             );
         );
@@ -1383,9 +1509,9 @@ bipartiteColoring Graph := List => G -> (
 
 deleteEdges = method()
 deleteEdges (Graph, List) := Graph => (G,L) -> (
-    E := sort \ toList \ edges G;
-    E' := E - set (sort \ L);
-    graph(vertexSet G, E', EntryMode => "edges")
+    E := set edges G;
+    E' := E - set(for l in L list set l);
+    graph(vertexSet G, toList(E'), EntryMode => "edges")
     )
 deleteEdges (Digraph, List) := Graph => (G,L) -> digraph(vertexSet G, edges G - set L)
 
@@ -1552,44 +1678,20 @@ vertexMultiplication (Graph, Thing, Thing) := Graph => (G,v,u) -> (
     if member(v, vertexSet G) == false then error "2nd argument must be in the input graph's vertex set";
     graph(append(vertexSet G, u), edges G | apply(toList neighbors (G,v), i -> {i,u}), EntryMode => "edges")
     )
-------------------------------------------
-------------------------------------------
--- Things that probably should not be in this package.
-------------------------------------------
-------------------------------------------
--- All of these things are used exclusively by GraphicalModels.
--- They probably should be there, not here.  Otherwise they should
--- probably be in their own package as they are highly specialized.
 
-SortedDigraph = new Type of HashTable;
 
--- Keys:
---      digraph: the original digraph
---      NewDigraph: the digraph with vertices labeld as integers obtained from sorting
---      map: the map giving the sorted order
-topSort = method()
-topSort Digraph := SortedDigraph => D -> (
-    L := topologicalSort D;
-    g := graph D;
-    new SortedDigraph from {
-	    digraph => D,
-	    newDigraph => digraph hashTable apply(#L, i -> i + 1 => apply(toList g#(L_i), j -> position(L, k -> k == j) + 1)),
-        map => hashTable apply(#L, i -> L_i => i + 1)
-	    }
-    )
 
-Bigraph = new Type of Graph
 
-bigraph = method(Options => {Singletons => null})
-bigraph HashTable := opts -> g -> new Bigraph from graph(g, opts)
-bigraph List := opts -> g -> new Bigraph from graph(g, opts)
+-* 
+
+--This code is written for an older version of Graphs and is not functional with current version of the packages.
 
 graphData = "graphData"
 labels = "labels"
 
 LabeledGraph = new Type of HashTable
 
-labeledGraph = method()
+labeledGraph = method(TypicalValue =>LabeledGraph)
 labeledGraph (Digraph,List) := (g,L) -> (
     C := new MutableHashTable;
     C#cache = new CacheTable from {};
@@ -1630,70 +1732,11 @@ toString LabeledGraph := g -> concatenate(
     "}"
     )
 
-graph LabeledGraph := opts -> g -> g#graph
+graph LabeledGraph := opts -> g -> g#graph  --used to transform the LabeledGraph into a hashtable
 
-MixedGraph = new Type of HashTable
+*- 
 
-mixedGraph = method()
-mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
-    C := new MutableHashTable;
-    C#cache = new CacheTable from {};
-    h := new MutableHashTable;
-    h#Graph = g;
-    h#Digraph = d;
-    h#Bigraph = b;
-    C#graph = new HashTable from h;
-    new MixedGraph from C)
-mixedGraph (Digraph, Bigraph) := (d,b) -> mixedGraph(graph {},d,b)
-mixedGraph (Graph, Digraph) := (g,d) -> mixedGraph(g,d,bigraph {})
-mixedGraph Digraph := d -> mixedGraph(graph {},d, bigraph {})
 
-net MixedGraph := g -> horizontalJoin flatten (
-     net class g,
-    "{",
-    stack (horizontalJoin \ sort apply(pairs (g#graph),(k,v) -> (net k, " => ", net v))),
-    "}"
-    )
-
-toString MixedGraph := g -> concatenate(
-    "new ", toString class g#graph,
-    if parent g#graph =!= Nothing then (" of ", toString parent g),
-    " from {",
-    if #g#graph > 0 then demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v)) else "",
-    "}"
-    )
-
-graph MixedGraph := opts -> g -> g#graph
-digraph MixedGraph := opts -> g -> g#graph#Digraph
-bigraph MixedGraph := opts -> g -> g#graph#Bigraph
-vertices MixedGraph := G -> toList sum(apply(keys(G#graph),i->set keys(graph (G#graph)#i)))
-
-descendents (MixedGraph, Thing) := (G,v) -> descendents(digraph G, v)
-nondescendents (MixedGraph, Thing) := (G,v) -> nondescendents(digraph G, v)
-parents (MixedGraph, Thing) := (G,v) -> parents(digraph G, v)
-foreFathers (MixedGraph, Thing) := (G,v) -> foreFathers(digraph G, v)
-children (MixedGraph, Thing) := (G,v) -> children(digraph G, v)
-neighbors (MixedGraph, Thing) := (G,v) -> neighbors(G#graph#Graph, v)
-nonneighbors (MixedGraph, Thing) := (G,v) -> nonneighbors(G#graph#Graph, v)
-
-collateVertices = method()
-collateVertices MixedGraph := g -> (
-    v := vertices g;
-    hh := new MutableHashTable;
-    G := graph g;
-    -- Graph
-    x := graph G#Graph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    gg := graph(new HashTable from hh);
-    -- Digraph
-    x = graph G#Digraph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    dd := digraph(new HashTable from hh);
-    -- Bigraph
-    x = graph G#Bigraph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    bb := bigraph(new HashTable from hh);
-    mixedGraph(gg,dd,bb))
 
 
 ------------------------------------------
@@ -1703,6 +1746,28 @@ collateVertices MixedGraph := g -> (
 ------------------------------------------
 
 beginDocumentation()
+
+-- authors: add some text to this documentation node:
+doc ///
+  Key
+    Graphs
+///
+
+-------------------------------
+--Data Types
+doc ///
+    Key
+    	Digraph
+///
+
+doc ///
+    Key
+    	Graph
+///
+
+
+
+
 
 -------------------------------
 --Graph Constructors
@@ -1836,7 +1901,7 @@ doc ///
         A:Matrix
     Description
         Text
-            The adjacency matrix is the n by n matrix (where n is the number of vertices in graph/digraph G) with rows and columns indexed by the vertices of G. Entry A_(u,v) is 1 if and only if {u,v} is an edge of G and 0 otherwise. It is easy to observe that if we just use a simple graph G, then its adjacency matrix must be symmetric, but if we us a digraph, then it is not necesarrily symmetric.
+            The adjacency matrix is the n by n matrix (where n is the number of vertices in graph/digraph G) with rows and columns indexed by the vertices of G. Entry A_(u,v) is 1 if and only if {u,v} is an edge of G and 0 otherwise. It is easy to observe that if we just use a simple graph G, then its adjacency matrix must be symmetric, but if we use a digraph, then it is not necessarily symmetric.
         Example
             D = digraph({{1,2},{2,3},{3,4},{4,3}},EntryMode=>"edges");
             adjacencyMatrix D
@@ -2034,11 +2099,11 @@ doc ///
     Description
         Text
             Displays a digraph or graph using Graphviz
-        Example
-            --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
-            --displayGraph("chuckDot","chuckJpg", G)
-            --displayGraph("chuck", G)
-            --displayGraph G
+        -- Example
+        --     --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
+        --     --displayGraph("chuckDot","chuckJpg", G)
+        --     --displayGraph("chuck", G)
+        --     --displayGraph G
     SeeAlso
         showTikZ
         writeDotFile
@@ -2060,11 +2125,61 @@ doc ///
     Description
         Text
             Writes a string of TikZ syntax that can be pasted into a .tex file to display G
-        Example
-            --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
-            --showTikZ G
+        -- Example
+        --     --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
+        --     --showTikZ G
     SeeAlso
         displayGraph
+///
+
+-- html
+doc ///
+    Key
+        (html, Digraph)
+    Headline
+        Create an .svg representation of a graph or digraph
+    Usage
+        html G
+    Inputs
+        G:Digraph
+    Description
+        Text
+            Uses graphviz to create an .svg representation of @TT "G"@,
+            which is returned as a string.
+        CannedExample
+            i2 : html completeGraph 2
+            -- running: dot -Tsvg /tmp/M2-2729721-0/0.dot -o /tmp/M2-2729721-0/1.svg
+
+            o2 = <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+                 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+                  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+                 <!-- Generated by graphviz version 2.43.0 (0)
+                  -->
+                 <!-- Title: G Pages: 1 -->
+                 <svg width="62pt" height="116pt"
+                  viewBox="0.00 0.00 62.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+                 <title>G</title>
+                 <polygon fill="white" stroke="transparent" points="-4,4 -4,-112 58,-112 58,4 -4,4"/>
+                 <!-- 0 -->
+                 <g id="node1" class="node">
+                 <title>0</title>
+                 <ellipse fill="none" stroke="black" cx="27" cy="-90" rx="27" ry="18"/>
+                 <text text-anchor="middle" x="27" y="-86.3" font-family="Times,serif" font-size="14.00">0</text>
+                 </g>
+                 <!-- 1 -->
+                 <g id="node2" class="node">
+                 <title>1</title>
+                 <ellipse fill="none" stroke="black" cx="27" cy="-18" rx="27" ry="18"/>
+                 <text text-anchor="middle" x="27" y="-14.3" font-family="Times,serif" font-size="14.00">1</text>
+                 </g>
+                 <!-- 0&#45;&#45;1 -->
+                 <g id="edge1" class="edge">
+                 <title>0&#45;&#45;1</title>
+                 <path fill="none" stroke="black" d="M27,-71.7C27,-60.85 27,-46.92 27,-36.1"/>
+                 </g>
+                 </g>
+                 </svg>
 ///
 
 -- writeDotFile
@@ -2072,6 +2187,7 @@ doc ///
     Key
         writeDotFile
         (writeDotFile, String, Graph)
+        (writeDotFile, String, Digraph)
     Headline
         Writes a graph to a dot file with a specified filename
     Usage
@@ -2082,9 +2198,9 @@ doc ///
     Description
         Text
             Writes the code for an inputted graph to be constructed in Graphviz with specified file name.
-        Example
-            --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
-            --writeDotFile("chuck", G)
+        -- Example
+        --     --G = graph({1,2,3,4,5},{{1,3},{3,4},{4,5}});
+        --     --writeDotFile("chuck", G)
     SeeAlso
 ///
 
@@ -2160,6 +2276,32 @@ doc ///
             D = digraph ({{1,2},{2,3},{3,4},{4,1},{1,3},{4,2}},EntryMode=>"edges")
             D' = digraphTranspose D
             D'' = digraphTranspose D'
+///
+
+--lineGraph
+doc ///
+    Key
+        lineGraph
+        (lineGraph, Graph)
+    Headline
+        Returns the line graph of an undirected graph
+    Usage
+        L = lineGraph G
+    Inputs
+        G:Graph
+    Outputs
+        L:Graph
+            The line graph of G
+    Description
+        Text
+            The line graph L of an undirected graph G is the graph whose
+            vertex set is the edge set of the original graph G and in
+            which two vertices are adjacent if their corresponding
+            edges share a common endpoint in G.
+        Example
+            G = graph({{1,2},{2,3},{3,4},{4,1},{1,3},{4,2}},EntryMode=>"edges")
+            lineGraph G
+    SeeAlso
 ///
 
 --underlyingGraph
@@ -2601,7 +2743,7 @@ doc ///
         G:Graph
     Description
         Text
-            The star graph is a special class of the general windmill graph class, in particular, it is windmill(2,n). A star graph is best visualized having one vertix in the center of a circle of other vertices.  The edge set is formed by connecting this center vertex to each of the outside vertices. The outside vertices are only connected to the center vertex.
+            The star graph is a special class of the general windmill graph class, in particular, it is windmill(2,n). A star graph is best visualized having one vertex in the center of a circle of other vertices.  The edge set is formed by connecting this center vertex to each of the outside vertices. The outside vertices are only connected to the center vertex.
         Example
             starGraph 5
     SeeAlso
@@ -2759,6 +2901,32 @@ doc ///
     SeeAlso
         vertexCuts
         vertexConnectivity
+///
+
+
+--minimalDegree
+doc ///
+    Key
+        minimalDegree
+        (minimalDegree, Graph)
+    Headline
+       computes the minimal degree of a graph 
+    Usage
+        d = minimalDegree G
+    Inputs
+        G:Graph
+    Outputs
+        d:ZZ
+            the minimal degree of a graph
+    Description
+        Text
+           This computes the minimal vertex degree of an undirected
+           graph.
+        Example
+            G = graph({{1,2}});
+            minimalDegree G
+    SeeAlso
+        degree
 ///
 
 --vertexConnectivity
@@ -3264,7 +3432,6 @@ doc ///
 --diameter
 doc ///
     Key
-        diameter
         (diameter, Graph)
     Headline
         Computes the diameter of a graph
@@ -3313,7 +3480,7 @@ doc ///
             G = graph({1,2,3,4},{{2,3},{3,4}});
             d = distance(G, 1, 4)
     SeeAlso
-        diameter
+        (diameter, Graph)
         distanceMatrix
 ///
 
@@ -3340,7 +3507,7 @@ doc ///
             G = digraph({1,2,3,4},{{2,3},{3,4}},EntryMode=>"edges");
             d = distanceMatrix G
     SeeAlso
-        diameter
+        (diameter, Graph)
         distance
 ///
 
@@ -3396,6 +3563,35 @@ doc ///
     SeeAlso
         coverIdeal
         independenceComplex
+///
+
+--expansion
+doc ///
+    Key
+        expansion
+        (expansion, Graph)
+    Headline
+        returns the expansion of a graph
+    Usage
+        h=expansion G
+    Inputs
+        G:Graph
+    Outputs
+        h:QQ
+            the expansion of a graph G
+    Description
+        Text
+            The expansion of a subset S of vertices is the ratio of
+            the number of edges leaving S and the size of S. The
+            (edge) expansion of a graph G is the minimal expansion of
+            all not too large subsets of the vertex set. The expansion
+            of a disconnected graph is 0 whereas the expansion of the
+            complete graph on n vertices is ceiling(n/2)
+        Example
+            G = graph({{1, 2}, {1, 3}, {2, 3}, {3, 4}},EntryMode=>"edges");
+            expansion G
+            expansion pathGraph 7
+            
 ///
 
 --findPaths
@@ -3521,7 +3717,7 @@ doc ///
             the independence complex of G
     Description
         Text
-            The independece complex of a graph G is the set of all the independent sets of G.
+            The independence complex of a graph G is the set of all the independent sets of G.
         Example
             G = graph({{1,2},{2,3},{3,4},{4,5}},EntryMode=>"edges");
             independenceComplex G
@@ -3914,7 +4110,7 @@ doc ///
         L:List
     Description
         Text
-            The spectrum of a graph G is the set of the eigenvalues of the adjacency matrix A corresponding to G. For simple graphs, these eigenvalues are all real since A must be symmetric. The user should be aware that Macauly 2 does not give exact values for these eigenvalues, they are numerical approximations, but it is still a good tool to use to check if two graphs are isomorphic; isomorphic graphs share the same spectrum although the converse is not necesarrily true.
+            The spectrum of a graph G is the set of the eigenvalues of the adjacency matrix A corresponding to G. For simple graphs, these eigenvalues are all real since A must be symmetric. The user should be aware that Macaulay 2 does not give exact values for these eigenvalues, they are numerical approximations, but it is still a good tool to use to check if two graphs are isomorphic; isomorphic graphs share the same spectrum although the converse is not necessarily true.
         Example
             spectrum completeGraph 6
             spectrum graphLibrary "petersen"
@@ -3993,7 +4189,7 @@ doc ///
             whether G or D has an Eulerian trail
     Description
         Text
-            A graph has an Eulerian trail if there is a path in the graph that visits each edge exactly once.  A digraph has a Eulerian trail if tehre is a directed path in the graph that visits each edge exacly once.  An Eulerian trail is also called an Eulerian path.  Unconnected graphs can have a Eulerian trail, but all vertices of degree greater than 0 of a graph (or all vertices of degree greater than 0 in the underlying graph of a digraph) must belong to a single connected component.
+            A graph has an Eulerian trail if there is a path in the graph that visits each edge exactly once.  A digraph has a Eulerian trail if there is a directed path in the graph that visits each edge exactly once.  An Eulerian trail is also called an Eulerian path.  Unconnected graphs can have a Eulerian trail, but all vertices of degree greater than 0 of a graph (or all vertices of degree greater than 0 in the underlying graph of a digraph) must belong to a single connected component.
         Example
             G = cycleGraph 5;
             hasEulerianTrail G
@@ -4198,7 +4394,7 @@ doc ///
             whether G or D is Eulerian
     Description
         Text
-            A graph is Eulerian if it has a path in the graph that visits each vertex exactly once.  A digraph is Eulerian if it has a directed path in the graph that visits each vertex exactly once.  Such a path is called an Eulerian circut.  Unconnected graphs can be Eulerian, but all vertices of degree greater than 0 of a graph (or all vertices of degree greater than 0 in the underlying graph of a digraph) must belong to a single connected component.
+            A graph is Eulerian if it has a path in the graph that visits each vertex exactly once.  A digraph is Eulerian if it has a directed path in the graph that visits each vertex exactly once.  Such a path is called an Eulerian circuit.  Unconnected graphs can be Eulerian, but all vertices of degree greater than 0 of a graph (or all vertices of degree greater than 0 in the underlying graph of a digraph) must belong to a single connected component.
         Example
             bridges = graph ({{0,1},{0,2},{0,3},{1,3},{2,3}}, EntryMode => "edges");
             E = isEulerian bridges
@@ -4341,6 +4537,34 @@ doc ///
         completeGraph
         cycleGraph
 ///
+
+--isRigid
+doc ///
+    Key
+        isRigid
+        (isRigid,Graph)
+    Headline
+        checks if a graph is rigid
+    Usage
+        r = isRigid G
+    Inputs
+        G:Graph
+    Outputs
+        r:Boolean
+    Description
+        Text
+            A drawing of a graph is rigid in the plane if any continuous motion 
+	    of the vertices that preserve edge lengths must preserve the distance 
+	    between every pair of vertices.  A graph is generically rigid if any 
+	    drawing of the graph with vertices in general position is rigid. This 
+	    method uses Laman's Theorem to determine if a graph is rigid or not.
+        Example
+            G = cycleGraph 4;
+            isRigid G
+	    G' = addEdges' (G, {{1,1},{3,1}})
+            isRigid G'
+///
+
 
 --isSimple
 doc ///
@@ -4632,7 +4856,7 @@ doc ///
             graphPower(G,2)
     SeeAlso
         distance
-        diameter
+        (diameter, Graph)
 ///
 
 --strongProuduct
@@ -4988,4 +5212,263 @@ doc ///
 ///
 
 
+doc /// 
+    Key
+        topologicalSort
+        (topologicalSort, Digraph) 
+	(topologicalSort, Digraph, String) 
+    Headline
+        outputs a list of vertices in a topologically sorted order of a DAG.
+    Usage
+        topologicalSort(D,S)
+	topologicalSort(D)
+    Inputs
+        D:Digraph
+	S:String
+    Outputs
+         :List 
+    Description 
+        Text
+	    This function outputs a list of vertices in a topologically sorted order of a directed acyclic graph (DAG). 
+	    S provides the preference given to the vertices in order to break ties and provide unique topological sorting to the DAG.
+	    
+	    Permissible values of S are: "random", "max", "min", "degree".
+	    
+	    S = "random" randomly sort the vertices of graph which have same precedence at any instance of the algorithm to break the ties.
+	    
+	    S = "min" sort the vertices according to their indices (from low to high) to break the ties.
+	    
+	    S = "max" sort the vertices according to their indices (from high to low) to break the ties.
+	    
+	    S = "degree" sort the vertices according to their degree (from low to high) to break the ties.
+        Example
+	   G = digraph{{5,2},{5,0},{4,0},{4,1},{2,3},{3,1}}
+	   topologicalSort G
+	   topologicalSort(G,"min")
+	   topologicalSort(G,"max")
+	   topologicalSort(G,"random")
+	   topologicalSort(G,"degree")
+	  
+    SeeAlso
+        topSort
+   ///
+
+--------------------------------------------
+-- Documentation topSort
+--------------------------------------------
+doc /// 
+    Key
+        topSort
+        (topSort, Digraph) 
+	(topSort, Digraph, String)
+    Headline
+        outputs a hashtable containing original digraph, new digraph with vertices topologically sorted and a map from vertices of original digraph to new digraph.
+    Usage
+        topSort(D)
+	topSort(D,S)
+    Inputs
+        D:Digraph
+	S: String 
+    Outputs
+         :HashTable 
+    Description 
+        Text
+	    This method outputs a HashTable with keys digraph, map and newDigraph, where digraph is the original digraph,
+	    map is the relation between old ordering and the new ordering of vertices and newDigraph is the Digraph with 
+	    topologically sorted vertices. This method needs the input to be directed adyclic graph (DAG).
+	    S provides the preference given to the vertices in order to break ties and provide unique topological sorting to the DAG.
+	    
+	    Permissible values of S are: "random", "max", "min", "degree".
+	    
+	    S = "random" randomly sort the vertices of graph which have same precedence at any instance of the algorithm to break the ties.
+	    
+	    S = "min" sort the vertices according to their indices (from low to high) to break the ties.
+	    
+	    S = "max" sort the vertices according to their indices (from high to low) to break the ties.
+	    
+	    S = "degree" sort the vertices according to their degree (from low to high) to break the ties.
+
+        Example
+	   G = digraph{{5,2},{5,0},{4,0},{4,1},{2,3},{3,1}}
+	   H = topSort G
+	   H#digraph
+	   H#map
+	   topSort(G,"min")
+	   topSort(G,"max")
+	   topSort(G,"random")
+	   topSort(G,"degree")
+    
+    SeeAlso
+          topologicalSort
+	  SortedDigraph
+	  newDigraph
+   ///
+
+
+doc /// 
+    Key
+        SortedDigraph
+    Headline
+        hashtable used in topSort
+    Description 
+        Text
+	    This is a type of hashtable.The output of @TO topSort@ has class {\tt SortedDigraph}. In the current version of 
+	    Graphs (version 0.3.3) the only use of SortedDigraph is in @TO topSort@.
+        Example
+	   G = digraph{{5,2},{5,0},{4,0},{4,1},{2,3},{3,1}}
+	   H = topSort G
+	   class H
+    SeeAlso
+          topSort
+	  newDigraph
+	  topologicalSort
+   ///
+
+
+doc /// 
+    Key
+        newDigraph
+    Headline
+        key used in the output of topSort
+    Description 
+        Text
+	    This is a key of the hashtable output @TO SortedDigraph@  of @TO topSort@. 
+        Example
+	   G = digraph{{5,2},{5,0},{4,0},{4,1},{2,3},{3,1}}
+	   H = topSort G
+	   keys H
+    SeeAlso
+          topSort
+	  SortedDigraph
+	  topologicalSort
+   ///
+
+
+
+
+
+
+
+TEST ///
+--test expansion of graphs
+G=pathGraph(7);
+assert(expansion(G)===1/3);
+///
+
+TEST ///
+--test connectivity
+G=completeGraph(5);
+assert(vertexConnectivity(G)===4);
+assert(edgeConnectivity(G)===4);
+H=graph({{1,2},{1,3},{2,4},{3,4},{4,5},{4,6},{5,7},{6,7}});
+assert(vertexConnectivity(H)===1);
+assert(edgeConnectivity(H)===2);
+///
+
+TEST ///
+--test cuts
+G=completeGraph(4);
+--complete graphs have no vertex cuts
+assert(vertexCuts(G)==={});
+assert(edgeCuts(G)==={{{0,1},{0,2},{0,3}},{{0,1},{1,2},
+{1,3}},{{0,2},{1,2},{2,3}},{{0,3},{1,3},{2,3}}});
+H=graph({{1,2},{2,3},{3,4},{4,1}});
+assert(vertexCuts(H)==={{1,3},{2,4}});
+assert(edgeCuts(H)==={{{1,2},{4,1}},{{1,2},{2,3}},
+{{4,1},{2,3}},{{1,2},{4,3}},{{4,1},{4,3}},{{2,3},{4,3}}});
+///
+
+TEST ///
+--vertices of complete graphs start at zero
+assert(vertexSet(completeGraph(4))==={0,1,2,3});
+--vertices of path graphs start at zero
+assert(vertexSet(pathGraph(4))==={0,1,2,3});
+///
+
+TEST ///
+--check diameter
+assert(diameter(pathGraph(7))===6);
+///
+
+TEST ///
+--check chromatic number
+G=starGraph(4);
+H=completeGraph(3);
+assert(chromaticNumber(G)===2);
+assert(chromaticNumber(H)===3);
+assert(chromaticNumber(cartesianProduct(G,H))===max(2,3));
+///
+
+TEST ///
+--check graphs with vertices from different classes
+G=graph({{1,2},{a,b},{3,c}});
+assert(numberOfComponents(G)===3);
+assert(chromaticNumber(G)===2);
+assert(isConnected(G)===false);
+assert(neighbors(G,a)===set({b}));
+assert(deleteEdges(G,{{a,b}})===graph({1,2,a,b,3,c},{{1,2},{c,3}}));
+
+H=digraph({{1,2},{a,b},{3,c}});
+assert(children(H,3)===set({c}));
+assert(parents(H,c)===set({3}));
+assert(degree(H,c)===1);
+///
+
+TEST ///
+--check properties of empty graph
+G=graph({});
+assert(vertexSet(G)==={});
+assert(expansion(G)===0);
+assert(edgeConnectivity(G)===0);
+assert(vertexConnectivity(G)===0);
+assert(edgeCuts(G)==={{}});
+assert(vertexCuts(G)==={});
+assert(connectedComponents(G)==={});
+assert(cliqueNumber(G)===0);
+assert(chromaticNumber(G)===0);
+assert(independenceNumber(G)===0);
+assert(numberOfComponents(G)===0);
+assert(isConnected(G)===true);
+assert(isBipartite(G)===true);
+assert(isCyclic(G)===true);
+assert(isForest(G)===true);
+assert(isChordal(G)===true);
+assert(isSimple(G)===true);
+///
+
+TEST ///
+--check rigidity
+assert( isRigid ( graph({{0,1},{0,3},{0,4},{1,3},{2,3}},Singletons => {5}) ) === false )
+assert( isRigid ( graph({{0,4},{0,5},{0,6},{1,4},{1,5},{1,6},{2,4},{2,5},{2,6}}) ) === true )
+assert( isRigid(graph{{0,1}}) === true )
+assert( isRigid(graph{{0,1},{1,2}}) === false )
+///
+
+TEST ///
+
+   D = digraph{{2,1},{3,1}}
+   assert(topologicalSort D==={2,3,1})
+///
+
+
+TEST ///
+
+   D = digraph{{2,1},{3,1}}
+   assert(topSort D ===  new SortedDigraph from {map => new HashTable from {1 => 3, 2 => 1, 3
+  => 2}, newDigraph => digraph ({1, 2, 3}, {{1, 3}, {2, 3}}), digraph =>
+  digraph ({2, 1, 3}, {{2, 1}, {3, 1}})})
+///
+
+
 end;
+
+loadPackage(Graphs, Reload => true)
+
+restart
+uninstallPackage "Graphs"
+restart
+installPackage "Graphs"
+viewHelp Graphs
+
+check Graphs
+

@@ -10,7 +10,7 @@ static node hash_buckets[7313];
 char *Csymbols[] = {
      "NULL", "stdout", "stdin", "stderr", "flush", "select", 
      "min", "max", "abort",
-     "abs", "times", "erase", "frame", "index",
+     "abs", "times", "erase", "frame", "index", "mutable",
      "auto", "break", "case", "const", "continue", "default",
      "register", "signed", "sizeof", "static","struct","switch","typedef",
      "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "mkdir", "stat",
@@ -22,7 +22,7 @@ char *Csymbols[] = {
 
 char *CXXkeywords[] = {
   /* avoid collisions with C++ keywords not allowed as identifiers */
-  "this", "default",
+     "this", "default", "class", "mutable"
 };
 
 char *uniquify(char *s){
@@ -60,7 +60,7 @@ void init_dictionary(scope v){
      #define f(name,var) {					\
 	  node sym = newsymbol(var##_S = UniqueString(name),	\
 	       keyword_T,v,					\
-	       intern_F|keyword_F|defined_F);		\
+	       intern_F|keyword_F|defined_F);			\
 	  var##_K = sym;					\
 	  }
      #define g(var) f(#var,var)
@@ -74,6 +74,7 @@ void init_dictionary(scope v){
      zero__K->body.symbol.type = int_T;
      one__K->body.symbol.Cname = "1";
      zero__K->body.symbol.Cname = "0";
+     char_K->body.symbol.Cname = "signed char"; /* for uniformity across compilers */
      char_T = basictype(char_K);
      double_T = basictype(double_K);
      package_T = basictype(package_K);

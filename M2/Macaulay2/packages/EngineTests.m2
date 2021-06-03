@@ -7,30 +7,29 @@ newPackage(
             {Name => "Michael E. Stillman", 
 		        Email => "mike@math.cornell.edu", 
 		        HomePage => "http://www.math.cornell.edu/People/Faculty/stillman.html"},
-	        {Name => "Jakob Kroeker", 
-		        Email => "Jakob Kröker <kroeker@math.uni-hannover.de>", 
+	        {Name => "Jakob Kröker", 
+		        Email => "kroeker@math.uni-hannover.de", 
 		        HomePage => "" }
             },
         Headline => "a test suite for the Macaulay2 engine",
-	    PackageExports => {"FastLinearAlgebra"},
-        DebuggingMode => true, 
+	Keywords => {"Miscellaneous"},
         AuxiliaryFiles=> true
         )
 
 export { 
-   runTests,
-   testNorm,
-   testClean,
-   hasFFPACK,
-   fields,
-    finitefields,
-    fieldsFFPACK,
-    fieldsFLINT,
-    fieldsGivaro,
-    fieldsGF,
-    ringsPID,
-    ringsRR,
-    ringsCC
+   "runTests",
+   "testNorm",
+   "testClean",
+   "hasFFPACK",
+   "fields",
+   "finitefields",
+   "fieldsFFPACK",
+   "fieldsFLINT",
+   "fieldsGivaro",
+   "fieldsGF",
+   "ringsPID",
+   "ringsRR",
+   "ringsCC"
    }
 
 debug Core
@@ -41,7 +40,8 @@ fieldsFLINT = {
     "ZZpFlint 2",
     "ZZpFlint 5",
     "ZZpFlint 101",
-    "ZZpFlint 8589934669"
+    "ZZpFlint 4294967291"		  -- less than 2^32
+--    "ZZpFlint 8589934669"
 --    "ZZpFlint 4611686018427387847",
 --    "ZZpFlint 9223372036854775783"
     }
@@ -258,22 +258,8 @@ load "EngineTests/MutableMatrix.Test.Driver.m2"
 load "EngineTests/Ring.Test.Driver.m2"
 load "EngineTests/GB.Test.Mathic.m2"
 
+load "EngineTests/Res.f4.m2"
 --check  EngineTests
-
-
-
-beginDocumentation()
-
-doc ///
-Key
-  EngineTests
-Headline
-  a test suite for the Macaulay2 engine
-Description
-  Text
-Caveat
-SeeAlso
-///
 
 ///
 testFracRaw = () -> (
@@ -486,8 +472,17 @@ assert(L2 == L3)
 
 ///
 
+beginDocumentation()
 
-
-end
+doc ///
+Key
+  EngineTests
+Headline
+  a test suite for the Macaulay2 engine
+Description
+  Text
+Caveat
+SeeAlso
+///
 
 

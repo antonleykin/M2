@@ -4,7 +4,23 @@ $(error config.Makefile already loaded)
 endif
 CONFIG_MAKEFILE = loaded
 .PHONY: all check initialize clean distclean install always reconfigure big-check
+
+# Note: run our makefiles with GNU make, version 4 or larger.
+#       Version 3.81, provided on Mac OS X, has a bug, but you can
+#	use "homebrew" to install a modern version under the name "gmake"
+ifeq ($(MAKE_VERSION),3.81)
+$(error GNU make version $(MAKE_VERSION) is too old)
+endif
+
 all:
+
+# clear this environment variable so the ambient system doesn't offer advice to
+# our libraries that use autoconf about where to install install things.  The
+# first example we encountered is under opensuse leap 42.1, which sets the
+# autoconf variable libdir to ${exec_prefix}/lib64 instead of
+# ${exec_prefix}/lib.  Our libraries' files are installed in only our private
+# directories, so it's safe to ignore such system conventions.
+export CONFIG_SITE =
 
 SHELL = /bin/sh
 
@@ -14,12 +30,13 @@ SHELL = /bin/sh
 CC = @CC@
 CXX = @CXX@
 FC = @FC@
+AR = @AR@
 CFLAGS = @CFLAGS@
 CPPFLAGS += @CPPFLAGS@
 CXXFLAGS = @CXXFLAGS@
 FCFLAGS = @FCFLAGS@
 LDFLAGS = @LDFLAGS@
-LDFLAGS_FOR_BUILD = @LDFLAGS_FOR_BUILD@
+OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
 
 # here we set the variables that "configure" uses
 # this is the only way to add libraries to the linking done by "gdbm", since it doesn't use LDLIBS or LOADLIBES
@@ -46,51 +63,41 @@ pre_exec_prefix = @pre_exec_prefix@
 # we want to ignore the --datarootdir setting, whatever that means, so here we we mention it: @datarootdir@
 abs_top_srcdir = @abs_top_srcdir@
 
-
 INSTALL = @INSTALL@
-
-# we can't use -isystem instead of -I for our library include files, because then they might be supplanted
-# by older include files in a directory specified by the user with CPPFLAGS=-I/foo/bar, causing
-# version skew (gcc preprocessor searches -I directories first, then -isystem directories)
-
 BUILTLIBPATH = @abs_top_builddir@/usr-host
-
-# this will be a symbolic link installed by libraries/gtest/Makefile
+# this will be a symbolic link installed by libraries/gtest/Makefile:
 GTEST_DIR = @abs_top_builddir@/libraries/final/gtest
-
-CPPFLAGS :=						\
-	-I@abs_top_srcdir@/include			\
-	-I@abs_top_builddir@/include			\
-	-I$(BUILTLIBPATH)/include			\
-	-I@abs_top_srcdir@/submodules/memtailor/src	\
-	-I@abs_top_srcdir@/submodules/mathic/src	\
-	-I@abs_top_srcdir@/submodules/mathicgb/src	\
+CPPFLAGS :=									\
+	-I@abs_top_srcdir@/include						\
+	-I@abs_top_builddir@/include						\
+	-I$(BUILTLIBPATH)/include						\
+	$(foreach S, @BUILDSUBLIST@, -I@abs_top_srcdir@/submodules/$S/src)	\
 	$(CPPFLAGS)
 
-ifeq "@ENABLE_MPACK@" "yes"
-CPPFLAGS := -I$(BUILTLIBPATH)/include/mpack $(CPPFLAGS)
-endif
-
 vpath %.h $(BUILTLIBPATH)/include
+
+BUILTSUBS := $(filter @BUILDSUBLIST@, memtailor mathic mathicgb)
+
+# /// @dan move the info about libraries and submodules nearer to the submodules, perhaps in new included makefiles
 LDFLAGS :=						\
 	-L$(BUILTLIBPATH)/lib				\
-	-L@abs_top_builddir@/submodules/memtailor	\
-	-L@abs_top_builddir@/submodules/mathic		\
-	-L@abs_top_builddir@/submodules/mathicgb	\
+	$(foreach S, $(BUILTSUBS), -L@abs_top_builddir@/submodules/$S/.libs) \
 	$(LDFLAGS)
-LDFLAGS_FOR_BUILD :=					\
-	-L$(BUILTLIBPATH)/lib				\
-	-L@abs_top_builddir@/submodules/memtailor	\
-	-L@abs_top_builddir@/submodules/mathic		\
-	-L@abs_top_builddir@/submodules/mathicgb	\
-	$(LDFLAGS_FOR_BUILD)
+
+LIBDEPS_FOR_BUILD := $(foreach S, $(BUILTSUBS), @abs_top_builddir@/submodules/$S/.libs/lib$S.a)
+LDLIBS_FOR_BUILD := $(foreach S, $(BUILTSUBS), -l$S)
+
 vpath %.a $(BUILTLIBPATH)/lib
 vpath %.o $(BUILTLIBPATH)/lib
 vpath %.so $(BUILTLIBPATH)/lib
 export PATH := @abs_top_srcdir@/usr-build/bin:${PATH}
 -include @abs_top_srcdir@/usr-build/aclocal-path
 -include @abs_top_srcdir@/usr-build/aclocal-path2
-export PKG_CONFIG_PATH := $(BUILTLIBPATH)/lib/pkgconfig:$(PKG_CONFIG_PATH)
+
+# it is a mistake to set PKG_CONFIG_PATH here, because when this makefile calls upon
+# "configure", it should find only pre-installed libaries, not libraries installed by
+# M2
+M2_PKG_CONFIG_PATH := $(BUILTLIBPATH)/lib/pkgconfig:$(PKG_CONFIG_PATH)
 
 ifeq (,$(findstring --no-print-directory,$(word 1,$(MAKEFLAGS))))
 MAKEFLAGS += -w
@@ -103,13 +110,7 @@ ifneq ($(RELAX),yes)
 # but sometimes that's bad, e.g., during configure scripts with loosely written test programs
 # -Winline gives too many warning messages
 
-M2_BOTH = -pipe -Wall -Wno-shadow -Wcast-qual
-
-# use no GNU extensions
-# CXXFLAGS += -std=c++98
-# using -std=c99 is a bad idea, because in ubuntu, this standard causes __USE_POSIX to be undefined, 
-#   hence sigjmp_buf to be undefined, which is needed by gc
-# CFLAGS += -std=c99
+M2_BOTH = -pipe -Wall -Wno-shadow -Wcast-qual -Wno-sign-conversion -Wno-sign-compare
 
 ifeq "@__INTEL_COMPILER@" "yes"
 X = -diag-disable 981,869,383,2259,444
@@ -119,7 +120,6 @@ ifeq "@DEBUG@" "yes"
 CFLAGS += -debug
 CXXFLAGS += -debug
 LDFLAGS += -debug
-LDFLAGS_FOR_BUILD += -debug
 endif
 else
 M2_BOTH += -Wno-parentheses
@@ -134,28 +134,23 @@ ifeq "@OPTIMIZE@" "yes"
 M2_BOTH += -Wuninitialized
 endif
 
-M2_CFLAGS   += $(M2_BOTH) -Wwrite-strings
-M2_CXXFLAGS += $(M2_BOTH) -Wconversion
+M2_CFLAGS   += $(M2_BOTH)
+M2_CXXFLAGS += $(M2_BOTH)
 
 M2_CFLAGS += @M2_CFLAGS@
+M2_CXXFLAGS += @M2_CXXFLAGS@
 
-# M2_CFLAGS   += -Werror=implicit-function-declaration -Werror=write-strings $(M2_BOTH)
+M2_CXXFLAGS += -Wno-error=pragmas
+
 ifeq "@__INTEL_COMPILER@" "no"
 M2_CFLAGS   += -Wimplicit-function-declaration
 endif
-
 
 # -Werror-implicit-function-declaration is important, because if we include the wrong include file and a function that
 # returns a 64-bit pointer is not declared as such, then only 32 bits of the return value will be used.
 endif
 endif
 STRIP = @STRIP@
-ifeq "$(ENABLE_STRIP)" "yes"
-ifneq "@OS@" "Darwin"
-LDFLAGS  += -s
-LDFLAGS_FOR_BUILD  += -s
-endif
-endif
 MKDIR_P = @INSTALL@ -d
 always:
 
@@ -163,7 +158,6 @@ always:
 export DISPLAY=
 
 # Safe C language:
-SCCFLAGS =
 ifeq "@DEBUG@" "no"
 SCCFLAGS += -O
 endif
@@ -179,21 +173,29 @@ ifeq "$(NORULES)" ""
 %-exports.h: ;	test -e $*-exports.h && cmp -s $*-exports.h.tmp $*-exports.h || cp $*-exports.h.tmp $*-exports.h
 
 %.sig.tmp %.dep: %.d
-	$(SCC1) -dep $(SCCFLAGS) $<
+	$(SHOW)SCC1 -dep $*.d
+	$(HIDE)$(SCC1) -dep $(SCCFLAGS) $<
 	mv $*.dep.tmp $*.dep
 	test -e $*.sig && cmp -s $*.sig.tmp $*.sig || cp $*.sig.tmp $*.sig
 %.sig.tmp %.dep: %.dd
-	$(SCC1) -dep $(SCCFLAGS) $<
+	$(SHOW)SCC1 -dep $*.dd
+	$(HIDE)$(SCC1) -dep $(SCCFLAGS) $<
 	mv $*.dep.tmp $*.dep
 	test -e $*.sig && cmp -s $*.sig.tmp $*.sig || cp $*.sig.tmp $*.sig
-%-tmp.c  %-exports.h.tmp: %.d
-	$(SCC1) $(SCCFLAGS) $<
+%-tmp.c	 %-exports.h.tmp: %.d
+	$(SHOW)SCC1 $*.d
+	$(HIDE)$(SCC1) $(SCCFLAGS) $<
 	test -e $*-exports.h && cmp -s $*-exports.h.tmp $*-exports.h || cp $*-exports.h.tmp $*-exports.h
 %-tmp.cc %-exports.h.tmp: %.dd
-	$(SCC1) $(SCCFLAGS) $<
+	$(SHOW)SCC1 $*.dd
+	$(HIDE)$(SCC1) $(SCCFLAGS) $<
 	test -e $*-exports.h && cmp -s $*-exports.h.tmp $*-exports.h || cp $*-exports.h.tmp $*-exports.h
-%.o: %-tmp.c  %-exports.h;		$(COMPILE.c)  $(DCFLAGS) $< $(OUTPUT_OPTION)
-%.o: %-tmp.cc %-exports.h;		$(COMPILE.cc) $(DCFLAGS) $< $(OUTPUT_OPTION)
+%.o: %-tmp.c  %-exports.h
+	$(SHOW)CC $*-tmp.c
+	$(HIDE)$(COMPILE.c) $(DCFLAGS) $< $(OUTPUT_OPTION)
+%.o: %-tmp.cc %-exports.h
+	$(SHOW)CXX $*-tmp.cc
+	$(HIDE)$(COMPILE.cc) $(DCXXFLAGS) $< $(OUTPUT_OPTION)
 
 # various compiler output files
 .SUFFIXES : .ss .ii .s
@@ -211,8 +213,32 @@ endif
 export GC_LARGE_ALLOC_WARN_INTERVAL=1
 
 # status info
-WHY = : remaking $@ because of $?
+WHY = @ (if [ -f $@ ] ;						\
+	 then echo "=== remaking $@ in $$(basename $$PWD) :" ;	\
+	      ls -l $@ | sed 's/^/===   /' || : ;		\
+	      ls -l $? | sed 's/^/===   /' ;			\
+	 fi)
+
+test:
+	: "PKG_CONFIG_PATH    = $(PKG_CONFIG_PATH)"
+	: "M2_PKG_CONFIG_PATH = $(M2_PKG_CONFIG_PATH)"
+	:
+	: "M2_CXXFLAGS           = $(M2_CXXFLAGS)"
+	: "M2_BOTH               = $(M2_BOTH)"
+	:
+	: "M2_LIBRARIES          = $(M2_LIBRARIES)"
+
+SHOW := $(if $(VERBOSE),@true "",@echo "")
+HIDE := $(if $(VERBOSE),,@)
+
+%.o: %.c
+	$(SHOW)CC $*.c
+	$(HIDE)$(COMPILE.c) $< $(OUTPUT_OPTION)
+
+%.o: %.cc
+	$(SHOW)CXX $*.cc
+	$(HIDE)$(COMPILE.cc) $< $(OUTPUT_OPTION)
 
 # Local Variables:
-# compile-command: "make -C $M2BUILDDIR include/config.Makefile DEPENDS=no "
+# compile-command: "set -x ; make -C $M2BUILDDIR include/config.Makefile DEPENDS=no && make -f $M2BUILDDIR/include/config.Makefile test "
 # End:

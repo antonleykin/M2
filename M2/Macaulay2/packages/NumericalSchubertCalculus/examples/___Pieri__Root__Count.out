@@ -1,0 +1,9 @@
+-- -*- M2-comint -*- hash: -703438448
+-- COMPILE TIME: May  9 2021, 16:10:46
+
+i1 : r := PieriRootCount(3,2,1);
+
+i2 : print r
+55
+
+i3 : 

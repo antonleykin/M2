@@ -1,4 +1,4 @@
--- -*- M2-comint -*- {* hash: 704393788 *}
+-- -*- M2-comint -*- hash: 704393788
 
 i1 : R = QQ[x,y,z]
 
@@ -14,11 +14,6 @@ o2 = {x  + x*y  + x*z  - x, x y + y  + y*z  - y}
 o2 : List
 
 i3 : S = bertiniPosDimSolve F
-Temporary directory for input and output files:/tmp/M2-14805-0/0
-
-The version of Bertini you have installed on your computer was used for this run. 
-Bertini is under ongoing development by D. Bates, J. Hauenstein, A. Sommese, and C. Wampler.
-
 
 o3 = S
 
@@ -26,25 +21,23 @@ o3 : NumericalVariety
 
 i4 : S#1_0#Points -- 1_0 chooses the first witness set in dimension 1
 
-o4 = {{1.31165e-60+1.68487e-60*ii, -1.5376e-60-1.48332e-60*ii,
-     ------------------------------------------------------------------------
-     .499782-.256389*ii}}
+o4 = {{9.83944e-68-8.625e-70*ii, 9.79349e-68+1.82104e-68*ii, .352544-.003583*ii}}
 
 o4 : VerticalList
 
 i5 : S#1 --first specify dimension
 
-o5 = {[dim=1,deg=1]}
+o5 = {(dim=1,deg=1)}
 
 o5 : List
 
 i6 : peek oo_0 --then list position
 
-o6 = WitnessSet{ComponentNumber => 0                                                                    }
-                IsIrreducible => null
-                Points => {{1.31165e-60+1.68487e-60*ii, -1.5376e-60-1.48332e-60*ii, .499782-.256389*ii}}
-                Slice => | .056846+.724565i .516568+.153937i 1.49808+.948033i 2.80355+1.09854i |
-                WitnessDataFileName => /tmp/M2-14805-0/0/witness_data
+o6 = WitnessSet{ComponentNumber => 0                                                                             }
+                IsIrreducible => true
+                Points => {{9.83944e-68-8.625e-70*ii, 9.79349e-68+1.82104e-68*ii, .352544-.003583*ii}}
+                Slice => | .676227+.312984ii -.430765+.527252ii .795595-.72831ii -.277873+.259612ii |
+                WitnessDataFileName => /var/folders/46/9b86vqxj4hjcngvy7kd7sb140000gn/T/M2-38830-0/1/witness_data
                                      3      2      2       2     3      2
                 Equations => ideal (x  + x*y  + x*z  - x, x y + y  + y*z  - y)
 

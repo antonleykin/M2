@@ -1,6 +1,6 @@
 export {
-    testGFpromote,
-    testGFGenerator
+    "testGFpromote",
+    "testGFGenerator"
     }
 
 debug Core
@@ -169,23 +169,24 @@ TEST ///
          {0, 1, 1, 0, 1}, {1, 0, 0, 1, 0}, {0, 1, 0, 0, 1}, {1, 0, 0, 0, 0}})
 ///
 
-TEST ///
-  {*
-    restart
-    loadPackage "EngineTests"
-  *}
-  debug Core
-  -- test that around 2^32, flint rings are created correctly, with correct charac.
-  primes = for i from -10000 to 10000 list if isPrime (2^32+i) then 2^32+i else continue;
-  badprimes = for p in primes list (
-    if p != rawCharacteristic raw ZZpFlint p then p else continue
-    )
-  assert(badprimes === {})
-  badprimes = for p in primes list (
-    if p != char ZZpFlint p then p else continue
-    )
-  assert(badprimes === {})
-///
+-- this test doesn't work on a machine where "long" is 32 bits
+-- TEST ///
+--   -*
+--     restart
+--     loadPackage "EngineTests"
+--   *-
+--   debug Core
+--   -- test that around 2^32, flint rings are created correctly, with correct charac.
+--   primes = for i from -10000 to 10000 list if isPrime (2^32+i) then 2^32+i else continue;
+--   badprimes = for p in primes list (
+--     if p != rawCharacteristic raw ZZpFlint p then p else continue
+--     )
+--   assert(badprimes === {})
+--   badprimes = for p in primes list (
+--     if p != char ZZpFlint p then p else continue
+--     )
+--   assert(badprimes === {})
+-- ///
 
 
 TEST ///
@@ -418,52 +419,52 @@ TEST ///
   for i from 1 to topval do (<< i << " "; testGFpromote(2,i,"New"))
   for i from 1 to topval do (<< i << " "; testGFpromote(2,i,null))
   if hasFFPACK then for i from 1 to topval do (<< i << " "; testGFpromote(2,i,"Givaro"))
-  for i from 1 to topval do (<< i << " "; testGFpromote(2,i,"FlintBig"))  
+  for i from 2 to topval do (<< i << " "; testGFpromote(2,i,"FlintBig"))  
   for i from 1 to topval do (<< i << " "; testGFpromote(2,i,"Flint"))  
 
   topval = 6 -- 8 would be better
   time for i from 1 to topval do (<< i << " "; testGFpromote(3,i,"New"))
   time for i from 1 to topval do (<< i << " " << flush; testGFpromote(3,i,null))  
   if hasFFPACK then time for i from 1 to topval do (<< i << " " << flush; testGFpromote(3,i,"Givaro"))  
-  time for i from 1 to topval do (<< i << " " << flush; testGFpromote(3,i,"FlintBig"))  
+  time for i from 2 to topval do (<< i << " " << flush; testGFpromote(3,i,"FlintBig"))  
   time for i from 1 to topval do (<< i << " " << flush; testGFpromote(3,i,"Flint"))  
   
   time for i from 1 to 5 do (<< i << " " << flush; testGFpromote(5,i,"New"))
   time for i from 1 to 5 do (<< i << " " << flush; testGFpromote(5,i,null))  
   if hasFFPACK then time for i from 1 to 5 do (<< i << " " << flush; testGFpromote(5,i,"Givaro"))  
-  time for i from 1 to 5 do (<< i << " " << flush; testGFpromote(5,i,"FlintBig"))  
+  time for i from 2 to 5 do (<< i << " " << flush; testGFpromote(5,i,"FlintBig"))  
   
   --time for i from 1 to 4 do (<< i << " " << flush; testGFpromote(7,i,"New"))
   --time for i from 1 to 4 do (<< i << " " << flush; testGFpromote(7,i,null))  
   --time for i from 1 to 4 do (<< i << " " << flush; testGFpromote(7,i,"Givaro"))  
-  time for i from 1 to 4 do (<< i << " " << flush; testGFpromote(7,i,"FlintBig"))  
+  time for i from 2 to 4 do (<< i << " " << flush; testGFpromote(7,i,"FlintBig"))  
   
   time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(11,i,"New"))
   time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(11,i,null))  
   if hasFFPACK then time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(11,i,"Givaro"))  
-  time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(11,i,"FlintBig"))  
+  time for i from 2 to 3 do (<< i << " " << flush; testGFpromote(11,i,"FlintBig"))  
   
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(13,i,"New"))
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(13,i,null))  
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(13,i,"Givaro"))  
-  time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(13,i,"FlintBig"))  
+  time for i from 2 to 3 do (<< i << " " << flush; testGFpromote(13,i,"FlintBig"))  
 
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(17,i,"New"))
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(17,i,null))  
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(17,i,"Givaro"))  
-  time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(17,i,"FlintBig"))  
+  time for i from 2 to 3 do (<< i << " " << flush; testGFpromote(17,i,"FlintBig"))  
   
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(19,i,"New"))
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(19,i,null))  
   --time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(19,i,"Givaro"))  
-  time for i from 1 to 3 do (<< i << " " << flush; testGFpromote(19,i,"FlintBig"))  
+  time for i from 2 to 3 do (<< i << " " << flush; testGFpromote(19,i,"FlintBig"))  
   
   for p from 80 to 100 do if isPrime p then (
       << "doing " << p << endl;
       time for i from 1 to 2 do (<< i << " " << flush; testGFpromote(p,i,"New"));
       time for i from 1 to 2 do (<< i << " " << flush; testGFpromote(p,i,null))  ;
       if hasFFPACK then time for i from 1 to 2 do (<< i << " " << flush; testGFpromote(p,i,"Givaro"));
-      time for i from 1 to 2 do (<< i << " " << flush; testGFpromote(p,i,"FlintBig"));
+      time for i from 2 to 2 do (<< i << " " << flush; testGFpromote(p,i,"FlintBig"));
       )
 ///
 
@@ -630,7 +631,7 @@ if hasFFPACK then
 ///
   -- how good are the random numbers:
   debug loadPackage "EngineTests"
-  kk = GF(9, Strategy=>"FlintBig") -- crashes
+  kk = GF(9, Strategy=>"FlintBig")
   m = mutableMatrix(kk, 100, 100);
   fillMatrix m;
   L = flatten entries m;
@@ -640,13 +641,13 @@ if hasFFPACK then
 
 ///
   -- how good are the random numbers.  Let's try it for 2^16
-  debug loadPackage "EngineTests"
-  kk = GF(2, 16, Strategy=>"FlintBig") -- crashes
+  debug needsPackage "EngineTests"
+  kk = GF(2, 16, Strategy=>"FlintBig")
   m = mutableMatrix(kk, 100, 100);
   fillMatrix m;
   L = flatten entries m;
   tally L;
-  tally for i from 1 to 10000 list random kk -- much better random behavior...
+  tally values tally for i from 1 to 10000 list random kk -- much better random behavior...
 ///
 
 ///

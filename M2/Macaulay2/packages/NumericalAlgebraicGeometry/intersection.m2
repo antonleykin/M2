@@ -3,7 +3,7 @@
 -- (loaded by  ../NumericalAlgebraicGeometry.m2)
 ------------------------------------------------------
 
-export {hypersurfaceSection, numericalIntersection}
+export {"hypersurfaceSection", "numericalIntersection"}
 
 insertComponent = method()
 insertComponent(WitnessSet,MutableHashTable) := (W,H) -> (
@@ -28,7 +28,9 @@ splitWitness (WitnessSet,RingElement) := Sequence => o -> (w,f) -> (
 	 if residual(matrix {{f}}, matrix x) < o.Tolerance 
 	 then w1 = w1 | {x}
 	 else w2 = w2 | {x};   
-     ( if #w1===0 then null else witnessSet(w.Equations + ideal f, w.Slice, w1), 
+     ( if #w1===0 then null else witnessSet(ideal equations w + ideal f, 
+	     -* this is "stretching" the convention that this has to be a complete intersection *-
+	     w.Slice, w1), 
        if #w2===0 then null else witnessSet(w.Equations, w.Slice, w2) 
        )
    )
@@ -40,6 +42,7 @@ hypersurfaceSection(NumericalVariety,RingElement) := o -> (c1,f) -> (
     "hypersurface: " << f << endl;
     d := sum degree f;
     R := ring f;
+    if getDefault Normalize then f = f/sqrt(numgens R * BombieriWeylNormSquared f); 
     c2 := new MutableHashTable; -- new components
     for comp in components c1 do (
 	if DBG>2 then << "*** proccesing component " << peek comp << endl;
@@ -48,7 +51,10 @@ hypersurfaceSection(NumericalVariety,RingElement) := o -> (c1,f) -> (
 	    if DBG>2 then << "( regeneration: " << net cIn << " is contained in V(f) for" << endl <<  
 	    << "  f = " << f << " )" << endl;
 	    scan(
-		partitionViaDeflationSequence( cIn.Points, polySystem(equations polySystem cIn | slice cIn) ),
+		partitionViaDeflationSequence( cIn.Points, 
+		    polySystem(equations polySystem cIn | slice cIn) 
+		    -- this is overdetermined!
+		    ),
 		pts -> (
 		    oldW := witnessSet(cIn.Equations, cIn.Slice, pts);
 		    if DBG>2 then << "   old component " << peek oldW << endl;

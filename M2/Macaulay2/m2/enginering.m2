@@ -218,12 +218,12 @@ commonEngineRingInitializations = (F) -> (
      if debugLevel > 25 then (
 	  registerFinalizer(F,"ring");
 	  );
-     {*
+     -*
      if debugLevel > 50 then (
 	  registerFinalizer(F#0,"ring 0");
 	  registerFinalizer(F#1,"ring 1");
 	  );
-     *}
+     *-
      )
 
 -----------------------------------------------------------------------------
@@ -238,10 +238,14 @@ reduce := (r,s) -> (
 	  );
      (a,b))
 
-toString EngineRing := R -> if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary) else toString R.RawRing
+expression EngineRing := R -> if hasAttribute(R,ReverseDictionary) then expression getAttribute(R,ReverseDictionary) else expression toString R.RawRing -- should never be used
+texMath EngineRing := R -> texMath expression R
+toString EngineRing := toString @@ expression
+net EngineRing := net @@ expression
 
 ZZ _ EngineRing := 
-RR _ EngineRing := RingElement => (i,R) -> new R from i_(R.RawRing)
+RR _ EngineRing :=
+RRi _ EngineRing := RingElement => (i,R) -> new R from i_(R.RawRing)
 
 new RingElement from RawRingElement := (R, f) -> (
      -- this might take too much time:
@@ -270,25 +274,15 @@ coefficientRing FractionField := F -> coefficientRing last F.baseRings
    degreeLength FractionField := F -> degreeLength last F.baseRings
         degrees FractionField := F -> degrees last F.baseRings
       precision FractionField := F -> precision last F.baseRings
-       toString FractionField := F -> (
-	    if hasAttribute(F,ReverseDictionary)
-	    then toString getAttribute(F,ReverseDictionary)
-	    else "frac(" | toString last F.baseRings | ")"
-	    )
         numgens FractionField := F -> numgens last F.baseRings
      generators FractionField := opts -> F -> if opts.CoefficientRing === F then {} else generators(last F.baseRings, opts) / (r -> promote(r,F))
            char FractionField := F -> char last F.baseRings
 	    dim FractionField := F -> 0
-            net FractionField := F -> (
-		 if hasAttribute(F,ReverseDictionary)
-		 then toString getAttribute(F,ReverseDictionary)
-		 else net new FunctionApplication from { frac, last F.baseRings }
-		 )
-     expression FractionField := F -> (expression frac) (expression last F.baseRings)
-       describe FractionField := F -> net expression F
+     expression FractionField := F -> if hasAttribute(F,ReverseDictionary) then expression getAttribute(F,ReverseDictionary) else (expression frac) (expression last F.baseRings)
+     describe FractionField := F -> Describe (expression frac) (describe last F.baseRings)
+     toExternalString FractionField := F -> toString describe F
 
 -- freduce := (f) -> (numerator f)/(denominator f)
-isHomogeneous EngineRing := R -> isHomogeneous 0_R
 
 factoryAlmostGood = R -> (
      k := coefficientRing R;
@@ -306,7 +300,9 @@ frac EngineRing := R -> if isField R then R else if R.?frac then R.frac else (
      if not factoryGood R then error "not implemented yet: fraction fields of polynomial rings over rings other than ZZ, QQ, or a finite field";
      R.frac = F := new FractionField from rawFractionRing R.RawRing;
      F.frac = F;
+     F.isCommutative = true;
      F.baseRings = append(R.baseRings,R);
+     F.isHomogeneous = isHomogeneous R and all (degrees R, deg -> all (deg, i -> i === 0));
      commonEngineRingInitializations F;
      factor F := options -> f -> factor numerator f / factor denominator f;
      toString F := x -> toString expression x;
@@ -330,6 +326,7 @@ frac EngineRing := R -> if isField R then R else if R.?frac then R.frac else (
 	  );
      if R.?indexSymbols then F.indexSymbols = applyValues(R.indexSymbols, r -> promote(r,F));
      if R.?indexStrings then F.indexStrings = applyValues(R.indexStrings, r -> promote(r,F));
+     if R.?numallvars then F.numallvars=R.numallvars;
      F)
 
 -- methods for all ring elements
@@ -416,7 +413,7 @@ EngineRing _ ZZ := (R,i) -> (
 
 size RingElement := f -> rawTermCount(numgens ring f, raw f)
 
-isHomogeneous RingElement := f -> rawIsHomogeneous raw f
+isHomogeneous RingElement := f -> isHomogeneous ring f and rawIsHomogeneous raw f
 
 + RingElement := identity
 - RingElement := RingElement => x -> new ring x from -raw x
@@ -428,8 +425,8 @@ RingElement ^ ZZ := RingElement => (x,i) -> new ring x from (raw x)^i
 
 toString RingElement := x -> toString expression x
 toExternalString RingElement := x -> toExternalFormat expression x
-
 net RingElement := x -> net expression x
+texMath RingElement := x -> texMath expression x
 
 someTerms(RingElement,ZZ,ZZ) := RingElement => (f,i,n) -> new ring f from rawGetTerms(numgens ring f,raw f,i,n+i-1)
 
@@ -623,11 +620,6 @@ RingElement == RingElement := (f,g) -> (
      f == g
      )
 
-frac0 = (f,g) -> f/g
-Number / RingElement := frac0 @@ promoteleftexact
-RingElement / Number := frac0 @@ promoterightexact
-InexactNumber / RingElement := frac0 @@ promoteleftinexact
-RingElement / InexactNumber := RingElement / Number := (f,g) -> (1/g) * f
 RingElement / RingElement := RingElement => (f,g) -> (
      R := class f;
      S := class g;
@@ -645,6 +637,13 @@ RingElement / RingElement := RingElement => (f,g) -> (
 	  else error "expected pair to have a method for '/'"
 	  );
      f / g)
+frac0 = (f,g) -> f/g
+
+Number / RingElement := frac0 @@ promoteleftexact
+RingElement / Number := (f,g) -> (1/g) * f
+
+InexactNumber / RingElement := frac0 @@ promoteleftinexact
+RingElement / InexactNumber := (f,g) -> (1/g) * f
 
 fraction(RingElement,RingElement) := (r,s) -> (
      R := ring r;
@@ -654,7 +653,12 @@ fraction(RingElement,RingElement) := (r,s) -> (
      fraction(r,s))
 -----------------------------------------------------------------------------
 
-isUnit(RingElement) := (f) -> 1 % ideal f == 0
+isUnit(RingElement) := (f) -> (
+    if (options ring f).?Inverses and (options ring f).Inverses then 
+      size f === 1 and isUnit leadCoefficient f
+    else
+      1 % ideal f == 0
+    )
 
 Ring _ String := RingElement => (x,s) -> x.indexStrings#s
 Ring _ Symbol := RingElement => (x,s) -> x.indexSymbols#s

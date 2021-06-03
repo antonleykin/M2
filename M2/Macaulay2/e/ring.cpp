@@ -1,23 +1,17 @@
-// Copyright 1995 Michael E. Stillman
+// Copyright 1995-2020 Michael E. Stillman
 
 #include "ring.hpp"
-#include "aring-RRR.hpp"
-#include "aring-CCC.hpp"
-#include "monoid.hpp"
-#include "monideal.hpp"
-#include "res-a1-poly.hpp"
-#include "poly.hpp"
 
-#include "freemod.hpp"
-#include "coeffrings.hpp"
+#include "ZZ.hpp"          // for RingZZ
+#include "coeffrings.hpp"  // for CoefficientRingR
+#include "freemod.hpp"     // for FreeModule
+#include "monoid.hpp"      // for Monoid
+#include "poly.hpp"        // for PolyRing
+#include "polyring.hpp"    // for PolynomialRing
 
-const Monoid * Ring::degree_monoid() const { return degree_ring->getMonoid(); }
-
+const Monoid *Ring::degree_monoid() const { return degree_ring->getMonoid(); }
 #if 1
-RingZZ* makeIntegerRing()
-{
-  return new RingZZ;
-}
+RingZZ *makeIntegerRing() { return new RingZZ; }
 #endif
 #if 0
 ARingZZ* makeIntegerRing()
@@ -26,10 +20,9 @@ ARingZZ* makeIntegerRing()
 }
 #endif
 
-const CoefficientRingR* Ring::getCoefficientRingR() const
+const CoefficientRingR *Ring::getCoefficientRingR() const
 {
-  if (cR == 0)
-    cR = new CoefficientRingR(this);
+  if (cR == 0) cR = new CoefficientRingR(this);
   return cR;
 }
 
@@ -55,30 +48,23 @@ void Ring::initialize_ring(long P0,
   minus_oneV = ZERO_RINGELEM;
 }
 
-Ring::~Ring()
-{
-}
-
+Ring::~Ring() {}
 FreeModule *Ring::make_FreeModule() const
 {
-  return new FreeModule(this,0,false);
+  return new FreeModule(this, 0, false);
 }
 
 FreeModule *Ring::make_Schreyer_FreeModule() const
 {
-  return new FreeModule(this,0,true);
+  return new FreeModule(this, 0, true);
 }
 
 FreeModule *Ring::make_FreeModule(int n) const
 {
-  return new FreeModule(this,n,false);
+  return new FreeModule(this, n, false);
 }
 
-bool Ring::is_field() const
-{
-  return _isfield == 1;
-}
-
+bool Ring::is_field() const { return _isfield == 1; }
 bool Ring::declare_field()
 {
   if (_isfield >= 0)
@@ -100,7 +86,7 @@ ring_elem Ring::get_non_unit() const
 
 void Ring::set_non_unit(ring_elem non_unit) const
 {
-  if (_isfield == 1) // i.e. declared to be a field
+  if (_isfield == 1)  // i.e. declared to be a field
     ERROR("a non unit was found in a ring declared to be a field");
   const_cast<Ring *>(this)->_isfield = -1;
   const_cast<Ring *>(this)->_non_unit = non_unit;
@@ -112,7 +98,7 @@ ring_elem Ring::var(int v) const
   return zeroV;
 }
 
-ring_elem Ring::power(const ring_elem gg, mpz_t m) const
+ring_elem Ring::power(const ring_elem gg, mpz_srcptr m) const
 {
   ring_elem ff = gg;
   int cmp = mpz_sgn(m);
@@ -121,11 +107,13 @@ ring_elem Ring::power(const ring_elem gg, mpz_t m) const
   mpz_init_set(n, m);
   if (cmp < 0)
     {
-      mpz_neg(n,n);
+      mpz_neg(n, n);
       ff = invert(ff);
       if (is_zero(ff))
         {
-          ERROR("either element not invertible, or no method available to compute its inverse");
+          ERROR(
+              "either element not invertible, or no method available to "
+              "compute its inverse");
           return ff;
         }
     }
@@ -135,7 +123,7 @@ ring_elem Ring::power(const ring_elem gg, mpz_t m) const
 
   for (;;)
     {
-      if (RingZZ::mod_ui(n,2) == 1)
+      if (RingZZ::mod_ui(n, 2) == 1)
         {
           tmp = mult(prod, base);
           prod = tmp;
@@ -194,59 +182,39 @@ ring_elem Ring::power(const ring_elem gg, int n) const
     }
 }
 
-
-
-
-
-void Ring::mult_to(ring_elem &f, const ring_elem g) const
-{
-  f = mult(f,g);
-}
-
-void Ring::add_to(ring_elem &f, ring_elem &g) const
-{
-  f = add(f,g);
-}
-
-void Ring::subtract_to(ring_elem &f, ring_elem &g) const
-{
-  f = subtract(f,g);
-}
-
-void Ring::negate_to(ring_elem &f) const
-{
-  f = negate(f);
-}
-
+void Ring::mult_to(ring_elem &f, const ring_elem g) const { f = mult(f, g); }
+void Ring::add_to(ring_elem &f, ring_elem &g) const { f = add(f, g); }
+void Ring::subtract_to(ring_elem &f, ring_elem &g) const { f = subtract(f, g); }
+void Ring::negate_to(ring_elem &f) const { f = negate(f); }
 ring_elem Ring::remainder(const ring_elem f, const ring_elem g) const
 {
-  if (is_zero(g))
-    return f;
+  if (is_zero(g)) return f;
   return zero();
 }
 
 ring_elem Ring::quotient(const ring_elem f, const ring_elem g) const
 {
-  if (is_zero(g))
-    return g;
-  return divide(f,g);
+  if (is_zero(g)) return g;
+  return divide(f, g);
 }
 
-ring_elem Ring::remainderAndQuotient(const ring_elem f, const ring_elem g,
+ring_elem Ring::remainderAndQuotient(const ring_elem f,
+                                     const ring_elem g,
                                      ring_elem &quot) const
 {
   if (is_zero(g))
     {
-      quot = g; // zero
+      quot = g;  // zero
       return f;
     }
-  quot = divide(f,g);
+  quot = divide(f, g);
   return zero();
 }
 
 std::pair<bool, long> Ring::coerceToLongInteger(ring_elem a) const
 {
-  return std::pair<bool,long>(false, 0); // the default is that it cannot be lifted.
+  return std::pair<bool, long>(false,
+                               0);  // the default is that it cannot be lifted.
 }
 
 bool Ring::from_BigComplex(gmp_CC z, ring_elem &result) const
@@ -260,6 +228,13 @@ bool Ring::from_BigReal(gmp_RR z, ring_elem &result) const
   result = from_long(0);
   return false;
 }
+
+bool Ring::from_Interval(gmp_RRi z, ring_elem &result) const
+{
+   result = from_long(0);
+   return false;
+}
+
 bool Ring::from_double(double a, ring_elem &result) const
 {
   result = from_long(0);
@@ -285,7 +260,7 @@ ring_elem Ring::preferred_associate(ring_elem f) const
 }
 
 bool Ring::lower_associate_divisor(ring_elem &f, const ring_elem g) const
-  // Implementation for a basic ring
+// Implementation for a basic ring
 {
   if (is_zero(f))
     {
@@ -298,7 +273,8 @@ bool Ring::lower_associate_divisor(ring_elem &f, const ring_elem g) const
 void Ring::lower_content(ring_elem &result, ring_elem g) const
 // default implementation
 {
-  // The default implementation here ASSUMES that result and g are in the same ring!
+  // The default implementation here ASSUMES that result and g are in the same
+  // ring!
   if (is_zero(result)) result = g;
 }
 
@@ -311,7 +287,7 @@ ring_elem Ring::content(ring_elem f) const
 ring_elem Ring::content(ring_elem f, ring_elem g) const
 // default implementation
 {
-  lower_content(f,g);
+  lower_content(f, g);
   return f;
 }
 
@@ -319,22 +295,21 @@ ring_elem Ring::divide_by_given_content(ring_elem f, ring_elem c) const
 // default implementation
 {
   // The default implementation here ASSUMES that f and c are in the same ring!
-  return divide(f,c);
+  return divide(f, c);
 }
 
 ring_elem Ring::divide_by_content(ring_elem f) const
 {
   ring_elem c = content(f);
-  return divide_by_given_content(f,c);
+  return divide_by_given_content(f, c);
 }
 
 ring_elem Ring::split_off_content(ring_elem f, ring_elem &result) const
 {
   ring_elem c = content(f);
-  result = divide_by_given_content(f,c);
+  result = divide_by_given_content(f, c);
   return c;
 }
-
 
 void Ring::monomial_divisor(const ring_elem a, int *exp) const
 {
@@ -343,14 +318,10 @@ void Ring::monomial_divisor(const ring_elem a, int *exp) const
 
 ring_elem Ring::diff(ring_elem a, ring_elem b, int use_coeff) const
 {
-  return mult(a,b);
+  return mult(a, b);
 }
 
-bool Ring::in_subring(int nslots, const ring_elem a) const
-{
-  return true;
-}
-
+bool Ring::in_subring(int nslots, const ring_elem a) const { return true; }
 void Ring::degree_of_var(int n, const ring_elem a, int &lo, int &hi) const
 {
   lo = 0;
@@ -370,8 +341,7 @@ ring_elem Ring::divide_by_expvector(const int *exp, const ring_elem a) const
 
 ring_elem Ring::homogenize(const ring_elem f, int, int deg, M2_arrayint) const
 {
-  if (deg != 0)
-    ERROR("homogenize: no homogenization exists");
+  if (deg != 0) ERROR("homogenize: no homogenization exists");
   return f;
 }
 
@@ -380,18 +350,10 @@ ring_elem Ring::homogenize(const ring_elem f, int, M2_arrayint) const
   return f;
 }
 
-bool Ring::is_homogeneous(const ring_elem) const
-{
-  return true;
-}
-
-void Ring::degree(const ring_elem, int *d) const
-{
-  degree_monoid()->one(d);
-}
-
+bool Ring::is_homogeneous(const ring_elem) const { return true; }
+void Ring::degree(const ring_elem, int *d) const { degree_monoid()->one(d); }
 bool Ring::multi_degree(const ring_elem f, int *d) const
-  // returns true iff f is homogeneous
+// returns true iff f is homogeneous
 {
   degree_monoid()->one(d);
   return true;
@@ -401,11 +363,7 @@ void Ring::degree_weights(const ring_elem, M2_arrayint, int &lo, int &hi) const
 {
   lo = hi = 0;
 }
-int Ring::index_of_var(const ring_elem a) const
-{
-  return -1;
-}
-
+int Ring::index_of_var(const ring_elem a) const { return -1; }
 M2_arrayint Ring::support(const ring_elem a) const
 {
   M2_arrayint result = M2_makearrayint(0);
@@ -414,18 +372,16 @@ M2_arrayint Ring::support(const ring_elem a) const
 
 // These next three routines are only overridden by RRR,CCC,polynomial rings,
 // and quotient rings
-unsigned long Ring::get_precision() const
-{
-  return 0;
-}
+unsigned long Ring::get_precision() const { return 0; }
 ring_elem Ring::zeroize_tiny(gmp_RR epsilon, const ring_elem f) const
-  // Default is to return f itself.
+// Default is to return f itself.
 {
   return f;
 }
 
-void Ring::increase_maxnorm(gmp_RR norm, const ring_elem f) const
-  // If any real number appearing in f has larger absolute value than norm, replace norm.
+void Ring::increase_maxnorm(gmp_RRmutable norm, const ring_elem f) const
+// If any real number appearing in f has larger absolute value than norm,
+// replace norm.
 {
   // Default for rings not over RRR or CCC is to do nothing.
 }
@@ -433,61 +389,27 @@ void Ring::increase_maxnorm(gmp_RR norm, const ring_elem f) const
 ///////////////////////////////////
 // SumCollector: default version //
 ///////////////////////////////////
-class SumCollectorDefault : public SumCollector {
+class SumCollectorDefault : public SumCollector
+{
   const Ring *R;
   ring_elem result;
-public:
+
+ public:
   SumCollectorDefault(const Ring *R0) : R(R0), result(R->zero()) {}
   virtual ~SumCollectorDefault() {}
   virtual void add(ring_elem f) { R->add_to(result, f); }
-  virtual ring_elem getValue() { ring_elem val = result; result = R->zero(); return val; }
+  virtual ring_elem getValue()
+  {
+    ring_elem val = result;
+    result = R->zero();
+    return val;
+  }
 };
 
 SumCollector *Ring::make_SumCollector() const
 {
   return new SumCollectorDefault(this);
 }
-
-////////////////////////////////////////////
-// Translation gbvector <--> ringelem/vec //
-////////////////////////////////////////////
-// This version is valid ONLY for base rings (not QQ!)
-#if 0
-// #include "gbring.hpp"
-// Ring::trans_tag Ring::trans_type() const { return BASE; }
-//
-// ring_elem Ring::trans_to_ringelem(ring_elem coeff,
-//                                const int *exp) const
-// {
-//   return coeff;
-// }
-//
-// ring_elem Ring::trans_to_ringelem_denom(ring_elem coeff,
-//                                      ring_elem denom,
-//                                      int *exp) const
-// {
-//   // To use this, the corresponding ring MUST have division defined
-//   return this->divide(coeff, denom);
-// }
-//
-// void Ring::trans_from_ringelem(gbvectorHeap &H,
-//                                  ring_elem coeff,
-//                                  int comp,
-//                                  int *exp,
-//                                  int firstvar) const
-// {
-//   GBRing *GR = H.get_gb_ring();
-//   const FreeModule *F = H.get_freemodule();
-//
-//   gbvector *g = GR->gbvector_term_exponents(F, coeff, exp, comp);
-//
-//   H.add(g);
-// }
-#endif
-
-////////////////////////////////////////////
-/////////////////////////////////////////////////////
-
 
 // Local Variables:
 // compile-command: "make -C $M2BUILDDIR/Macaulay2/e "

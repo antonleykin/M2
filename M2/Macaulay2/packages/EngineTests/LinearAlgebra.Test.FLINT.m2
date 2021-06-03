@@ -5,8 +5,8 @@
 --------------------------------
 
 export {
-    ZZpFlint,
-    testLinearAlgebra$FLINT
+    "ZZpFlint",
+    "testLinearAlgebra$FLINT"
 }
 
 ZZpFlint = (char) ->
@@ -62,7 +62,7 @@ TEST ///
   id2 = mutableMatrix matrix(R, {{1,0},{0,1}})
   inverse m
   solve(m, id2)
-  solveLinear(m, id2)
+  -- solveLinear(m, id2)
 ///
 TEST ///
   R = ZZpFlint( 5 )
@@ -194,14 +194,14 @@ TEST ///
 ///
 
 TEST ///
-  -- largest prime < 2^62
-  R = ZZpFlint( 4611686018427387847 ) 
+  -- largest prime < 2^31
+  R = ZZpFlint( 2147483647 ) 
   testLinearAlgebra$FLINT R
 ///
 
 TEST ///
-  -- largest prime < 2^63
-  R = ZZpFlint(9223372036854775783 )
+  -- largest prime < 2^30
+  R = ZZpFlint(1073741789 )
   testLinearAlgebra$FLINT R
 ///
 

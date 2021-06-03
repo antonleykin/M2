@@ -4,68 +4,68 @@ use M2;
 use hashtables;
 
 declarations "
-   #ifdef HAVE_WINSOCK2_H
-    #include <winsock2.h>
-      /* under mingw64 winsock2.h should be included before including windows.h
-	  pthread.h includes windows.h
-	   therefore winsock2.h should be included before pthread */
-    #undef ERROR
-   #endif
-   #if USE_MYSQL
+   #ifdef WITH_MYSQL
      #include <mysql/mysql.h>
    #endif
-   #ifdef HAVE_PYTHON
-     #include <python2.5/Python.h>
-   #else
-     #define PyObject_Str(o) 0
-     #define PyString_AS_STRING(o) 0
-     #define Py_DECREF(o) 0
+   #ifdef WITH_PYTHON
+     #include <Python.h>
    #endif
    ";
 
 header "
-   #include <atomic_ops.h>
-   #include <mpfr.h>
+   #include <M2/config.h>
+   #include <M2/gc-include.h>
+   #include <M2/math-include.h>
+   #include \"distributed-packages.h\"
+
+   #define stringize0(a) #a
+   #define stringize(a) stringize0(a)
+
+   const char * M2_version () { return PACKAGE_VERSION; }
+
+   extern char timestamp[];
+   static int32_t endianness_string[2] = {0x61626364,0};
+
+   #include <boost/version.hpp>
+
+//   #include <mpfr.h>
+//   #include <mpfi.h>
+
    #include <memtailor.h>
    #include <mathic.h>
    #include <mathicgb.h>
-   #define stringize0(a) #a
-   #define stringize(a) stringize0(a)
-   #define Matrix FactoryMatrix
-   #include <factory/factory.h>
-   #undef Matrix
-   extern char timestamp[];
-   #undef ASSERT
-   #ifdef HAVE_FROBBY
-     #include <stdinc.h>		// to get version number of frobby
-     #define FROBBY_VERSION constants::version
+
+   #include <frobby.h>
+   #ifdef HAVE_FROBBY_VERSION
+     extern const char* const frobby_version;
    #else
-     #define FROBBY_VERSION \"not present\"
+     namespace constants { extern const char* const version; }
+     const char* const frobby_version = constants::version;
    #endif
-   #include <pari-c.h>
+
+   #include <mps/version.h>
+   #ifndef MPS_MAJOR_VERSION
+     #error \"MPS_MAJOR_VERSION undefined\"
+   #endif
+
+   #undef ASSERT
    #ifdef HAVE_SCSCP
      #include <scscp.h>
      void scscp_dummy() { SCSCP_sc_init(NULL,NULL); /* just to force linking with the library */ }
    #endif
-   #include <stdio.h>
-   extern unsigned int GC_version; /* in libgc.a */
-   #include <gmp.h>
+
    #include <NTL/version.h>
-   #include <factory/factoryconf.h>
+
    #undef ASSERT
-   static int32_t endianness_string[2] = {0x61626364,0};
-   #include <readline/readline.h>
-   #ifdef HAVE_GIVARO
-       #include <givaro/givconfig.h>
-   #endif
-   #ifdef HAVE_LINBOX
-       #include <linbox/linbox-config.h>
-   #endif
-   #ifdef HAVE_FLINT
-       #include <M2/gc-include.h>
-       #include <flint/flint.h>
-   #endif
-   ";
+   #include <givaro/givinit.h>
+   #include <givaro/givconfig.h>
+   Givaro::GivaroMain givaroMain;";
+
+header "
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored \"-Wconversion\"
+#include <flint/flint.h>
+#pragma GCC diagnostic pop";
 gcversion():constcharstar := Ccode(returns,"
      static char buf[40];
      unsigned x = GC_get_version();
@@ -74,38 +74,44 @@ gcversion():constcharstar := Ccode(returns,"
      unsigned micro = x & 0xff;
      if (micro == 0xff) sprintf(buf,\"%d.%d\", major, minor);
      else sprintf(buf,\"%d.%d.%d\", major, minor, micro);
-     return buf;
-     ");
+     return buf");
 
+header "#include <atomic_ops.h>";
 atomicopsversion():constcharstar := Ccode(returns,"
 #ifdef AO_VERSION_MICRO
      static char buf[40];
      sprintf(buf,\"%d.%d.%d\",AO_VERSION_MAJOR, AO_VERSION_MINOR, AO_VERSION_MICRO);
-     return buf;
+     return buf
 #else
      return \"version number not available\"
 #endif
+");
+
+header "#include <fflas-ffpack/config.h>";
+ffpackVersion():constcharstar := Ccode(constcharstar,"__FFLASFFPACK_PACKAGE_VERSION");
+
+header"
+#pragma push_macro(\"PACKAGE_VERSION\")
+#undef PACKAGE_VERSION
+#include <factory/factoryconf.h>
+const char * factory_version () { return PACKAGE_VERSION; }
+extern const char factoryVersion[]; /* extracted from factory's factory.h */
+#pragma pop_macro(\"PACKAGE_VERSION\")";
+factoryversion():constcharstar := Ccode(returns,"
+     return factory_version();
+     // the following way used to work, but now it gives 4.0.1 instead of 4.1.0:
+     //   char const * p = strrchr(factoryVersion,' ');
+     //   return p ? p+1 : factoryVersion;
      ");
 
-givaroVersion():constcharstar := Ccode(returns,"
-     #ifdef HAVE_GIVARO
-	  static char buf[40];
-	  sprintf(buf,\"%d.%d.%d\", GIVARO_MAJOR_VERSION, GIVARO_MINOR_VERSION, GIVARO_REVISION_VERSION);
-	  return buf;
-     #else
-	  return \"not present\";
-     #endif
-     ");
-factoryversion():constcharstar := Ccode(returns,"
-     extern const char factoryVersion[]; /* extracted from factory's factory.h */
-     char const * p = strrchr(factoryVersion,' ');
-     return p ? p+1 : factoryVersion;
-     ");
+header "#include <readline/readline.h>";
 readlineversion():constcharstar := Ccode(returns,"
      static char buf[8];
      sprintf(buf, \"%d.%d\", (rl_readline_version>>8)&0xff, rl_readline_version&0xff );
-     return buf;
-     ");
+     return buf");
+
+header "#include <gdbm.h>";
+gdbmversion():constcharstar := Ccode(returns, "return gdbm_version");
 
 ic := Ccode(int, "
      #if defined(__INTEL_COMPILER)
@@ -122,6 +128,9 @@ compiler := (
 	  else tostring(ic/100) + "." + tostring(ic%100)
 	  )
      else tostring(Ccode(constcharstar,"
+	    #ifdef __clang__
+	        \"clang \" __clang_version__
+	    #else
 	    #if defined(__GNUC__)
 	    #ifdef __GNUC_PATCHLEVEL__
 		 \"gcc \" stringize(__GNUC__) \".\" stringize(__GNUC_MINOR__) \".\" stringize(__GNUC_PATCHLEVEL__)
@@ -131,10 +140,11 @@ compiler := (
 	    #else
 	    \"unknown\"
 	    #endif
+	    #endif
 	    ")));
 
 setupconst("version", Expr(toHashTable(Sequence(
-   "VERSION" => Ccode(constcharstar,"PACKAGE_VERSION"),
+   "VERSION" => Ccode(constcharstar,"M2_version()"),
    "architecture" => Ccode(constcharstar,"ARCH"),
    "issue" => Ccode(constcharstar,"ISSUE"),
    "machine" => Ccode(constcharstar,"MACHINE"),
@@ -144,67 +154,43 @@ setupconst("version", Expr(toHashTable(Sequence(
    "configure arguments" => Ccode(constcharstar,"CONFIG_ARGS"),
    "compile time" => Ccode(constcharstar,"timestamp"),
    "compile node name" => Ccode(constcharstar,"NODENAME"),
-   "dumpdata" => Ccode(bool,"
-	  #if DUMPDATA
-	       haveDumpdata()
-	  #else
-	       0
-	  #endif
-	  "),
    "atomic_ops version" => atomicopsversion(),
    "gc version" => gcversion(),
    "mysql version" => Ccode(constcharstar,"
-	  #if USE_MYSQL
+	  #if WITH_MYSQL
 		   mysql_get_client_info()
 	  #else
 		   \"not present\"
 	  #endif
 	  "),
-   "givaro version" => givaroVersion(),
-   "linbox version" => Ccode(constcharstar,"
-	  #ifdef HAVE_LINBOX
-	       __LINBOX_VERSION
-	  #else
-	       \"not present\"
-	  #endif
-	  "),
+   "givaro version" => Ccode(constcharstar, "stringize(GIVARO_MAJOR_VERSION) \".\" stringize(GIVARO_MINOR_VERSION) \".\" stringize(GIVARO_REVISION_VERSION)" ),
+   "fflas_ffpack version" => ffpackVersion(),
+   "mpsolve version" => Ccode(constcharstar, "stringize(MPS_MAJOR_VERSION) \".\" stringize(MPS_MINOR_VERSION) \".\" stringize(MPS_PATCH_VERSION)" ),
    "python version" => Ccode(constcharstar,"
-	#ifdef HAVE_PYTHON
-		 PY_VERSION				      
+	#ifdef WITH_PYTHON
+		 PY_VERSION
 	#else
 		 \"not present\"
 	#endif
 	"),
+   "gdbm version" => gdbmversion(),
    "gmp version" => Ccode(constcharstar,"
-	  #ifdef __MPIR_VERSION
+	  #if USING_MPIR
 	       \"not present\"
 	  #else
 	       __gmp_version
 	  #endif
 	  "),
    "mpir version" => Ccode(constcharstar,"
-	#ifdef __MPIR_VERSION
+	#if USING_MPIR
 	     __mpir_version
 	#else
 	     \"not present\"
 	#endif
 	"),
    "ntl version" => Ccode(constcharstar,"NTL_VERSION"),
-   "frobby version" => Ccode(constcharstar,"FROBBY_VERSION"),
-   "pari version" => Ccode(constcharstar,"
-	 #ifdef HAVE_PARI
-	   get_pari_version()
-	 #else
-	   \"not present\"
-	 #endif
-	 "),
-   "flint version" => Ccode(constcharstar,"
-	 #if HAVE_FLINT
-	   FLINT_VERSION
-	 #else
-	   \"not present\"
-	 #endif
-	 "),
+   "frobby version" => Ccode(constcharstar,"frobby_version"),
+   "flint version" => Ccode(constcharstar,"flint_version"),
    "scscp version" => Ccode(constcharstar,"
 	 #ifdef HAVE_SCSCP
 	   stringize(SCSCP_VERSION_MAJOR) \".\" stringize(SCSCP_VERSION_MINOR) \".\" stringize(SCSCP_VERSION_PATCH)
@@ -212,21 +198,23 @@ setupconst("version", Expr(toHashTable(Sequence(
 	   \"not present\"
 	 #endif
 	 "),
+   "boost version" => Ccode(constcharstar,"BOOST_LIB_VERSION"),
    "memtailor version" => Ccode(constcharstar,"MEMTAILOR_VERSION_STRING"),
    "mathic version" => Ccode(constcharstar,"MATHIC_VERSION_STRING"),
    "mathicgb version" => Ccode(constcharstar,"MATHICGB_VERSION_STRING"),
    "factory version" => factoryversion(),
    "readline version" => readlineversion(),
-   "mpfr version" => Ccode(constcharstar,"mpfr_version"),
+   "mpfr version" => Ccode(constcharstar,"MPFR_VERSION_STRING"),
+   "mpfi version" => Ccode(constcharstar,"MPFI_VERSION_STRING"),
    "M2 suffix" => Ccode(constcharstar,"M2SUFFIX"),
    "executable extension" => Ccode(constcharstar,"EXEEXT"),
    "M2 name" => Ccode(constcharstar," \"M2\" M2SUFFIX EXEEXT "),
    "endianness" => Ccode(constcharstar,"(char *)endianness_string"),
    "pointer size" => Ccode(int,"sizeof(void *)"),
-   "packages" => Ccode(constcharstar,"PACKAGES"),
+   "packages" => Ccode(constcharstar,"DISTRIBUTED_PACKAGES"),
    "build" => Ccode(constcharstar,"buildsystemtype"),
    "host" => Ccode(constcharstar,"hostsystemtype"),
-   "threads" => USE_THREADS
+   "git description" => Ccode(constcharstar,"GIT_DESCRIPTION")
    ))));
 
 -- Local Variables:

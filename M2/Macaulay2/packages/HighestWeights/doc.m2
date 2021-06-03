@@ -32,7 +32,7 @@ doc ///
 	       representations.
 	       
 	       This package implements an algorithm introduced in 
-	       @HREF("http://arxiv.org/abs/1406.1900","Galetto - Propagating 
+	       @HREF("http://dx.doi.org/10.1016/j.jsc.2015.05.004","Galetto - Propagating 
 		weights of tori along free resolutions")@.
 	       The methods of this package are meant to be used in 
 	       characteristic zero.
@@ -311,8 +311,8 @@ doc ///
 	       equivariant map, instead of the highest weights decomposition.
 
 	       This method implements an algorithm introduced in 
-	       Galetto - {\it Propagating weights of tori along free 
-	       resolutions} (in preparation).
+	       @HREF("http://dx.doi.org/10.1016/j.jsc.2015.05.004","Galetto - Propagating 
+		weights of tori along free resolutions")@.
      SeeAlso
      	  setWeights
 ///
@@ -376,11 +376,11 @@ doc ///
 	       there is a basis of homogeneous weight vectors $\{e_i''\}$ 
 	       of $E$, with $v_i$ the weight of $e_i''$.
 	       Notice that the change of basis from $\{e_i\}$ to $\{e_i''\}$ is
-	       not retuned.
+	       not returned.
 	       
 	       This method implements an algorithm introduced in 
-	       Galetto - {\it Propagating weights of tori along free 
-	       resolutions} (in preparation).
+	       @HREF("http://dx.doi.org/10.1016/j.jsc.2015.05.004","Galetto - Propagating 
+		weights of tori along free resolutions")@.
 	       
 	       In the following example, the polynomial ring @TT "R"@ is the
 	       symmetric algebra over $\mathbb{C}^2 \otimes \mathbb{C}^4$, 
@@ -469,7 +469,7 @@ doc ///
 	       in $R$ are weight vectors for the action of $T$.
 	       
 	       This method can be used to obtain the decomposition into
-	       highest weight reperesentations of various objects over $R$ that
+	       highest weight representations of various objects over $R$ that
 	       carry a compatible $G$-action. These objects can be ideals in $R$,
 	       quotients of $R$ by an ideal, $R$-modules or the terms in a 
 	       complex of free $R$-modules.

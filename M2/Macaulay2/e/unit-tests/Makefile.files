@@ -7,12 +7,15 @@ SHARED_UNITTEST_CCFILES := \
 
 UNITTEST_CCFILES := \
     $(SHARED_UNITTEST_CCFILES) \
+    NCGroebnerTest \
+    PointArray \
     ARingZZTest \
     ARingQQFlintTest \
     ARingQQGmpTest \
     ARingRRTest \
     ARingCCTest \
     ARingRRRTest \
+    ARingRRiTest \
     ARingCCCTest \
     ARingZZpTest \
     ARingGFTest \
@@ -21,6 +24,7 @@ UNITTEST_CCFILES := \
     RingQQTest \
     RingTowerTest \
     DMatZZpTest \
+    ResTest \
     SubsetTest  
 
 #    RingRRRTest \

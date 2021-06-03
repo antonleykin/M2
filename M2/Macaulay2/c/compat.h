@@ -1,6 +1,9 @@
 /*		Copyright 1993 by Daniel R. Grayson		*/
 
+#ifndef __cplusplus
+#undef bool
 typedef char bool;
+#endif
 
 extern char posfmt[];
 extern char errfmt[];
@@ -58,11 +61,7 @@ extern char errfmtnc[];
 #include <stdio.h>
 #include <fcntl.h>
 
-#ifdef __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 
 /*
 # Local Variables:

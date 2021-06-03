@@ -10,33 +10,34 @@ newPackage(
 		HomePage => "http://www.math.uni-bielefeld.de/~bcalmes/"},
                 {Name => "Viktor Petrov"}
 		},
-	Headline => "Root systems and Weyl groups",
+	Headline => "root systems and Weyl groups",
+	Keywords => {"Lie Groups and Lie Algebras"},
 	AuxiliaryFiles => true,
 	PackageExports => {"Graphics"},
 	DebuggingMode => false)
 
 -- Put here the name of functions that should be visible to users
 export{
-RootSystem, 
-cartanMatrix, 
-rootSystem, rootSystemA, rootSystemB, rootSystemC, rootSystemD, rootSystemE, rootSystemF4, rootSystemG2, 
-Weight, 
-weight, 
-Root, 
-isPositiveRoot, isRoot, addRoots,
-halfSumOfRoots, reflect, simpleRoot, rootCoefficients, 
-WeylGroupElement, 
-reduce, reducedDecomposition, isReduced, coxeterLength, longestWeylGroupElement, positiveRoots, reflection, scalarProduct, eval, isReflection, whoseReflection, 
-Parabolic, WeylGroupLeftCoset, WeylGroupRightCoset, WeylGroupDoubleCoset, 
-parabolic, minimalRepresentative, isMinimalRepresentative, 
-DynkinDiagram, DynkinType, 
-dynkinDiagram, connectedComponents, endVertices, dynkinType, dynkinExponents,
-poincareSeries,
-HasseDiagram, HasseGraph, 
-hasseDiagramToGraph, hasseGraphToPicture, storeHasseGraph, loadHasseGraph,
-underBruhat, aboveBruhat,
-isLtBruhat, intervalBruhat,
-numberOfPositiveRoots, listWeylGroupElements, neutralWeylGroupElement
+"RootSystem", 
+"cartanMatrix", 
+"rootSystem", "rootSystemA", "rootSystemB", "rootSystemC", "rootSystemD", "rootSystemE", "rootSystemF4", "rootSystemG2", 
+"Weight", 
+"weight", 
+"Root", 
+"isPositiveRoot", "isRoot", "addRoots",
+"halfSumOfRoots", "reflect", "simpleRoot", "rootCoefficients", 
+"WeylGroupElement", 
+"reduce", "reducedDecomposition", "isReduced", "coxeterLength", "longestWeylGroupElement", "positiveRoots", "reflection", "scalarProduct", "eval", "isReflection", "whoseReflection", 
+"Parabolic", "WeylGroupLeftCoset", "WeylGroupRightCoset", "WeylGroupDoubleCoset", 
+"parabolic", "minimalRepresentative", "isMinimalRepresentative", 
+"DynkinDiagram", "DynkinType", 
+"dynkinDiagram", "connectedComponents", "endVertices", "dynkinType", "dynkinExponents",
+"poincareSeries",
+"HasseDiagram", "HasseGraph", 
+"hasseDiagramToGraph", "hasseGraphToPicture", "storeHasseGraph", "loadHasseGraph",
+"underBruhat", "aboveBruhat",
+"isLtBruhat", "intervalBruhat",
+"numberOfPositiveRoots", "listWeylGroupElements", "neutralWeylGroupElement"
 }
 
 -- Variables that can be modified by the user
@@ -642,7 +643,7 @@ isReduced(RootSystem,BasicList) := (R,L) ->
 	b
 	)
 
---check whether the length of the Weyl group element multplied on the left by the reflection in the list is l(w)+length of list
+--check whether the length of the Weyl group element multiplied on the left by the reflection in the list is l(w)+length of list
 isReduced(BasicList,WeylGroupElement) := (L,w) ->
 	(
 	b:=true;
@@ -928,7 +929,7 @@ poincareSeries(RootSystem,Parabolic,RingElement):=(R,P,x)->
 
 HasseDiagram = new Type of BasicList 
 
---(not used anymore, another algorithm below) compute the interval between two Weyl group elements for the Bruhat order, i.e. the set of elements w such that u<=w<=v together with the reflections involved. This is done by finding successively the "cone" of all elements i steps below u and above v until these two cones can intersect (have a row in the same lenght). Whether we go down from u or up from v is decided at each iteration (variable fromtop) according to what seems to have the least number of elements in the last computed row. Then, when the two computed cones arrive at a lenght where they can intersect, one computes if they actually do, and one goes back up (and down) using their intersection finding all elements above this intersection or below it that are in the cones.
+--(not used anymore, another algorithm below) compute the interval between two Weyl group elements for the Bruhat order, i.e. the set of elements w such that u<=w<=v together with the reflections involved. This is done by finding successively the "cone" of all elements i steps below u and above v until these two cones can intersect (have a row in the same length). Whether we go down from u or up from v is decided at each iteration (variable fromtop) according to what seems to have the least number of elements in the last computed row. Then, when the two computed cones arrive at a length where they can intersect, one computes if they actually do, and one goes back up (and down) using their intersection finding all elements above this intersection or below it that are in the cones.
 --intervalBruhat = method()
 --intervalBruhat(WeylGroupElement,WeylGroupElement):= (u,v) ->
 --	(
@@ -4404,7 +4405,7 @@ TEST ///
         set{"2"}})
     -- we should check that the links are correct too.
     -- the following is one possible answer, but it can change.  Why?!
-    {*
+    -*
       assert(G#0 == {{"12132", {{"3", 0}, {"2", 1}}}});
       assert(G#1 == {
               {"2132", {{"232", 1}, {"2", 2}}}, 
@@ -4417,7 +4418,7 @@ TEST ///
               });
       assert(G#3 == {{"12", {{"121", 0}}}, {"21", {{"1", 0}}}, {"23", {{"3", 0}}}})
       assert(G#4 == {{"2", {}}})
-      *}
+      *-
 ///
 
 doc ///

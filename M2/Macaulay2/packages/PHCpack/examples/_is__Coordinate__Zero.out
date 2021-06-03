@@ -1,22 +1,24 @@
--- -*- M2-comint -*- {* hash: -1411864467 *}
+-- -*- M2-comint -*- hash: 285553619
+Hello world from process 0 out of 1 processes
+-- COMPILE TIME: Feb 24 2021, 10:08:22
 
 i1 : R = CC[x,y];
 
 i2 : f = { x^3*y^5 + y^2 + x^2*y, x*y + x^2 - 1};
 
-i3 : fSols = solveSystem(f);
+i3 : fSols = solveSystem(f, randomSeed=>3);
 
 i4 : fSols/print
 {-1, 0}
 {1, 0}
-{.742585-.425943*ii, .270685+1.00715*ii}
-{-.894935+.624334*ii, .143333-1.14868*ii}
+{-1.59272, .964857}
 {.742585+.425943*ii, .270685-1.00715*ii}
 {-.764107, -.544612}
-{-1.59272, .964857}
 {1.33076-.335184*ii, -.62414+.513163*ii}
 {-.894935-.624334*ii, .143333+1.14868*ii}
 {1.33076+.335184*ii, -.62414-.513163*ii}
+{-.894935+.624334*ii, .143333-1.14868*ii}
+{.742585-.425943*ii, .270685+1.00715*ii}
 
 o4 = {, , , , , , , , , }
 
@@ -27,3 +29,4 @@ i5 : isCoordinateZero(fSols_0,1,1.0e-10)
 o5 = true
 
 i6 : 
+Bye world from process 0 out of 1 processes

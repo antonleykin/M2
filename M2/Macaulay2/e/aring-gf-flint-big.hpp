@@ -7,13 +7,18 @@
 
 // The following needs to be included before any flint files are included.
 #include <M2/gc-include.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 #include <flint/fq_nmod.h>
 #include <flint/flint.h>
+#pragma GCC diagnostic pop
 
 #include "aring.hpp"
 #include "buffer.hpp"
 #include "ringelem.hpp"
 
+#include <iostream>
 
 class PolynomialRing;
 class RingElement;
@@ -24,143 +29,189 @@ namespace M2 {
 \ingroup rings
 */
 
-  class ARingGFFlintBig : public RingInterface
+class ARingGFFlintBig : public RingInterface
+{
+ public:
+  static const RingID ringID = ring_GFFlintBig;
+  typedef fq_nmod_struct ElementType;
+  // this type is defined in fq_nmod.h
+  // for debugging purposes (flint version 2.5):
+  // this is nmod_poly_struct, defined in nmod_poly.h
+  // typedef struct
+  // {
+  //   mp_ptr coeffs;
+  //   slong alloc;
+  //   slong length;
+  //   nmod_t mod;
+  // } nmod_poly_struct;
+  
+  typedef ElementType elem;
+  typedef std::vector<elem> ElementContainerType;
+
+  ARingGFFlintBig(const PolynomialRing& R, const ring_elem a);
+
+  ~ARingGFFlintBig();
+
+  const fq_nmod_ctx_struct* flintContext() const { return mContext; }
+  long characteristic() const { return mCharacteristic; }
+  long dimension() const { return mDimension; }
+  const PolynomialRing& originalRing() const { return mOriginalRing; }
+  void getGenerator(ElementType& result_gen) const;
+
+  void text_out(buffer& o) const;
+
+ private:
+  fq_nmod_ctx_t mContext;
+  const PolynomialRing& mOriginalRing;   // This is a quotient ring k[a]/f(a).
+  const RingElement* mPrimitiveElement;  // element in the original ring
+  unsigned int*
+      mPPowers;  // array 0..mDimension of powers of mCharacteristic (mod 2^32)
+  long mCharacteristic;
+  long mDimension;
+  mutable flint_rand_t mRandomState;
+
+  mutable ElementType mCachedGenerator;
+  mutable bool mGeneratorComputed;
+
+  ////////////////////////////////
+  /// Arithmetic functions ///////
+  ////////////////////////////////
+
+ public:
+  unsigned int computeHashValue(const elem& a) const
   {
-  public:
-    static const RingID ringID = ring_GFFlintBig;
-    typedef nmod_poly_struct ElementType;
-    typedef ElementType elem;
+    unsigned int hash = 0;
+    long deg = nmod_poly_degree(&a);
+    for (long i = 0; i <= deg; i++)
+      hash += static_cast<unsigned int>(nmod_poly_get_coeff_ui(&a, i)) *
+              mPPowers[i];
+    // printf("computing hash value: %ld\n", hash);
+    return hash;
+  }
 
-    ARingGFFlintBig(const PolynomialRing &R,
-                    const ring_elem a);
+  void to_ring_elem(ring_elem& result, const ElementType& a) const
+  {
+    ElementType* b = getmemstructtype(ElementType*);
+    init(*b);
+    copy(*b, a);
+    result.poly_val = reinterpret_cast<Nterm*>(b);
+  }
 
-    ~ARingGFFlintBig();
+  void from_ring_elem(ElementType& result, const ring_elem& a) const
+  {
+    ElementType* b = reinterpret_cast<ElementType*>(a.poly_val);
+    copy(result, *b);
+  }
 
-    const fq_nmod_ctx_struct* flintContext() const { return mContext; }
-    long characteristic() const { return mCharacteristic; }
-    long dimension() const { return mDimension; }
+  bool is_unit(const ElementType& f) const { return not is_zero(f); }
+  bool is_zero(const ElementType& f) const
+  {
+    return fq_nmod_is_zero(&f, mContext);
+  }
+  bool is_equal(const ElementType& f, const ElementType& g) const
+  {
+    return fq_nmod_equal(&f, &g, mContext);
+  }
 
-    const PolynomialRing& originalRing() const { return mOriginalRing; }
+  int compare_elems(const ElementType& f, const ElementType& g) const;
 
-    void getGenerator(ElementType& result_gen) const;
+  void copy(ElementType& result, const ElementType& a) const
+  {
+    fq_nmod_set(&result, &a, mContext);
+  }
+  void init(ElementType& result) const { fq_nmod_init2(&result, mContext); }
+  void init_set(ElementType& result, const ElementType& a) const
+  {
+    init(result);
+    copy(result, a);
+  }
+  void set(ElementType& result, const ElementType& a) const { copy(result, a); }
+  void set_zero(ElementType& result) const { fq_nmod_zero(&result, mContext); }
+  void clear(ElementType& result) const { fq_nmod_clear(&result, mContext); }
+  void set_from_long(ElementType& result, long a) const
+  {
+    long a1 = a % characteristic();
+    if (a1 < 0) a1 += characteristic();
+    fq_nmod_set_ui(&result, a1, mContext);
+  }
 
-    void text_out(buffer &o) const;
+  void set_var(ElementType& result, int v) const
+  {
+    if (v != 0) set_from_long(result, 1);
+    std::vector<long> poly = {0, 1};
+    fromSmallIntegerCoefficients(result, poly);
+  }
 
-  private:
-    fq_nmod_ctx_t mContext;
-    const PolynomialRing& mOriginalRing; // This is a quotient ring k[a]/f(a).
-    const RingElement* mPrimitiveElement; // element in the original ring
-    unsigned int* mPPowers; // array 0..mDimension of powers of mCharacteristic (mod 2^32)
-    long mCharacteristic;
-    long mDimension;
-    mutable flint_rand_t mRandomState;
+  void set_from_mpz(ElementType& result, mpz_srcptr a) const
+  {
+    int b = static_cast<int>(mpz_fdiv_ui(a, characteristic()));
+    set_from_long(result, b);
+  }
 
-    mutable ElementType mCachedGenerator;
-    mutable bool mGeneratorComputed;
+  bool set_from_mpq(ElementType& result, mpq_srcptr a) const
+  {
+    ElementType n, d;
+    init(n);
+    init(d);
+    set_from_mpz(n, mpq_numref(a));
+    set_from_mpz(d, mpq_denref(a));
+    if (is_zero(d)) return false;
+    divide(result, n, d);
+    return true;
+  }
 
-    ////////////////////////////////
-    /// Arithmetic functions ///////
-    ////////////////////////////////
+  bool set_from_BigReal(ElementType& result, gmp_RR a) const { return false; }
+  void negate(ElementType& result, const ElementType& a) const
+  {
+    fq_nmod_neg(&result, &a, mContext);
+  }
 
-  public:
-    unsigned int computeHashValue(const elem& a) const 
-    { 
-      unsigned int hash = 0;
-      long deg = nmod_poly_degree(&a);
-      for (long i=0; i<=deg; i++)
-        hash += static_cast<unsigned int>(nmod_poly_get_coeff_ui(&a,i)) * mPPowers[i];
-      //printf("computing hash value: %ld\n", hash);
-      return hash;
-    }
+  void invert(ElementType& result, const ElementType& a) const
+  {
+    assert(not is_zero(a));
+    fq_nmod_inv(&result, &a, mContext);
+  }
 
-    void to_ring_elem(ring_elem &result, const ElementType &a) const
-    {
-      ElementType* b = getmemstructtype(ElementType*);
-      init(*b);
-      copy(*b, a);
-      result.poly_val = reinterpret_cast<Nterm*>(b);
-    }
+  void add(ElementType& result,
+           const ElementType& a,
+           const ElementType& b) const
+  {
+    fq_nmod_add(&result, &a, &b, mContext);
+  }
 
-    void from_ring_elem(ElementType &result, const ring_elem &a) const
-    {
-      ElementType* b = reinterpret_cast<ElementType*>(a.poly_val);
-      copy(result, *b);
-    }
+  void subtract(ElementType& result,
+                const ElementType& a,
+                const ElementType& b) const
+  {
+    fq_nmod_sub(&result, &a, &b, mContext);
+  }
 
-    bool is_unit(const ElementType& f) const { return not is_zero(f); }
-    bool is_zero(const ElementType& f) const { return fq_nmod_is_zero(&f, mContext); }
-    bool is_equal(const ElementType& f, const ElementType& g) const { return fq_nmod_equal(&f, &g, mContext); }
+  void subtract_multiple(ElementType& result,
+                         const ElementType& a,
+                         const ElementType& b) const
+  {
+    ElementType c;
+    init(c);
+    mult(c, a, b);
+    subtract(result, result, c);
+    clear(c);
+  }
 
-    int compare_elems(const ElementType& f, const ElementType& g) const;
+  void mult(ElementType& result,
+            const ElementType& a,
+            const ElementType& b) const
+  {
+    fq_nmod_mul(&result, &a, &b, mContext);
+  }
 
-    void copy(ElementType& result, const ElementType& a) const { fq_nmod_set(&result, &a, mContext); }
-    void init(ElementType& result) const { fq_nmod_init2(&result, mContext); }
-    void init_set(ElementType& result, const ElementType& a) const { init(result); copy(result, a); }
-    void set(ElementType& result, const ElementType& a) const { copy(result, a); }
-    void set_zero(ElementType& result) const { fq_nmod_zero(&result, mContext); }
-    void clear(ElementType& result) const { fq_nmod_clear(&result, mContext); }
-    
-    void set_from_long(ElementType& result, long a) const {
-      long a1 = a % characteristic();
-      if (a1 < 0) a1 += characteristic();
-      fq_nmod_set_ui(&result, a1, mContext);
-    }
-
-    void set_var(ElementType& result, int v) const 
-    { 
-      if (v != 0) set_from_long(result, 1);
-      std::vector<long> poly = {0,1};
-      fromSmallIntegerCoefficients(result, poly);
-    }
-
-    void set_from_mpz(ElementType& result, mpz_ptr a) const {
-      int b = static_cast<int>(mpz_fdiv_ui(a, characteristic()));
-      set_from_long(result, b);
-    }
-
-    void set_from_mpq(ElementType& result, mpq_ptr a) const {
-      ElementType n, d;
-      init(n);
-      init(d);
-      set_from_mpz(n, mpq_numref(a));
-      set_from_mpz(d, mpq_denref(a));
-      M2_ASSERT(not is_zero(d));  //TODO actually: we need to check for this...
-      divide(result,n,d);
-    }
-
-    bool set_from_BigReal(ElementType& result, gmp_RR a) const { return false; }
-    
-    void negate(ElementType& result, const ElementType& a) const { fq_nmod_neg(&result, &a, mContext); }
-
-    void invert(ElementType& result, const ElementType& a) const { 
-      M2_ASSERT(not is_zero(a)); 
-      fq_nmod_inv(&result, &a, mContext); 
-    }
-
-    void add(ElementType& result, const ElementType& a, const ElementType& b) const { fq_nmod_add(&result, &a, &b, mContext); }
-
-    void subtract(ElementType& result, const ElementType& a, const ElementType& b) const { fq_nmod_sub(&result, &a, &b, mContext); }
-
-    void subtract_multiple(ElementType& result, const ElementType& a, const ElementType& b) const
-    {
-      ElementType c;
-      init(c);
-      mult(c,a,b);
-      subtract(result,result,c);
-      clear(c);
-    }
-
-    void mult(ElementType& result, const ElementType& a, const ElementType& b) const 
-    { 
-      fq_nmod_mul(&result, &a, &b, mContext); 
-    }
-
-    void divide(ElementType& result, const ElementType& a, const ElementType& b) const 
-    {
-      // We need to handle the case when result is a, or b.
-      // This is why we use the temporary value 'c'.
-      ElementType c;
-      init(c);
+  void divide(ElementType& result,
+              const ElementType& a,
+              const ElementType& b) const
+  {
+    // We need to handle the case when result is a, or b.
+    // This is why we use the temporary value 'c'.
+    ElementType c;
+    init(c);
 #if 0
       printf("entering divide\n");
       printf("  a = ");
@@ -168,104 +219,172 @@ namespace M2 {
       printf("\n  b = ");
       fq_nmod_print_pretty(&b, mContext);
 #endif
-      M2_ASSERT(not is_zero(b));
-      invert(c,b); 
+    assert(not is_zero(b));
+    invert(c, b);
 #if 0
       printf("\n  1/b = ");
       fq_nmod_print_pretty(&c, mContext);
 #endif
-      mult(result,c,a); 
+    mult(result, c, a);
 #if 0
       printf("\n  a/b = ");
       fq_nmod_print_pretty(&result, mContext);
       printf("\n");
 #endif
-      clear(c);
-    }
+    clear(c);
+  }
 
-    void power(ElementType& result, const ElementType& a, int n) const
-    {
-      if (is_zero(a)) set_zero(result);
-      else if (n < 0)
-        {
-          invert(result, a);
-          fq_nmod_pow_ui(&result, &result, -n, mContext);
-        }
-      else
-        fq_nmod_pow_ui(&result, &a, n, mContext);
-    }
+  void power(ElementType& result, const ElementType& a, int n) const
+  {
+    if (is_zero(a))
+      set_zero(result);
+    else if (n < 0)
+      {
+        invert(result, a);
+        fq_nmod_pow_ui(&result, &result, -n, mContext);
+      }
+    else
+      fq_nmod_pow_ui(&result, &a, n, mContext);
+  }
 
-    void power_mpz(ElementType& result, const ElementType& a, mpz_ptr n) const
-    {
-      if (is_zero(a)) 
-        {
-          set_zero(result);
-          return;
-        }
-      bool neg = false;
-      if (mpz_sgn(n) < 0)
-        {
-          neg = true;
-          mpz_neg(n,n);
-          invert(result, a);
-        }
-      else copy(result, a);
+  void power_mpz(ElementType& result, const ElementType& a, mpz_srcptr n) const
+  {
+#if 0
+    std::cout << "entering GFBigFLint::power_mpz" << std::endl;
 
-      fmpz_t fn;
-      fmpz_init_set_readonly(fn, n);
-      fq_nmod_pow(&result, &result, fn, mContext);
-      fmpz_clear_readonly(fn);
-      if (neg) mpz_neg(n,n);
-    }
+    if (mGeneratorComputed)
+      {
+        std::cout << " gen: " <<  " limbs: " << mCachedGenerator.coeffs << std::endl;
+        std::cout << " gen: " <<  " alloc: " << mCachedGenerator.alloc << std::endl;
+        std::cout << " gen: " <<  " length: " << mCachedGenerator.length << std::endl;
+        std::cout << " sizeof(nmod_poly_struct) = " << sizeof(ElementType) << std::endl;
+        std::cout << " sizeof(nmod_t) = " << sizeof(nmod_t) << std::endl;
 
-    void swap(ElementType &a, ElementType &b) const
-    {
-      fq_nmod_swap(&a, &b, mContext);
-    }
+        
+      }
+    std::cout << " a: " <<  " limbs: " << a.coeffs << std::endl;
+    std::cout << " a: " <<  " alloc: " << a.alloc << std::endl;
+    std::cout << " a: " <<  " length: " << a.length << std::endl;
+#endif    
+    if (is_zero(a))
+      {
+        set_zero(result);
+        return;
+      }
+    mpz_t abs_n;
+    mpz_init(abs_n);
+#if 0    
+    mpz_set_si(abs_n, 3);
+    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+#endif
+    mpz_abs(abs_n, n);
+    //    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;    
+    ElementType base;
+    init(base);
+#if 0    
+    std::cout << " base: " <<  " limbs: " << base.coeffs << std::endl;
+    std::cout << " base: " <<  " alloc: " << base.alloc << std::endl;
+    std::cout << " base: " <<  " length: " << base.length << std::endl;
+    std::cout << " sizeof(nmod_poly_struct) = " << sizeof(ElementType) << std::endl;
+    std::cout << " sizeof(nmod_t) = " << sizeof(nmod_t) << std::endl;
+#endif    
+    if (mpz_sgn(n) < 0)
+      invert(base, a);
+    else
+      copy(base, a);
+#if 0    
+    std::cout << " base: " <<  " limbs: " << base.coeffs << std::endl;
+    std::cout << " base: " <<  " alloc: " << base.alloc << std::endl;
+    std::cout << " base: " <<  " length: " << base.length << std::endl;
+    std::cout << " sizeof(nmod_poly_struct) = " << sizeof(ElementType) << std::endl;
+    std::cout << " sizeof(nmod_t) = " << sizeof(nmod_t) << std::endl;
+#endif
+    fmpz_t fn;
+#if 1
+    fmpz_init_set_readonly(fn, abs_n);
+    // std::cout << "  about to call fq_nmod_pow" << std::endl;    
+    // std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+    fq_nmod_pow(&result, &base, fn, mContext);
+    // std::cout << "  done calling fq_nmod_pow" << std::endl;
+    // std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+    fmpz_clear_readonly(fn);
+#else
+    fmpz_init(fn);
+    fmpz_set_si(fn, 3);
 
-    void elem_text_out(buffer &o,
-                       const ElementType& a,
-                       bool p_one=true,
-                       bool p_plus=false,
-                       bool p_parens=false) const;
+    std::cout << "  about to call fq_nmod_pow" << std::endl;    
+    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+    fq_nmod_pow(&result, &base, fn, mContext);
+    std::cout << "  done calling fq_nmod_pow" << std::endl;
+    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+#endif
 
-    void syzygy(const ElementType& a, const ElementType& b,
-                ElementType &x, ElementType &y) const
-    // returns x,y s.y. x*a + y*b == 0.
-    // if possible, x is set to 1.
-    // no need to consider the case a==0 or b==0.
-    {
-      M2_ASSERT(not is_zero(a));
-      M2_ASSERT(not is_zero(b));
-      set_from_long(x, 1);
-      divide(y,a,b);
-      negate(y,y);
-    }
+#if 0
+    std::cout << "  about to clear abs_n" << std::endl;
+    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+#endif    
+    mpz_clear(abs_n);
+#if 0    
+    std::cout << " abs_n: " << static_cast<void*>(abs_n) << " limbs: " << abs_n[0]._mp_d << std::endl;
+    std::cout << "  about to clear base" << std::endl;
+#endif
+    clear(base);
+    //    std::cout << " ... leaving GFBigFLint::power_mpz" << std::endl;
+  }
 
-    void random(ElementType &result) const
-    {
-      //      printf("calling ARingGFFlintBig::random\n");
-      fq_nmod_randtest(&result, mRandomState, mContext);
-    }
+  void swap(ElementType& a, ElementType& b) const
+  {
+    fq_nmod_swap(&a, &b, mContext);
+  }
 
-    void fromSmallIntegerCoefficients(ElementType& result, const std::vector<long>& poly) const;
+  void elem_text_out(buffer& o,
+                     const ElementType& a,
+                     bool p_one = true,
+                     bool p_plus = false,
+                     bool p_parens = false) const;
 
-    void getSmallIntegerCoefficients(const ElementType& a, std::vector<long>& poly) const;
+  void syzygy(const ElementType& a,
+              const ElementType& b,
+              ElementType& x,
+              ElementType& y) const
+  // returns x,y s.y. x*a + y*b == 0.
+  // if possible, x is set to 1.
+  // no need to consider the case a==0 or b==0.
+  {
+    assert(not is_zero(a));
+    assert(not is_zero(b));
+    set_from_long(x, 1);
+    divide(y, a, b);
+    negate(y, y);
+  }
 
-    bool promote(const Ring *Rf, const ring_elem f, ElementType& result) const;
+  void random(ElementType& result) const
+  {
+    //      printf("calling ARingGFFlintBig::random\n");
+    fq_nmod_randtest(&result, mRandomState, mContext);
+  }
 
-    void lift_to_original_ring(ring_elem& result, const ElementType& f) const;
-    // GF specific routine, used in getRepresentation
-    
-    bool lift(const Ring *Rg, const ElementType& f, ring_elem &result) const;
+  void fromSmallIntegerCoefficients(ElementType& result,
+                                    const std::vector<long>& poly) const;
 
-    // map : this --> target(map)
-    //       primelem --> map->elem(first_var)
-    // evaluate map(f)
-    void eval(const RingMap *map, const ElementType& f, int first_var, ring_elem &result) const;
+  void getSmallIntegerCoefficients(const ElementType& a,
+                                   std::vector<long>& poly) const;
 
-  };
+  bool promote(const Ring* Rf, const ring_elem f, ElementType& result) const;
 
+  void lift_to_original_ring(ring_elem& result, const ElementType& f) const;
+  // GF specific routine, used in getRepresentation
+
+  bool lift(const Ring* Rg, const ElementType& f, ring_elem& result) const;
+
+  // map : this --> target(map)
+  //       primelem --> map->elem(first_var)
+  // evaluate map(f)
+  void eval(const RingMap* map,
+            const ElementType& f,
+            int first_var,
+            ring_elem& result) const;
+};
 };
 
 #endif

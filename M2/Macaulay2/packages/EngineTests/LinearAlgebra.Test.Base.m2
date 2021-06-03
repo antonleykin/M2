@@ -1,36 +1,30 @@
 -- -*- coding: utf-8 -*-
 
 
-export { jordanForm,
-    maxFLINTPrime,
-    maxFFPACKPrime,
-    testDeterminant,
-    testMult,
-    testInverse,
-    testNullspace,
-    testRank,
-    testRankProfile,
-    testSolve,
-    testLinearAlgebra,
-    testLinearAlgebraSet,
-    testLUBoundaryCases,
-    testHasEngineLinearAlgebra
+export { "jordanForm",
+    "maxFLINTPrime",
+    "maxFFPACKPrime",
+    "testDeterminant",
+    "testMult",
+    "testInverse",
+    "testNullspace",
+    "testRank",
+    "testRankProfile",
+    "testSolve",
+    "testLinearAlgebra",
+    "testLinearAlgebraSet",
+    "testLUBoundaryCases",
+    "testHasEngineLinearAlgebra"
     }
 
-
+needs "EngineTests/LinearAlgebra.Test.LU.Base.m2"
 
 debug Core;
 -----------------------------------------------------------------
 -- Test of MutableMatrix linear algebra over fields -------------
 -----------------------------------------------------------------
-maxFLINTPrime = 18446744073709551521
+maxFLINTPrime = 4294967291		    -- the largest prime less than 2^32
 maxFFPACKPrime = 33554393
-
-needsPackage "FastLinearAlgebra"
-debug FastLinearAlgebra
-
-load "EngineTests/LinearAlgebra.Test.LU.Base.m2"
-
 
 jordanBlock = (R, diag, n) -> (
     m := mutableMatrix(R,n,n);

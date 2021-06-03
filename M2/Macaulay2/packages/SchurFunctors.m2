@@ -9,14 +9,15 @@ newPackage(
 	       {Name => "Anton Leykin"},
 	       {Name => "Mauricio Velasco"}
 	       },
-	  Headline => "computations of Schur modules and maps between them",
+	  Headline => "Schur modules and maps between them",
+	  Keywords => {"Homological Algebra", "Representation Theory"},
 	  DebuggingMode => false,
 	  AuxiliaryFiles=>true
      	  )
      
-export{ schur, schurModule, Filling, 
-     straighten, printSchurModuleElement, schurModulesMap, augmentFilling, 
-     character, splitCharacter, characterRep, decomposeRep}
+export{ "schur", "schurModule", "Filling", 
+     "straighten", "printSchurModuleElement", "schurModulesMap", "augmentFilling", 
+     "character", "splitCharacter", "characterRep", "decomposeRep"}
 
 exteriorPower(List, Module) := opts -> (L,M) -> (
      if #L == 0 then exteriorPower(0,M)

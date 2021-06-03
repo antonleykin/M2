@@ -4,11 +4,69 @@
 ## Source code ###
 ##################
 
-INTERFACE2 = \
-	interrupted \
-	newdelete \
+INTERFACE2 = interrupted
+
+#  NCAlgebras/SuffixTree \
 
 INTERFACE = \
+	myalloc \
+	matrix-ncbasis \
+	M2FreeAlgebraQuotient \
+	M2FreeAlgebra \
+	NCAlgebras/Word \
+	NCAlgebras/NCReduction \
+	NCAlgebras/FreeAlgebraQuotient \
+	NCAlgebras/FreeAlgebra \
+	NCAlgebras/FreeMonoid \
+	NCAlgebras/WordTable \
+	NCAlgebras/SuffixTree \
+	NCAlgebras/NCGroebner \
+	NCAlgebras/NCF4 \
+	NCAlgebras/OverlapTable \
+	NCResolutions/nc-res-computation \
+	Polynomial \
+	monomial-collection \
+	eigen \
+	monomial-sets \
+	mutablecomplex \
+	localring \
+	bibasis/bibasis \
+	bibasis/allocator \
+	bibasis/launcher \
+	bibasis/monom \
+	bibasis/monomDL \
+	bibasis/monomDRL \
+	bibasis/monomLex \
+	bibasis/settings-manager \
+	schreyer-resolution/res-monomial-sorter \
+	schreyer-resolution/res-varpower-monomial \
+	schreyer-resolution/res-f4-monlookup \
+	schreyer-resolution/res-moninfo-dense \
+	schreyer-resolution/res-moninfo-sparse \
+	schreyer-resolution/res-moninfo \
+	schreyer-resolution/res-poly-ring \
+	schreyer-resolution/res-f4-m2-interface \
+	schreyer-resolution/res-schreyer-frame \
+	schreyer-resolution/res-f4 \
+	schreyer-resolution/res-f4-computation \
+	schreyer-resolution/res-gausser \
+	schreyer-resolution/res-gausser-ZZp \
+	schreyer-resolution/res-gausser-QQ \
+	schreyer-resolution/res-gausser-QQ-hybrid \
+	f4/f4 \
+	f4/f4-mem \
+	f4/f4-monlookup \
+	f4/f4-computation \
+	f4/f4-spairs \
+	f4/f4-m2-interface \
+	f4/hilb-fcn \
+	f4/monhashtable \
+	monsort \
+	f4/moninfo \
+	f4/ntuple-monomial \
+	f4/varpower-monomial \
+	f4/gausser \
+	betti \
 	util \
 	GF \
 	ZZ \
@@ -21,6 +79,7 @@ INTERFACE = \
 	aring-zz-flint \
 	aring-qq-flint \
 	aring-zzp-flint \
+	aring-RRi \
 	aring-RR \
 	aring-CC \
 	aring-RRR \
@@ -35,13 +94,13 @@ INTERFACE = \
 	aring \
 	schurSn \
 	schur2 \
-	spair-heap \
 	dpoly \
 	tower \
 	interreduce \
 	gb-test1 \
 	finalize \
 	NAG \
+	SLP \
 	overflow \
 	memory-status \
 	imonorder \
@@ -51,7 +110,7 @@ INTERFACE = \
 	LLL \
 	fractionfreeLU \
 	ntl-interface \
-    fplll-interface \
+	fplll-interface \
 	mat \
 	dmat \
 	coeffrings \
@@ -118,15 +177,6 @@ INTERFACE = \
 	varpower \
 	weylalg
 
-#	RRR \
-#	CCC \
-	QQ \
-#
-
-COMMANDS2 = \
-	x-monideal \
-	x-factor
-
 COMMANDS = \
 	ntl-internal \
 	ntl-debugio \
@@ -136,25 +186,39 @@ COMMANDS = \
 	ring-vecs \
         res-a2-gb \
 	engine \
-	x-aring \
-	x-monom \
-	x-monoid \
-	x-relem \
-	x-free \
-	x-mat \
-	x-gb \
-	x-ringmap \
-	x-mutablemat \
+	interface/aring \
+	interface/cra \
+	interface/factory \
+	interface/flint \
+	interface/freemodule \
+	interface/groebner \
+	interface/matrix \
+	interface/monoid \
+	interface/monomial-ideal \
+	interface/monomial-ordering \
+	interface/mutable-matrix \
+	interface/polyroots \
+	interface/random \
+	interface/ring \
+	interface/ringelement \
+	interface/ringmap \
 	franzi-gb \
 	franzi-interface
 
-NAMES_H = ringelem \
+NAMES_H = \
+	f4/f4-types \
+	f4/memblock \
+	VectorArithmetic \
+	ARingElem \
+	MemoryBlock \
+	NCAlgebras/Range \
+	ringelem \
 	style \
 	hash \
 	index \
 	res-a0-pair
 
-C_FILES = error table exptable monordering complex rand
+C_FILES = error table exptable complex
 
 D_FILES = 
 DD_FILES = #test
@@ -163,14 +227,13 @@ DD_FILES = #test
 ## end of source code files ##
 ##############################
 
-CC_FILES := $(INTERFACE) $(INTERFACE2) $(COMMANDS) $(COMMANDS2)
+CC_FILES := $(INTERFACE) $(INTERFACE2) $(COMMANDS)
 FILES := $(CC_FILES) $(C_FILES)
 LOFILES := $(addsuffix .lo,$(CC_FILES) $(C_FILES))
 ENGINE_CCFILES := $(addsuffix .cpp,$(CC_FILES))
 ENGINE_CFILES := $(addsuffix .c,$(C_FILES))
 ENGINE_DDFILES := $(addsuffix .dd,$(DD_FILES))
 ENGINE_DFILES := $(addsuffix .d,$(D_FILES))
-ENGINE_SRCFILES := $(ENGINE_CCFILES) $(ENGINE_CFILES) $(ENGINE_DDFILES) $(ENGINE_DFILES)
 ENGINE_OFILES := $(addsuffix .o,$(C_FILES) $(CC_FILES) $(D_FILES) $(DD_FILES))
 
 ifeq "$(SHARED)" "yes"
