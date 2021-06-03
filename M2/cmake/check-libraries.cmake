@@ -8,7 +8,9 @@
 
 # These are the libraries linked with Macaulay2 in Macaulay2/{e,bin}/CMakeLists.txt
 set(PKGLIB_LIST    FFLAS_FFPACK GIVARO)
-set(LIBRARIES_LIST MPSOLVE MATHICGB MATHIC MEMTAILOR FROBBY FACTORY FLINT NTL MPFR MP BDWGC LAPACK)
+
+set(LIBRARIES_LIST MPSOLVE MATHICGB MATHIC MEMTAILOR FROBBY FACTORY FLINT NTL MPFI MPFR MP BDWGC LAPACK)
+set(LIBRARIES_LIST MPSOLVE MATHICGB MATHIC MEMTAILOR FROBBY FACTORY FLINT NTL MPFI MPFR MP BDWGC LAPACK TBB)
 set(LIBRARY_LIST   READLINE HISTORY GDBM ATOMICOPS)
 
 message(CHECK_START " Checking for existing libraries and programs")
@@ -28,7 +30,9 @@ endif()
 ## Requirement	Debian package	RPM package	Homebrew package
 #   Threads	libc6-dev	glibc-headers	N/A
 #   LAPACK	libopenblas-dev	openblas-devel	N/A (Accelerate)
-#   Boost       libboost-dev    boost-devel     boost
+#   Boost	libboost-dev    boost-devel     boost (Regex and Stacktrace)
+#   TBB 	libtbb-dev	tbb-devel	tbb
+#   OpenMP	libomp-dev	libomp-devel	libomp (Optional)
 #   GDBM	libgdbm-dev	gdbm-devel	gdbm
 #   libatomic_ops libatomic_ops-dev libatomic_ops-devel libatomic_ops
 
@@ -38,16 +42,21 @@ endif()
 
 find_package(Threads	REQUIRED QUIET)
 find_package(LAPACK	REQUIRED QUIET)
-find_package(Boost	REQUIRED QUIET COMPONENTS regex ${Boost_stacktrace})
+find_package(Boost	REQUIRED QUIET COMPONENTS regex OPTIONAL_COMPONENTS stacktrace_backtrace stacktrace_addr2line)
+if(Boost_STACKTRACE_BACKTRACE_FOUND)
+  set(Boost_stacktrace_lib "Boost::stacktrace_backtrace")
+elseif(Boost_STACKTRACE_ADDR2LINE_FOUND)
+  set(Boost_stacktrace_lib "Boost::stacktrace_addr2line")
+else()
+  #fallback to header only mode
+  set(Boost_stacktrace_header_only YES)
+endif()
+
+find_package(TBB	REQUIRED QUIET) # See FindTBB.cmake
 # TODO: replace gdbm, see https://github.com/Macaulay2/M2/issues/594
 find_package(GDBM	REQUIRED QUIET) # See FindGDBM.cmake
 # TODO: replace libatomic_ops, see https://github.com/Macaulay2/M2/issues/1113
 find_package(AtomicOps	REQUIRED QUIET) # See FindAtomicOps.cmake
-
-###############################################################################
-## Optional	Debian package	RPM package 	Homebrew package
-#   OpenMP	libomp-dev	libomp-devel	libomp
-#   TBB		libtbb-dev	tbb-devel	tbb
 
 if(WITH_OMP)
   find_package(OpenMP REQUIRED)
@@ -65,12 +74,6 @@ foreach(lang IN ITEMS C CXX)
     set(OpenMP_${lang}_LDLIBS "${OpenMP_${lang}_LDLIBS} -L${_libdir} -l${_lib}")
   endforeach()
 endforeach()
-
-if(WITH_TBB)
-  # See FindTBB.cmake
-  find_package(TBB REQUIRED)
-  list(APPEND LIBRARIES_LIST TBB)
-endif()
 
 ###############################################################################
 ## Platform dependent requirements:
@@ -111,6 +114,7 @@ endforeach()
 #   bdw-gc	Boehm-Demers-Weiser conservative C/C++ Garbage Collector
 #   mpir	Multiple Precision Integers & Rationals	(needs yasm)
 #   mpfr	Multiple Precision Floating Point	(needs gmp)
+#   mpfi	Multiple Precision F.-P. Interval	(needs gmp, mpfr)
 #   ntl		Victor Shoup's Number Theory Library	(needs gmp, mpfr)
 #   flint	Fast Library for Number Theory		(needs gmp, mpfr, ntl)
 #   factory	Multivariate Polynomal Package		(needs gmp, mpfr, ntl, flint)
@@ -128,9 +132,10 @@ endforeach()
 find_package(Eigen3	3.3.0 PATHS ${M2_HOST_PREFIX})
 find_package(BDWGC	7.6.4)
 find_package(MPFR	4.0.1)
+find_package(MPFI	1.5.1)
 find_package(NTL       10.5.0)
 find_package(Flint	2.6.0)
-find_package(Factory	4.1.0)
+find_package(Factory	4.2.0)
 find_package(MPSolve	3.2.0)
 # TODO: add minimum version checks
 find_package(Frobby	0.9.0)
@@ -146,7 +151,7 @@ pkg_search_module(GIVARO	IMPORTED_TARGET	givaro>=4.1.1)
 # TODO: add FindModules for these two as well
 
 set(LIBRARY_OPTIONS
-  Eigen3 BDWGC MPIR MPFR NTL Flint Factory Frobby cddlib MPSolve
+  Eigen3 BDWGC MPIR MPFR MPFI NTL Flint Factory Frobby cddlib MPSolve
   GTest Memtailor Mathic Mathicgb GLPK Givaro FFLAS_FFPACK)
 
 ###############################################################################
@@ -173,7 +178,6 @@ endif()
 #   fplll	Lattice algorithms using floating-point arithmetic	(uses mpir and mpfr)
 #   linbox	Exact computational linear algebra	(needs fflas and givaro)
 #   arb		arbitrary-precision ball arithmetic
-#   mpfi	arbitrary-precision interval arithmetic
 ## Requested by Greg Smith for future use:
 #   cddplus	Double Description Method
 #   lrslib	vertex enumeration/convex hull problems
@@ -327,11 +331,6 @@ if(FACTORY_FOUND)
   # whether factory was built with --enable-streamio
   check_cxx_source_compiles([[#include <factory/factory.h>
     int main(){Variable x; x = Variable(); std::cout << x;return 0;}]] FACTORY_STREAMIO)
-  # whether Prem() from factory is public
-  # TODO: revert cb64eb37 once factory is updated above 4.0.3 everywhere
-  # see https://github.com/Macaulay2/M2/pull/1538#discussion_r537901750
-  check_cxx_source_compiles([[#include <factory/factory.h>
-    int main(){CanonicalForm p,q; Prem(p,q);return 0;}]] HAVE_FACTORY_PREM)
 else()
   unset(FACTORY_STREAMIO CACHE)
 endif()

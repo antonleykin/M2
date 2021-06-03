@@ -233,7 +233,7 @@ documentationValue(Symbol, Package)         := (S, pkg) -> if pkg =!= Core then 
 		                HREF{cert#"published article URI",  cert#"article title"}, ".",
 		    " That version can be obtained",
 		    " from ",   HREF{cert#"published code URI", "the journal"}, " or",
-		    " from ",   HREF{commit, ("the ", EM "Macaulay2", " source code repository")},
+		    " from ",   HREF{commit, SPAN{"the ", EM "Macaulay2", " source code repository"}},
 		    "."}}
 	    ),
 	DIV {
@@ -270,7 +270,7 @@ getOperator := key -> if operator#?key then (
     fixup DIV (
 	if binary#?key then {
 	    PARA {"This operator may be used as a binary operator in an expression like ", TT ("x" | op | "y"), ". ",
-		"The user may install ", TO "Macaulay2Doc :: binary methods", "for handling such expressions with code such as"},
+		"The user may install ", TO "Macaulay2Doc :: binary methods", " for handling such expressions with code such as"},
 	    PRE if key === symbol SPACE
 	    then "         X Y := (x,y) -> ..."
 	    else "         X "|op|" Y := (x,y) -> ...",
@@ -453,17 +453,26 @@ viewHelp = new Command from viewHelp
 -- This ensures that "methods viewHelp" and "?viewHelp" work as expected
 setAttribute(viewHelp#0, ReverseDictionary, symbol viewHelp)
 
+makeInfo := tag -> (
+    infoFile := temporaryDirectory() | toFilename format tag | ".info";
+    infoFile << "\037" << endl <<
+	"Node: Top, Up: (Macaulay2Doc)Top" << endl << endl <<
+	info help tag << endl << close;
+    infoFile
+)
+
 infoHelp = method(Dispatch => Thing)
 infoHelp Thing := key -> (
-    if key === () then return infoHelp "Macaulay2Doc";
-    rawdoc := fetchAnyRawDocumentation makeDocumentTag(key, Package => null);
-    if (tag := getOption(rawdoc, symbol DocumentTag)) =!= null
-    then (
-	tag = infoTagConvert tag;
-	if getenv "INSIDE_EMACS" == "" then chkrun ("info " | format tag)
-	-- used by M2-info-help in M2.el
-	else print("-*" | " infoHelp: " | tag | " *-");
-    ) else error("no documentation for ", format key))
+    if key === () then infoHelp "Macaulay2Doc"
+    else infoHelp makeDocumentTag key)
+infoHelp DocumentTag := tag -> (
+    rawdoc := fetchAnyRawDocumentation tag;
+    tag' := getOption(rawdoc, symbol DocumentTag);
+    infoTag := if tag' =!= null then infoTagConvert tag' else makeInfo tag;
+    if getenv "INSIDE_EMACS" == "" then chkrun ("info " | format infoTag)
+    -- used by M2-info-help in M2.el
+    else print("-*" | " infoHelp: " | infoTag | " *-")
+)
 infoHelp ZZ := i -> seeAbout(infoHelp, i)
 infoHelp = new Command from infoHelp
 -- This ensures that "methods infoHelp" and "?infoHelp" work as expected

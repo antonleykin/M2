@@ -26,8 +26,8 @@ of the License, or any later version.
 
 newPackage select((
     "Graphs",
-        Version => "0.3.3",
-        Date => "21. August 2020",
+        Version => "0.3.4",
+        Date => "May 15, 2021",
         Authors => {
             {Name => "Jack Burkart", Email => "jburkar1@nd.edu"},
             {Name => "David Cook II", Email => "dwcook@eiu.edu", HomePage => "http://ux1.eiu.edu/~dwcook/"},
@@ -40,7 +40,7 @@ newPackage select((
 	Keywords => {"Graph Theory"},
         Configuration => {
             "DotBinary" => "dot",
-            "JpgViewer" => "display"
+            "JpgViewer" => ""
             },
 	PackageImports => { "PrimaryDecomposition" },
         PackageExports => {
@@ -51,7 +51,10 @@ newPackage select((
 
 -- Load configurations
 graphs'DotBinary = if instance((options Graphs).Configuration#"DotBinary", String) then (options Graphs).Configuration#"DotBinary" else "dot";
-graphs'JpgViewer = if instance((options Graphs).Configuration#"JpgViewer", String) then (options Graphs).Configuration#"JpgViewer" else "display";
+
+importFrom_Core {"printerr"}
+if (options Graphs).Configuration#"JpgViewer" != "" then
+    printerr "warning: the \"JpgViewer\" configuration option is deprecated"
 
 -- Exports
 export {
@@ -141,7 +144,6 @@ export {
     "DFS",
     "descendants",
     "descendents",
-    "diameter",
     "distance",
     "distanceMatrix",
     "eccentricity",
@@ -395,7 +397,7 @@ displayGraph = method()
 displayGraph (String, String, Digraph) := (dotfilename, jpgfilename, G) -> (
      writeDotFile(dotfilename, G);
      runcmd(graphs'DotBinary  | " -Tjpg " | dotfilename | " -o " | jpgfilename);
-     runcmd(graphs'JpgViewer  | " " | jpgfilename|" &");
+     show URL("file://" | toAbsolutePath jpgfilename);
      )
 displayGraph (String, Digraph) := (dotfilename, G) -> (
      jpgfilename := temporaryFileName() | ".jpg";
@@ -894,7 +896,6 @@ descendants = method()
 descendants (Digraph, Thing) := Set => (D,v) -> set flatten breadthFirstSearch(D, v)
 descendents = descendants
 
-diameter = method()
 diameter Graph := ZZ => G -> (
     allEntries := flatten entries distanceMatrix G;
     if member(-1, allEntries) then infinity else max allEntries
@@ -3431,7 +3432,6 @@ doc ///
 --diameter
 doc ///
     Key
-        diameter
         (diameter, Graph)
     Headline
         Computes the diameter of a graph
@@ -3480,7 +3480,7 @@ doc ///
             G = graph({1,2,3,4},{{2,3},{3,4}});
             d = distance(G, 1, 4)
     SeeAlso
-        diameter
+        (diameter, Graph)
         distanceMatrix
 ///
 
@@ -3507,7 +3507,7 @@ doc ///
             G = digraph({1,2,3,4},{{2,3},{3,4}},EntryMode=>"edges");
             d = distanceMatrix G
     SeeAlso
-        diameter
+        (diameter, Graph)
         distance
 ///
 
@@ -4856,7 +4856,7 @@ doc ///
             graphPower(G,2)
     SeeAlso
         distance
-        diameter
+        (diameter, Graph)
 ///
 
 --strongProuduct

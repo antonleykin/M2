@@ -27,13 +27,19 @@ add_custom_target(clean-stamps
 ## Set the default compile and link flags for external projects
 
 # Preprocessor flags
-string(REPLACE ";" " " CPPFLAGS "$ENV{CPPFLAGS} ${COMPILE_OPTIONS}")
+set(CPPFLAGS "$ENV{CPPFLAGS}")
+foreach(FLAG ${COMPILE_DEFINITIONS})
+  set(CPPFLAGS "-D${FLAG} ${CPPFLAGS}")
+endforeach()
+
+# General compile flags
+string(REPLACE ";" " " COMPILEFLAGS "${COMPILE_OPTIONS}")
 
 # C compiler flags
-set(CFLAGS   "${CPPFLAGS} -w -Wimplicit -Werror")
+set(CFLAGS   "${COMPILEFLAGS} -w -Wimplicit -Werror")
 
 # C++ compiler flags
-set(CXXFLAGS "${CPPFLAGS} -std=gnu++11 -w -Wno-mismatched-tags -Wno-deprecated-register")
+set(CXXFLAGS "${COMPILEFLAGS} -std=gnu++11 -w -Wno-mismatched-tags -Wno-deprecated-register")
 
 # Linker flags
 string(REPLACE ";" " " LDFLAGS "${LINK_OPTIONS}")
@@ -292,6 +298,36 @@ ExternalProject_Add(build-mpfr
 set(MPFR_INCLUDE_DIR ${MPFR_INCLUDE_DIRS}) # TODO: make this unnecessary in d/CMakeLists.txt
 _ADD_COMPONENT_DEPENDENCY(libraries mpfr mp MPFR_FOUND)
 
+# http://perso.ens-lyon.fr/nathalie.revol/software.html
+ExternalProject_Add(build-mpfi
+  URL               https://gforge.inria.fr/frs/download.php/file/38111/mpfi-1.5.4.tgz
+  URL_HASH          SHA256=3b3938595d720af17973deaf727cfc0dd41c8b16c20adc103a970f4a43ae3a56
+  PREFIX            libraries/mpfi
+  SOURCE_DIR        libraries/mpfi/build
+  DOWNLOAD_DIR      ${CMAKE_SOURCE_DIR}/BUILD/tarfiles
+  BUILD_IN_SOURCE   ON
+  CONFIGURE_COMMAND autoreconf -vif
+            COMMAND ${CONFIGURE} --prefix=${M2_HOST_PREFIX}
+                      #-C --cache-file=${CONFIGURE_CACHE}
+                      --with-gmp=${MP_ROOT}
+                      --with-mpfr=${MPFR_ROOT}
+                      ${shared_setting}
+                      ${assert_setting}
+                      CC=${CMAKE_C_COMPILER}
+                      CFLAGS=${CFLAGS}
+                      CPPFLAGS=${CPPFLAGS}
+                      LDFLAGS=${LDFLAGS}
+  BUILD_COMMAND     ${MAKE} -j${PARALLEL_JOBS} all
+  INSTALL_COMMAND   ${MAKE} -j${PARALLEL_JOBS} install-strip
+          COMMAND   ${CMAKE_COMMAND} -E make_directory ${M2_INSTALL_LICENSESDIR}/mpfi
+          COMMAND   ${CMAKE_COMMAND} -E copy_if_different COPYING COPYING.LESSER ${M2_INSTALL_LICENSESDIR}/mpfi
+  TEST_COMMAND      ${MAKE} -j${PARALLEL_JOBS} -C tests check
+  EXCLUDE_FROM_ALL  ON
+  TEST_EXCLUDE_FROM_MAIN ON
+  STEP_TARGETS      install test
+  )
+_ADD_COMPONENT_DEPENDENCY(libraries mpfi "mp;mpfr" MPFI_FOUND)
+
 
 # http://shoup.net/ntl
 ExternalProject_Add(build-ntl
@@ -432,7 +468,8 @@ ExternalProject_Add(build-factory
   )
 if(GFTABLESDIR AND NOT EXISTS ${M2_DIST_PREFIX}/${M2_INSTALL_DATADIR}/Core/factory/gftables)
   message(STATUS "Copying gftables from ${GFTABLESDIR}/gftables")
-  file(COPY ${GFTABLESDIR}/gftables DESTINATION ${M2_DIST_PREFIX}/${M2_INSTALL_DATADIR}/Core/factory)
+  file(COPY ${GFTABLESDIR}/gftables
+    DESTINATION ${M2_DIST_PREFIX}/${M2_INSTALL_DATADIR}/Core/factory FOLLOW_SYMLINK_CHAIN)
 endif()
 _ADD_COMPONENT_DEPENDENCY(libraries factory "mp;ntl;flint" FACTORY_FOUND)
 
@@ -728,8 +765,8 @@ ExternalProject_Add(build-mathicgb
                     -DBUILD_TESTING=OFF # FIXME: ${BUILD_TESTING}
                     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                     -DCMAKE_CXX_FLAGS=${CXXFLAGS}
-                    -Dwith_tbb=${WITH_TBB}
                     -Denable_mgb=ON
+                    -Dwith_tbb=ON
   EXCLUDE_FROM_ALL  ON
   TEST_EXCLUDE_FROM_MAIN ON
   STEP_TARGETS      install test
@@ -1156,7 +1193,7 @@ if(EXISTS ${M2_HOST_PREFIX}/lib)
   file(COPY ${M2_HOST_PREFIX}/lib
     DESTINATION ${M2_DIST_PREFIX}/${M2_INSTALL_LIBDIR}/Macaulay2
     FILES_MATCHING PATTERN "*.so*" PATTERN "*.dylib*"
-    PATTERN "pkgconfig" EXCLUDE)
+    PATTERN "pkgconfig" EXCLUDE FOLLOW_SYMLINK_CHAIN)
 endif()
 
 # TODO: strip libraries and binaries

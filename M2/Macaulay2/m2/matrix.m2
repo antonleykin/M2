@@ -64,26 +64,14 @@ numeric(ZZ, Matrix) := (prec,f) -> (
      )
 numeric Matrix := f -> numeric(defaultPrecision,f)
 
--- Warning: does not return a normal form over local rings
+-- the key for reduce hooks under GlobalHookStore
+protect ReduceHooks
 reduce = (tar,rawF) -> (
     if isFreeModule tar then return rawF;
-    RP := ring tar;
-    G := presentation tar;
-    if instance(RP, LocalRing) then (
-        F := map(RP, rawF);
-        cols := for i from 0 to numColumns F - 1 list F_{i};
-        mat  := for col in cols list (
-            LocalRings := needsPackage "LocalRings";
-            liftUp := value LocalRings.Dictionary#"liftUp";
-            L := flatten entries syz(liftUp(col | G), SyzygyRows => 1);
-            if any(L, u -> isUnit promote(u, RP))
-              then map(tar, RP^1, 0)
-              else col
-              );
-        rawMatrixRemake2(raw cover tar, rawSource rawF, degree rawF, raw matrix{mat}, 0)
-        )
-    else rawF % raw gb G)
-protect symbol reduce					    -- we won't export this
+    if (C := runHooks(ReduceHooks, (tar, rawF))) =!= null then C
+    else error "reduce: no strategy implemented for this type of ring")
+
+addHook(ReduceHooks, Strategy => Default, (tar, rawF) -> rawF % raw gb presentation tar)
 
 Matrix * Number := Matrix * ZZ := (m,i) -> i * m
 Number * Matrix := (r,m) -> (
@@ -196,7 +184,7 @@ Matrix * Matrix := Matrix => (m,n) -> (
 	       then degree m + degree n
 	       else if same dif
 	       then degree m + degree n + dif#0
- 	       else toList (degreeLength R:0)
+ 	       else toList (degreeLength ring m:0)
 	       );
 	  f := m.RawMatrix * n.RawMatrix;
 	  f = rawMatrixRemake2(rawTarget f, rawSource f, deg, f, 0);
@@ -222,7 +210,7 @@ Matrix * Vector := Matrix Vector := Vector => (m,v) -> (
 expression Matrix := m -> (
     x := applyTable(entries m, expression);
     d := degrees -* cover *- target m;
-    if not all(d, i -> all(i, j -> j == 0)) then MatrixDegreeExpression {x,d, degrees source m} else MatrixExpression x
+    MatrixExpression if not all(d, i -> all(i, j -> j == 0)) then { x, Degrees=>{d, degrees source m} } else { x }
     )
 
 net Matrix := m -> net expression m
@@ -233,7 +221,7 @@ texMath Matrix := m -> texMath expression m
 describe Matrix := m -> (
     args:=(describe target m,describe source m);
     if m.?RingMap then args=append(args,describe m.RingMap);
-    args=append(args,expression if m == 0 then 0 else toExternalString \ entries m);
+    args=append(args, expression if m == 0 then 0 else entries m);
     if not all(degree m,zero) then args=append(args,expression(Degree=>degree m));
     Describe (expression map) args
     )

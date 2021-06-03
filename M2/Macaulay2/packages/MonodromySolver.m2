@@ -1,8 +1,8 @@
 -- -*- coding: utf-8 -*-
 newPackage(
 	"MonodromySolver",
-    	Version => "1.14", 
-    	Date => "Nov 2020",
+    	Version => "1.15", 
+    	Date => "May 2021",
     	Authors => {
 	     {Name => "Timothy Duff", Email => "tduff3@gatech.edu"},
 	     {Name => "Cvetelina Hill", Email => "cvetelina.hill@math.gatech.edu"},
@@ -14,12 +14,12 @@ newPackage(
     	HomePage => "http://www.math.gatech.edu/~leykin",
     	Headline => "solving polynomial systems via monodromy",
 	Keywords => {"Numerical Algebraic Geometry"},
-	PackageImports => {"PHCpack","NAGtypes"},
+	PackageImports => {"gfanInterface","NAGtypes"},
 	PackageExports => {"NumericalAlgebraicGeometry"},
 	AuxiliaryFiles => true, -- set to true if package comes with auxiliary files
   	DebuggingMode => false,		
   	--DebuggingMode => true,		 -- set to true only during development
-  	CacheExampleOutput => true
+  	CacheExampleOutput => false
 --        OptionalComponentsPresent => true --  set to true only during development
     	)
 
@@ -33,6 +33,7 @@ export{"Edges", "Graph", "Node1", "Node2", "TargetSolutionCount", "Potential", "
 debug NAGtypes
 debug NumericalAlgebraicGeometry
 debug Core
+needs "./MonodromySolver/misc.m2"
 needs "./MonodromySolver/Systems.m2"
 needs "./MonodromySolver/PointArray.m2"
 needs "./MonodromySolver/HomotopyGraphTypes.m2"
@@ -56,8 +57,5 @@ check "MonodromySolver"
 uninstallPackage "MonodromySolver"
 restart
 installPackage("MonodromySolver", RemakeAllDocumentation=>true, RerunExamples=>true)
+viewHelp MonodromySolver
 check "MonodromySolver"
-
--- Local Variables:
--- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=PackageTemplate pre-install"
--- End:
