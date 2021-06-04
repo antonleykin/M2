@@ -1,0 +1,18 @@
+HOMEPAGE = https://github.com/oneapi-src/oneTBB/
+URL = 
+VERSION = 2020_U3
+TARFILE = tbb-$(VERSION).tar.gz
+TARDIR = oneTBB-2020_U3
+PROGRAMS = 
+LIBRARIES = 
+INCLUDEFILES =
+LICENSEFILES = 
+CONFIGURECMD = :
+# BUILDOPTIONS = 
+INSTALLCMD = :
+include ../Makefile.library
+Makefile: @srcdir@/Makefile.in ; cd ../.. && ./config.status libraries/tbb/Makefile
+# Local Variables:
+# mode: makefile-gmake
+# compile-command: "make -C $M2BUILDDIR/libraries/tbb "
+# End:
