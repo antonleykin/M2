@@ -1,6 +1,6 @@
 HOMEPAGE = https://github.com/oneapi-src/oneTBB/
-URL = 
-VERSION = 2020_U3
+URL = http://macaulay2.com/Downloads/OtherSourceCode
+VERSION = v2020.3
 TARFILE = tbb-$(VERSION).tar.gz
 TARDIR = oneTBB-2020.3
 PROGRAMS = 
