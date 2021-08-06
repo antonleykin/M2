@@ -358,21 +358,6 @@ AC_SEARCH_LIBS(hstrerror,resolv)
 AC_SEARCH_LIBS(dlopen,dl)
 AC_SEARCH_LIBS(gethostbyname,nsl)
 
-AC_SUBST(HAVE_LIBTBB,no)
-AC_SUBST(LIBTBB)
-   AC_LANG(C++)
-   AC_CHECK_HEADER(tbb/tbb.h,
-      [AC_SEARCH_LIBS(TBB_runtime_interface_version,"tbb",
-	 LIBTBB=$ac_cv_search_TBB_runtime_interface_version
-	 HAVE_LIBTBB=yes,
-	 [AC_MSG_ERROR([tbb library not found])])],
-       [AC_MSG_ERROR([tbb include file (tbb.h) not found])])
-   AC_LANG(C)
-
-# the following line remove -ltbb from LIBS (only thing in LIBS so far).  It is not needed
-# for linking M2-binary.  It is used in mathicgb.
-# LIBS=
-
 AC_CHECK_FUNCS([herror error clock_gettime getaddrinfo hstrerror sync getpgrp setpgid fchmod pipe waitpid setrlimit alarm fork sigprocmask kill longjmp siglongjmp sigaction wait4 readlink lstat realpath mkdir link symlink socket accept fcntl personality ioctl])
 
 AC_SUBST(HAVE_PERSONALITY,$ac_cv_func_personality)
@@ -1152,6 +1137,7 @@ else
         [AC_MSG_RESULT([no])])
 fi
 
+
 #############################################################################
 
 PROGLIST=" $PROGLIST "
@@ -1515,6 +1501,17 @@ then if test $added_fclibs != yes
      else AC_MSG_NOTICE(using fortran compiler $FC)
      fi
 fi
+
+AC_SUBST(HAVE_LIBTBB,no)
+AC_SUBST(LIBTBB)
+   AC_LANG(C++)
+   AC_CHECK_HEADER(tbb/tbb.h,
+      [AC_SEARCH_LIBS(TBB_runtime_interface_version,"tbb",
+	 LIBTBB=$ac_cv_search_TBB_runtime_interface_version
+	 HAVE_LIBTBB=yes,
+	 [AC_MSG_ERROR([tbb library not found])])],
+       [AC_MSG_ERROR([tbb include file (tbb.h) not found])])
+   AC_LANG(C)
 
 dnl This code doesn't seem to be needed, and it wasn't ever working, anyway:
 dnl if test $BUILD_lapack = yes
