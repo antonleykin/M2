@@ -281,11 +281,11 @@ const Matrix /* or null */ *Matrix::make(const MonomialIdeal *mi)
   const Monoid *M = P->getMonoid();
   int *mon = M->make_one();
 
-  MatrixConstructor mat(P->make_FreeModule(1), mi->length());
+  MatrixConstructor mat(P->make_FreeModule(1), mi->size());
   int next = 0;
-  for (Index<MonomialIdeal> i = mi->last(); i.valid(); i--)
+  for (auto i = mi->beginAtLast(); i != mi->end(); --i)  // TODO MES: should go from last() via --i to end()...
     {
-      M->from_varpower((*mi)[i]->monom().raw(), mon);
+      M->from_varpower(i->monom().raw(), mon);
       ring_elem f =
           P->make_flat_term(P->getCoefficientRing()->from_long(1), mon);
       mat.set_entry(0, next++, f);
@@ -472,7 +472,7 @@ Matrix /* or null */ *Matrix::sub_matrix(M2_arrayint r, M2_arrayint c) const
       for (; v != NULL; v = v->next)
         if (trans[v->comp] != -1) mat.set_entry(trans[v->comp], i, v->coeff);
     }
-  deletearray(trans);
+  freemem(trans);
   return mat.to_matrix();
 }
 
@@ -664,7 +664,7 @@ Matrix *Matrix::module_tensor(const Matrix *m) const
   FreeModule *G = rows()->tensor(m->cols());
   FreeModule *G1 = m->rows()->tensor(cols());
   G->direct_sum_to(G1);
-  deleteitem(G1);
+  freemem(G1);
 
   MatrixConstructor mat(F, G, nullptr);
 
@@ -779,8 +779,8 @@ Matrix *Matrix::diff(const Matrix *m, int use_coef) const
   const FreeModule *G = G1->tensor(m->cols());
   int *deg = degree_monoid()->make_one();
   degree_monoid()->divide(m->degree_shift(), degree_shift(), deg);
-  deleteitem(F1);
-  deleteitem(G1);
+  freemem(F1);
+  freemem(G1);
 
   MatrixConstructor mat(F, G, deg);
   degree_monoid()->remove(deg);
@@ -836,7 +836,7 @@ Matrix *Matrix::lead_term(int nparts) const
 //       if (rsyz != NULL) Rsyz->remove(rsyz);
 //     }
 //   for (x=0; x<n_cols(); x++)
-//     deleteitem(mis[x]);
+//     freemem(mis[x]);
 // }
 #endif
 
@@ -901,8 +901,8 @@ out:
     int next = 0;
     for (int i = 0; i < n; i++)
       if (exp[i] > 0) result->array[next++] = i;
-    deletearray(exp);
-    deletearray(exp2);
+    freemem(exp);
+    freemem(exp2);
     return result;
   }
 
@@ -937,8 +937,8 @@ out:
     int next = 0;
     for (int i = 0; i < n; i++)
       if (exp[i] > 0) result->array[next++] = i;
-    //deletearray(exp);
-    //deletearray(exp2);
+    //freemem(exp);
+    //freemem(exp2);
     return result;    
   }
 
@@ -1088,7 +1088,7 @@ static MonomialIdeal *makemonideal(const Matrix *A)
       return nullptr;
     }
   const Monoid *M = P->getMonoid();
-  queue<Bag *> new_elems;
+  VECTOR(Bag *) new_elems;
 
   for (int i = 0; i < A->n_cols(); i++)
     {
@@ -1096,7 +1096,7 @@ static MonomialIdeal *makemonideal(const Matrix *A)
       if (v == nullptr) continue;
       Bag *b = new Bag(i);
       M->to_varpower(P->lead_flat_monomial(v->coeff), b->monom());
-      new_elems.insert(b);
+      new_elems.push_back(b);
     }
 
   MonomialIdeal *result = new MonomialIdeal(P, new_elems);
@@ -1176,9 +1176,9 @@ Matrix /* or null */ *Matrix::koszul_monomials(int nskew,
             }
         }
     }
-  deletearray(aexp);
-  deletearray(bexp);
-  deletearray(result_exp);
+  freemem(aexp);
+  freemem(bexp);
+  freemem(result_exp);
   return mat.to_matrix();
 }
 
@@ -1223,9 +1223,9 @@ Matrix /* or null */ *Matrix::koszul(const Matrix *r, const Matrix *c)
             }
         }
     }
-  deletearray(aexp);
-  deletearray(bexp);
-  deletearray(result_exp);
+  freemem(aexp);
+  freemem(bexp);
+  freemem(result_exp);
   return mat.to_matrix();
 }
 
@@ -1387,8 +1387,8 @@ Matrix *Matrix::compress() const
 //   newf->next = NULL;
 //   f = head.next;
 //
-//   deletearray(exp);
-//   deletearray(scratch_exp);
+//   freemem(exp);
+//   freemem(scratch_exp);
 //   return result;
 // }
 #endif
@@ -1733,7 +1733,7 @@ Matrix /* or null */ *Matrix::monomials(M2_arrayint vars) const
     }
 
   // Remove the garbage memory
-  deletearray(exp);
+  freemem(exp);
   M->remove(mon);
   exponent_table_free(&E);
 
@@ -1800,8 +1800,8 @@ static vec coeffs_of_vec(exponent_table *E,
             }
         }
     }
-  deletearray(exp);
-  deletearray(scratch_exp);
+  freemem(exp);
+  freemem(scratch_exp);
   M->remove(mon);
   P->vec_sort(result);
   return result;
@@ -1893,7 +1893,7 @@ MonomialIdeal *Matrix::make_monideal(
   bool coeffsZZ = (P->coefficient_type() == Ring::COEFF_ZZ &&
                    use_only_monomials_with_unit_coeffs);
   const Monoid *M = P->getMonoid();
-  queue<Bag *> new_elems;
+  VECTOR(Bag *) new_elems;
   for (int i = 0; i < n_cols(); i++)
     {
       vec v = elem(i);
@@ -1904,7 +1904,7 @@ MonomialIdeal *Matrix::make_monideal(
         continue;
       Bag *b = new Bag(i);
       M->to_varpower(P->lead_flat_monomial(w->coeff), b->monom());
-      new_elems.insert(b);
+      new_elems.push_back(b);
     }
 
   // If the base ring is a quotient ring, include these lead monomials.
@@ -1914,7 +1914,7 @@ MonomialIdeal *Matrix::make_monideal(
       if (coeffsZZ && !globalZZ->is_unit(f->coeff)) continue;
       Bag *b = new Bag(-1);
       M->to_varpower(f->monom, b->monom());
-      new_elems.insert(b);
+      new_elems.push_back(b);
     }
 
   // If the base ring has skew commuting variables, include their squares
@@ -1925,7 +1925,7 @@ MonomialIdeal *Matrix::make_monideal(
           {
             Bag *b = new Bag(-1);
             varpower::var(i, 2, b->monom());
-            new_elems.insert(b);
+            new_elems.push_back(b);
           }
     }
 
@@ -1971,7 +1971,7 @@ int Matrix::dimension1() const
         }
       for (i = 0; i < n_rows(); i++)
         if (dims[i] > result) result = dims[i];
-      deletearray(dims);
+      freemem(dims);
       return result;
     }
 }
@@ -2038,7 +2038,7 @@ gmp_RRorNull Matrix::norm(gmp_RR p) const
     }
   gmp_RRmutable nm = getmemstructtype(gmp_RRmutable);
   mpfr_init2(nm, mpfr_get_prec(p));
-  mpfr_ui_div(nm, 1, p, GMP_RNDN);
+  mpfr_ui_div(nm, 1, p, MPFR_RNDN);
   if (!mpfr_zero_p(nm))
     {
       ERROR("Lp norm only implemented for p = infinity");

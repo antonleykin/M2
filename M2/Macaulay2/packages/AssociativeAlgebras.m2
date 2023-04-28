@@ -16,6 +16,15 @@ newPackage(
     AuxiliaryFiles => true
     )
 
+-- TODO for tbb update: (Dec 2021)
+--   configure, cmake: need to set MTBB_VERSION to 2021, 2020, 0, etc.
+--     for 0, maybe we need a configure option --disable-tbb.
+--   testing=on: for cmake build, cannot compile tests at the moment
+--      for both: we commented out tests from mathicgb, need to reinstate them.
+--   run multithreaded tests for NCF4 and mgb to make sure they are actually getting speedups.
+--   add in the arena stuff? Jay's pull request to mathicgb
+--      (We would need to make the same changes for M2 usage, i.e. NCF4).
+-- 
 ---- Warning!!  This package is a current work in progress.
 ---- The interface will change (even basic things like Groebner bases and the basis command)
 ---- and more functionality is expected to be added.
@@ -212,7 +221,7 @@ freeAlgebra(Ring, BasicList) := FreeAlgebra => (A, args)  -> (
        error "expected coefficient ring handled by the engine";
    varSymbols := findSymbols toSequence varList;
    if #varSymbols == 0 then error "Expected at least one variable.";
-   (degs,degrk) := processDegrees( opts.Degrees, opts.DegreeRank, length varSymbols);
+   (degs,degrk,group) := processDegrees( opts.Degrees, opts.DegreeRank, null -* opts.DegreeGroup *-, length varSymbols);
    -- now check correctness of weights, flatten them
    wtvecs := combineWeightsAndDegree(#varSymbols, opts.Weights, degs);
    heftvec := if opts.Heft =!= null then opts.Heft
@@ -685,7 +694,7 @@ isExterior Ring := A -> (
 
 toFreeAlgebraQuotient = method()
 toFreeAlgebraQuotient Ring := FreeAlgebraQuotient => R -> (
-   --- generate the (skew)commutivity relations
+   --- generate the (skew)commutativity relations
    Q := coefficientRing R;
    gensA := new AngleBarList from ((gens R) / baseName | {Degrees=> degrees R});
    A := Q gensA;

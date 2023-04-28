@@ -442,7 +442,7 @@ void MonomialTableZZ::insert(mpz_srcptr coeff, exponents exp, int comp, int id)
  * Minimalization ***********
  ****************************/
 
-struct montable_sorter_ZZ : public std::binary_function<int, int, bool>
+struct montable_sorter_ZZ
 {
   int nvars;
   const VECTOR(mpz_srcptr) & coeffs;
@@ -595,7 +595,7 @@ void MonomialTableZZ::find_weak_generators(int nvars,
   fprintf(stderr, "\n\n");
 #endif
   /* We could return T if that is desired */
-  //  deleteitem(T);
+  //  freemem(T);
 }
 
 void MonomialTableZZ::find_strong_generators(int nvars,
@@ -633,7 +633,7 @@ void MonomialTableZZ::find_strong_generators(int nvars,
         T->insert(coeffs[*j], exps[*j], comps[*j], *j);
       }
   /* We could return T if that is desired */
-  //  deleteitem(T);
+  //  freemem(T);
 }
 
 void MonomialTableZZ::show_mon_term(FILE *fil, mon_term *t) const

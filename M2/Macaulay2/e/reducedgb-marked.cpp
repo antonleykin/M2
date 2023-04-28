@@ -15,12 +15,12 @@ MarkedGB *MarkedGB::create(const PolynomialRing *originalR0,
 MarkedGB::~MarkedGB()
 {
   delete T;
-  deletearray(leadterms);
+  freemem(leadterms);
 }
 
 void MarkedGB::set_gb(VECTOR(POLY) & polys0) {}
 
-struct MarkedGB_sorter : public std::binary_function<int, int, bool>
+struct MarkedGB_sorter
 {
   GBRing *R;
   const FreeModule *F;

@@ -185,7 +185,7 @@ class complex
   double getimaginary() const;
   bool operator==(complex);
   void operator=(complex);
-  void sprint(char*);
+  void snprint(char*, int);
 };
 
 //                                        CONSTRUCTOR
@@ -211,8 +211,8 @@ inline complex::complex(const complex& c)
 
 inline complex::complex(gmp_CC mpfrCC)
 {
-  real = mpfr_get_d(mpfrCC->re, GMP_RNDN);
-  imag = mpfr_get_d(mpfrCC->im, GMP_RNDN);
+  real = mpfr_get_d(mpfrCC->re, MPFR_RNDN);
+  imag = mpfr_get_d(mpfrCC->im, MPFR_RNDN);
 }
 
 inline void complex::operator=(complex c)
@@ -306,9 +306,9 @@ inline bool complex::operator==(complex c)
   return (real == c.real) && (imag == c.imag) ? 1 : 0;
 }
 
-inline void complex::sprint(char* s)
+inline void complex::snprint(char* s, int N)
 {
-  sprintf(s, "(%lf) + i*(%lf)", real, imag);
+  snprintf(s, N, "(%lf) + i*(%lf)", real, imag);
 }
 
 
@@ -546,8 +546,8 @@ struct Solution
   ~Solution() { release(); }
   void release()
   {
-    deletearray(x);
-    deletearray(start_x);
+    freemem(x);
+    freemem(start_x);
   }
 };
 
@@ -600,8 +600,8 @@ class PathTracker : public MutableEngineObject
             *(Hxt + i * n + j) = tt;
           }
         *(Hxt + n * n + n - 1) = complex(0.);  // last row and column
-        deletearray(SxS);
-        deletearray(TxT);
+        freemem(SxS);
+        freemem(TxT);
       }
     else
       slpHxt->evaluate(n + 1, x0t0, Hxt);

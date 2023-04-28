@@ -99,17 +99,17 @@ FreeAlgebra* FreeAlgebra::create(const Ring* K,
                                  )
 {
   assert(K != nullptr);
-  FreeMonoid *M = new FreeMonoid(names, degreeRing, degrees, wtvecs, heftVector);
+  std::shared_ptr<FreeMonoid> M (new FreeMonoid(names, degreeRing, degrees, wtvecs, heftVector));
   FreeAlgebra* result = new FreeAlgebra(K, M);
 
   return result;
 }
 
 FreeAlgebra::FreeAlgebra(const Ring* K,
-                         const FreeMonoid* M
+                         std::shared_ptr<FreeMonoid> M
                          )
   : mCoefficientRing(*K),
-    mMonoid(*M)
+    mMonoid(M)
 {
 }
 
@@ -555,7 +555,7 @@ void FreeAlgebra::mult_by_term_right(Poly& result,
                                      const ring_elem c,
                                      const Word& w) const
 {
-  IntVector tmp;
+  gc_vector<int> tmp;
   monoid().monomInsertFromWord(tmp,w);
   Monom tmpMonom(tmp.data());
   mult_by_term_right(result,f,c,tmpMonom);
@@ -586,7 +586,7 @@ void FreeAlgebra::mult_by_term_left(Poly& result,
                                     const ring_elem c,
                                     const Word& w) const
 {
-  IntVector tmp;
+  gc_vector<int> tmp;
   monoid().monomInsertFromWord(tmp,w);
   Monom tmpMonom(tmp.data());
   mult_by_term_left(result,f,c,tmpMonom);
@@ -633,7 +633,7 @@ void FreeAlgebra::mult_by_term_left_and_right(Poly& result,
                                               const Word& leftW,
                                               const Word& rightW) const
 {
-  IntVector leftTmp, rightTmp;
+  gc_vector<int> leftTmp, rightTmp;
   monoid().monomInsertFromWord(leftTmp,leftW);
   monoid().monomInsertFromWord(rightTmp,rightW);
   Monom leftTmpMonom(leftTmp.data());
@@ -648,7 +648,7 @@ void FreeAlgebra::mult_by_term_left_and_right(Poly& result,
                                               const Word& leftW,
                                               const Word& rightW) const
 {
-  IntVector leftTmp, rightTmp;
+  gc_vector<int> leftTmp, rightTmp;
   monoid().monomInsertFromWord(leftTmp,leftW);
   monoid().monomInsertFromWord(rightTmp,rightW);
   Monom leftTmpMonom(leftTmp.data());

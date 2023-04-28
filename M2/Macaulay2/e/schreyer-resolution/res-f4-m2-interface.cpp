@@ -32,7 +32,7 @@
 #include "schreyer-resolution/res-gausser.hpp"            // for ResGausser
 #include "schreyer-resolution/res-moninfo.hpp"            // for ResMonoid
 #include "schreyer-resolution/res-monomial-types.hpp"     // for res_monomia...
-#include "schreyer-resolution/res-poly-ring.hpp"          // for poly_iter
+#include "schreyer-resolution/res-poly-ring.hpp"          // for ResPolynomialIterator
 #include "schreyer-resolution/res-schreyer-frame.hpp"     // for SchreyerFrame
 #include "schreyer-resolution/res-schreyer-order.hpp"     // for ResSchreyer...
 #include "timing.hpp"                                     // for timer, seconds
@@ -201,7 +201,7 @@ void ResGausserQQHybrid::from_ring_elem(CoefficientVector& result,
 void ResF4toM2Interface::from_M2_vec(const ResPolyRing& R,
                                      const FreeModule* F,
                                      vec v,
-                                     poly& result)
+                                     ResPolynomial& result)
 {
   const PolynomialRing* origR = F->get_ring()->cast_to_PolynomialRing();
   const Monoid* M = origR->getMonoid();
@@ -244,13 +244,13 @@ void ResF4toM2Interface::from_M2_vec(const ResPolyRing& R,
       n++;
     }
 
-  poly_constructor::setPolyFromArrays(result, n, coeffs, monoms);
+  ResPolynomialConstructor::setPolyFromArrays(result, n, coeffs, monoms);
   GR->gbvector_remove(f);
   delete[] exp;
 }
 
 vec ResF4toM2Interface::to_M2_vec(const ResPolyRing& R,
-                                  const poly& f,
+                                  const ResPolynomial& f,
                                   const FreeModule* F)
 {
   const PolynomialRing* origR = F->get_ring()->cast_to_PolynomialRing();
@@ -435,11 +435,11 @@ MutableMatrix* ResF4toM2Interface::to_M2_MutableMatrix(SchreyerFrame& C,
     {
       // Now we create the polynomials for column j
       // into 'comps', 'last'.
-      const poly& f = (*j1).mSyzygy;
+      const ResPolynomial& f = (*j1).mSyzygy;
       for (int i = 0; i < nrows; i++)
         {
           comps[i] = nullptr;
-          last[i] = nullptr;  // used to easily placce monomials in the correct
+          last[i] = nullptr;  // used to easily place monomials in the correct
                               // bin, at the end of the polynomials.
         }
       const res_monomial_word* w = f.monoms.data();
@@ -469,8 +469,8 @@ MutableMatrix* ResF4toM2Interface::to_M2_MutableMatrix(SchreyerFrame& C,
     }
 
   delete[] exp;
-  deletearray(comps);
-  deletearray(last);
+  freemem(comps);
+  freemem(last);
   return result;
 }
 
@@ -511,8 +511,8 @@ MutableMatrix* ResF4toM2Interface::to_M2_MutableMatrix(SchreyerFrame& C,
     {
       if (p->mDegree != degree) continue;
       auto& f = p->mSyzygy;
-      auto end = poly_iter(C.ring(), f, 1);
-      auto i = poly_iter(C.ring(), f);
+      auto end = ResPolynomialIterator(C.ring(), f, 1);
+      auto i = ResPolynomialIterator(C.ring(), f);
       for (; i != end; ++i)
         {
           long comp = C.monoid().get_component(i.monomial());
@@ -582,8 +582,8 @@ public:
       {
         if (p->mDegree != mDegree) continue;
         auto& f = p->mSyzygy;
-        auto end = poly_iter(mSchreyerFrame.ring(), f, 1);
-        auto i = poly_iter(mSchreyerFrame.ring(), f);
+        auto end = ResPolynomialIterator(mSchreyerFrame.ring(), f, 1);
+        auto i = ResPolynomialIterator(mSchreyerFrame.ring(), f);
 
         for (; i != end; ++i)
           {
@@ -646,8 +646,8 @@ public:
           if (mIter->mDegree == mGenerator.mDegree) break;
         }
       auto& f = mIter->mSyzygy;
-      auto end = poly_iter(mGenerator.mSchreyerFrame.ring(), f, 1);
-      auto i = poly_iter(mGenerator.mSchreyerFrame.ring(), f);
+      auto end = ResPolynomialIterator(mGenerator.mSchreyerFrame.ring(), f, 1);
+      auto i = ResPolynomialIterator(mGenerator.mSchreyerFrame.ring(), f);
 
       for (; i != end; ++i)
         {
@@ -849,28 +849,16 @@ int SchreyerFrame::rank(int slanted_degree, int lev)
     }
   int rkSparse = -1;
   int rkDense = -1;
-  if (frac_nonzero <= .02)
-    rkSparse = rankUsingSparseMatrix(D);
-  if (frac_nonzero >= .01)
+  if (frac_nonzero <= .007)
+    {
+      rkSparse = rankUsingSparseMatrix(D);
+      return rkSparse;
+    }
+  else
     {
       rkDense = rankUsingDenseMatrix(D);
-      int rkDense1B = rankUsingDenseMatrix(D, true);
-      int rkDense2 = rankUsingDenseMatrixFlint(D);
-      int rkDense3 = rankUsingDenseMatrixFlint(D, true);
-      if (rkDense != rkDense2 or rkDense != rkDense3 or rkDense != rkDense1B)
-        {
-          std::cout << "ERROR!! dense ranks(" << slanted_degree << "," << lev << ") = " << rkDense
-                    << " and " << rkDense2 << " and " << rkDense3 << " and " << rkDense1B << std::endl;
-        }
+      return rkDense;
     }
-      
-  if (rkSparse >= 0 and rkDense >= 0 and rkSparse != rkDense)
-    {
-      std::cout << "ERROR!! ranks(" << slanted_degree << "," << lev << ") = " << rkSparse
-                << " and " << rkDense << std::endl;
-    }
-
-  return (rkSparse >= 0 ? rkSparse : rkDense);
 }
 
 M2_arrayint rawMinimalBetti(Computation* C,

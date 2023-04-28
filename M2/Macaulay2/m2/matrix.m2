@@ -1,6 +1,8 @@
 --		Copyright 1995-2002 by Daniel R. Grayson and Michael Stillman
 -- methods of "map" with a RawMatrix replace "getMatrix", which was a private function
 
+needs "modules.m2"
+
 oops := R -> error (
      if degreeLength R === 1
      then "expected degree to be an integer or list of integers of length 1"
@@ -73,19 +75,14 @@ reduce = (tar,rawF) -> (
 
 addHook(ReduceHooks, Strategy => Default, (tar, rawF) -> rawF % raw gb presentation tar)
 
-Matrix * Number := Matrix * ZZ := (m,i) -> i * m
-Number * Matrix := (r,m) -> (
-     S := ring m;
-     try r = promote(r,S) else error "can't promote scalar to ring of matrix";
-     map(target m, source m, reduce(target m, raw r * raw m)))
 InfiniteNumber * Matrix := (r,m) -> (map(target m, source m, matrix(r*(entries m))))
 Matrix * InfiniteNumber := (m,r) -> r*m
+Number * Matrix :=
 RingElement * Matrix := (r,m) -> (
-     r = promote(r,ring m);
+    if ring r =!= ring m then try r = promote(r,ring m) else m = promote(m,ring r);
      map(target m, source m, reduce(target m, raw r * raw m)))
-Matrix * RingElement := (m,r) -> (
-     r = promote(r,ring m);
-     map(target m, source m, reduce(target m, raw m * raw r)))
+Matrix * Number :=
+Matrix * RingElement := (m,r) -> r*m
 
 toSameRing = (m,n) -> (
      if ring m =!= ring n then (
@@ -207,10 +204,20 @@ Matrix * Vector := Matrix Vector := Vector => (m,v) -> (
      u := m * v#0;
      new target u from {u})
 
+blocks := m -> if m.cache.?components then flatten apply(m.cache.components,blocks) else { rank m }
+
+protect Blocks
+blockMatrixForm=false;  -- governs expression Matrix inclusion of blocks
 expression Matrix := m -> (
     x := applyTable(entries m, expression);
     d := degrees -* cover *- target m;
-    MatrixExpression if not all(d, i -> all(i, j -> j == 0)) then { x, Degrees=>{d, degrees source m} } else { x }
+    if not all(d, i -> all(i, j -> j == 0)) then x=append(x,Degrees=>{d, degrees source m});
+    if blockMatrixForm then (
+    	b1 := blocks target m;
+    	b2 := blocks source m;
+    	if #b1>1 or #b2>1 then x=append(x,Blocks=>{b1,b2});
+	);
+    MatrixExpression x
     )
 
 net Matrix := m -> net expression m
@@ -298,6 +305,7 @@ Module.directSum = args -> (
 	  N.cache.components = toList args;
 	  N.cache.formation = FunctionApplication (directSum, args);
 	  N)
+Module ^ ZZ := Module => (M, i) -> if i > 0 then Module.directSum (i:M) else 0*M
 
 single := v -> (
      if not same v 

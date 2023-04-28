@@ -265,7 +265,7 @@ void MonomialTable::insert(exponents exp, int comp, int id)
  * Minimalization ***********
  ****************************/
 
-struct sorter : public std::binary_function<exponents, exponents, bool>
+struct sorter
 {
   int nvars;
   const VECTOR(exponents) & exps;
@@ -360,7 +360,7 @@ void MonomialTable::minimalize(int nvars,
       first = next;
       /* At this point: [first,next) is the range of equal monomials */
     }
-  deleteitem(T);
+  freemem(T);
 }
 
 MonomialTable *MonomialTable::make_minimal(int nvars,

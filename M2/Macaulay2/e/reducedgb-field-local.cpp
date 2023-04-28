@@ -15,7 +15,9 @@ ReducedGB_Field_Local::ReducedGB_Field_Local(GBRing *R0,
                                              const FreeModule *F0,
                                              const FreeModule *Fsyz0,
                                              const GBWeight *wt0)
-    : ReducedGB_Field(R0, originalR0, F0, Fsyz0), T1(0), wt(wt0)
+    : ReducedGB_Field(R0, originalR0, F0, Fsyz0),
+      T1(nullptr),
+      wt(wt0)
 {
   // fprintf(stderr, "creating GB with local order\n");
   if (wt == 0) wt = new GBWeight(F0, 0);
@@ -37,7 +39,6 @@ ReducedGB_Field_Local::ReducedGB_Field_Local(GBRing *R0,
 }
 
 struct ReducedGB_Field_Local_sorter
-    : public std::binary_function<int, int, bool>
 {
   GBRing *R;
   const FreeModule *F;

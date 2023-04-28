@@ -19,7 +19,6 @@
 #include "aring-zzp-ffpack.hpp"
 #include "aring-qq.hpp"
 #include "aring-m2-gf.hpp"
-#include "aring-gf-givaro.hpp"
 #include "aring-gf-flint-big.hpp"
 #include "aring-gf-flint.hpp"
 #include "aring-tower.hpp"
@@ -111,6 +110,13 @@ inline bool get_from_double(const ARingRRR& R,
 {
   return R.set_from_double(a, b);
 }
+  
+inline bool get_from_double(const ARingRRi& R,
+                            ARingRRi::ElementType& a,
+                            double b)
+{
+   return R.set_from_double(a, b);
+}  
     
 inline bool get_from_Interval(const ARingRRi& R,
                               ARingRRi::ElementType& a,

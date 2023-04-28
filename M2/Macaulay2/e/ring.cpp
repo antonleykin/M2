@@ -22,7 +22,7 @@ ARingZZ* makeIntegerRing()
 
 const CoefficientRingR *Ring::getCoefficientRingR() const
 {
-  if (cR == 0) cR = new CoefficientRingR(this);
+  if (cR == nullptr) cR = new CoefficientRingR(this);
   return cR;
 }
 
@@ -34,7 +34,7 @@ void Ring::initialize_ring(long P0,
   // If this is a basic routine, K = this, M = trivial monoid.
   // If this is a frac field, K = R, M = trivial monoid.
   mCharacteristic = P0;
-  if (DR == 0)
+  if (DR == nullptr)
     degree_ring = PolyRing::get_trivial_poly_ring();
   else
     degree_ring = DR;
@@ -98,22 +98,40 @@ ring_elem Ring::var(int v) const
   return zeroV;
 }
 
+/// @brief Exponentiation. This is the default function, if a class doesn't
+/// define this.
+//
+//  The method used is successive squaring.
+//  Which classes actually use this?
 ring_elem Ring::power(const ring_elem gg, mpz_srcptr m) const
 {
   ring_elem ff = gg;
-  int cmp = mpz_sgn(m);
+  int cmp = mpz_sgn(m);  // the sign of m, <0, ==0, >0
   if (cmp == 0) return one();
   mpz_t n;
   mpz_init_set(n, m);
+  // @TODO MES: rewrite this so it inverts before creating n.
+  // That way we don't have to catch any exceptions here.
+  // e.g. as
+#if 0  
+  if (cmp < 0)
+    ff = invert(ff);
+  mpz_init_set(n, m);
+  mpz_t n;
+  if (cmp < 0)
+    mpz_neg(n, n);
+#endif
   if (cmp < 0)
     {
       mpz_neg(n, n);
-      ff = invert(ff);
+      ff = invert(
+          ff);  // this can raise an exception, in which case we need to free n.
       if (is_zero(ff))
         {
           ERROR(
               "either element not invertible, or no method available to "
               "compute its inverse");
+          mpz_clear(n);
           return ff;
         }
     }
@@ -144,6 +162,7 @@ ring_elem Ring::power(const ring_elem gg, mpz_srcptr m) const
 
 ring_elem Ring::power(const ring_elem gg, int n) const
 {
+  // TODO: reorganize to match the above routine (but using an int).
   ring_elem ff = gg;
   if (n == 0) return one();
   if (n < 0)
@@ -170,10 +189,7 @@ ring_elem Ring::power(const ring_elem gg, int n) const
           prod = tmp;
         }
       n >>= 1;
-      if (n == 0)
-        {
-          return prod;
-        }
+      if (n == 0) { return prod; }
       else
         {
           tmp = mult(base, base);
@@ -183,8 +199,11 @@ ring_elem Ring::power(const ring_elem gg, int n) const
 }
 
 void Ring::mult_to(ring_elem &f, const ring_elem g) const { f = mult(f, g); }
-void Ring::add_to(ring_elem &f, ring_elem &g) const { f = add(f, g); }
-void Ring::subtract_to(ring_elem &f, ring_elem &g) const { f = subtract(f, g); }
+void Ring::add_to(ring_elem &f, const ring_elem &g) const { f = add(f, g); }
+void Ring::subtract_to(ring_elem &f, const ring_elem &g) const
+{
+  f = subtract(f, g);
+}
 void Ring::negate_to(ring_elem &f) const { f = negate(f); }
 ring_elem Ring::remainder(const ring_elem f, const ring_elem g) const
 {
@@ -231,8 +250,8 @@ bool Ring::from_BigReal(gmp_RR z, ring_elem &result) const
 
 bool Ring::from_Interval(gmp_RRi z, ring_elem &result) const
 {
-   result = from_long(0);
-   return false;
+  result = from_long(0);
+  return false;
 }
 
 bool Ring::from_double(double a, ring_elem &result) const

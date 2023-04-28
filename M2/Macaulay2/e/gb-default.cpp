@@ -107,6 +107,10 @@ void gbA::initialize(const Matrix *m,
   // 10 is best so far (125.33 sec, 527 MB virtual).
   // 50 is faster/smaller than 100, and 1000 was awful, on 3-andersbuch
 
+  ringtable = nullptr;
+  ringtableZZ = nullptr;
+  first_gb_element = 0;
+  
   max_reduction_count = max_reduction_count0;
 
   const PolynomialRing *origR = m->get_ring()->cast_to_PolynomialRing();
@@ -154,8 +158,8 @@ void gbA::initialize(const Matrix *m,
   hilb_new_elems = false;
   hilb_n_in_degree = 0;
   n_saved_hilb = 0;
-  hf_orig = 0;
-  hf_diff = 0;
+  hf_orig = nullptr;
+  hf_diff = nullptr;
 
   this_degree = _F->lowest_primary_degree() - 1;
   npairs = 0;
@@ -423,6 +427,7 @@ gbA::spair *gbA::spair_node()
 {
   spair *result = reinterpret_cast<spair *>(spair_stash->new_elem());
   result->next = 0;
+  result->lead_of_spoly = 0;
   return result;
 }
 
@@ -513,31 +518,32 @@ gbA::spair *gbA::spair_make_ring(int i, int j)
 
 void gbA::spair_text_out(buffer &o, spair *p)
 {
-  char s[100];  // enough room for all of the non polynomial cases.
+  const int N = 1000;
+  char s[N];  // enough room for all of the non polynomial cases.
   switch (p->type)
     {
       case SPAIR::SPAIR_GCD_ZZ:
-        sprintf(s, "spairgcd(g%d,g%d)", p->x.pair.j, p->x.pair.i);
+        snprintf(s, N, "spairgcd(g%d,g%d)", p->x.pair.j, p->x.pair.i);
         o << s;
-        sprintf(s, " deg(%d)", p->deg);
+        snprintf(s, N, " deg(%d)", p->deg);
         o << s;
         o << " lcm[";
         for (int i = 0; i < _nvars + 2; i++)
           {
-            sprintf(s, "%d ", p->lcm[i]);
+            snprintf(s, N, "%d ", p->lcm[i]);
             o << s;
           }
         o << "]";
         break;
       case SPAIR::SPAIR_SPAIR:
-        sprintf(s, "spair(g%d,g%d):", p->x.pair.j, p->x.pair.i);
+        snprintf(s, N, "spair(g%d,g%d):", p->x.pair.j, p->x.pair.i);
         o << s;
-        sprintf(s, " deg %d", p->deg);
+        snprintf(s, N, " deg %d", p->deg);
         o << s;
         o << " lcm exponents [";
         for (int i = 0; i < _nvars + 2; i++)
           {
-            sprintf(s, "%d ", p->lcm[i]);
+            snprintf(s, N, "%d ", p->lcm[i]);
             o << s;
           }
         o << "]";
@@ -551,11 +557,11 @@ void gbA::spair_text_out(buffer &o, spair *p)
         R->gbvector_text_out(o, _F, p->f(), 3);
         break;
       case SPAIR::SPAIR_RING:
-        sprintf(s, "rpair(%d,%d)", p->x.pair.i, p->x.pair.j);
+        snprintf(s, N, "rpair(%d,%d)", p->x.pair.i, p->x.pair.j);
         o << s;
         break;
       case SPAIR::SPAIR_SKEW:
-        sprintf(s, "skewpair(g%d,g%d)", p->x.pair.j, p->x.pair.i);
+        snprintf(s, N, "skewpair(g%d,g%d)", p->x.pair.j, p->x.pair.i);
         o << s;
         break;
       default:
@@ -672,8 +678,8 @@ gbA::spairs::iterator gbA::choose_pair(gbA::spairs::iterator first,
   return first; /* MES: really do something here... */
 }
 
+namespace {
 struct spair_sorter
-    : public std::binary_function<gbA::spair *, gbA::spair *, bool>
 {
   int nvars;
   spair_sorter(int nv) : nvars(nv) {}
@@ -699,6 +705,7 @@ struct spair_sorter
     return result;
   }
 };
+}; // unnamed namespace
 
 class SPolySorter
 {
@@ -2158,9 +2165,10 @@ void gbA::insert_gb(POLY f, gbelem_type minlevel)
     }
   else if (M2_gbTrace >= 5)
     {
-      char s[100];
+      const int N = 100;
+      char s[N];
       buffer o;
-      sprintf(s, "new-inserting element %d (minimal %d): ", me, minlevel);
+      snprintf(s, N, "new-inserting element %d (minimal %d): ", me, minlevel);
       o << s;
       R->gbvector_text_out(o, _F, g->g.f);
       emit_line(o.str());
@@ -2232,9 +2240,10 @@ void gbA::replace_gb_element_ZZ(MonomialTableZZ::mon_term *t)
     }
   else if (M2_gbTrace >= 5)
     {
-      char s[100];
+      const int N = 100;
+      char s[N];
       buffer o;
-      sprintf(s,
+      snprintf(s, N,
               "replacing-inserting element %d (minimal %d replacing %d): ",
               me,
               g->minlevel,
@@ -2460,7 +2469,7 @@ void gbA::do_computation()
                         hilb_comp::coeff_of(hf_diff, this_degree);
                     if (error())
                       {
-                        // The previous line can give an error, which measn that
+                        // The previous line can give an error, which means that
                         // the Hilbert
                         // function declared was actually incorrect.
                         set_status(COMP_ERROR);

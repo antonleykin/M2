@@ -89,7 +89,6 @@ INTERFACE = \
 	aring-gf-flint \
 	aring-m2-gf \
 	aring-zzp \
-	aring-gf-givaro \
 	aring-zzp-ffpack \
 	aring \
 	schurSn \
@@ -97,7 +96,6 @@ INTERFACE = \
 	dpoly \
 	tower \
 	interreduce \
-	gb-test1 \
 	finalize \
 	NAG \
 	SLP \
@@ -184,7 +182,7 @@ COMMANDS = \
 	matrix-symm \
 	matrix-sort \
 	ring-vecs \
-        res-a2-gb \
+	res-a2-gb \
 	engine \
 	interface/aring \
 	interface/cra \
@@ -206,6 +204,7 @@ COMMANDS = \
 	franzi-interface
 
 NAMES_H = \
+	m2tbb \
 	f4/f4-types \
 	f4/memblock \
 	VectorArithmetic \
@@ -215,7 +214,6 @@ NAMES_H = \
 	ringelem \
 	style \
 	hash \
-	index \
 	res-a0-pair
 
 C_FILES = error table exptable complex

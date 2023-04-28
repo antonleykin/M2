@@ -1,5 +1,12 @@
 --		Copyright 1995-2002 by Daniel R. Grayson
 
+-- TODO: needs "newring.m2" for flattenRing
+needs "galois.m2"
+needs "matrix1.m2"
+needs "modules.m2"
+needs "modules2.m2"
+needs "mutablemat.m2"
+
 RingMap = new Type of HashTable
 
 RingMap.synonym = "ring map"
@@ -129,11 +136,7 @@ map(Ring,Ring) := RingMap => opts -> (S,R) -> map(S,R,{},opts)
 
 Ring#id = (R) -> map(R,R,vars R)
 
-RingMap#{Standard,AfterPrint} = RingMap#{Standard,AfterNoPrint} = f -> (
-     << endl;				  -- double space
-     << concatenate(interpreterDepth:"o") << lineNumber << " : " << class f;
-     << " " << target f << " <--- " << source f << endl;
-     )
+RingMap#AfterPrint = RingMap#AfterNoPrint = f ->  (class f, " ", new MapExpression from {target f,source f})
 
 RingMap RingElement := RingElement => fff := (p,m) -> (
      R := source p;
@@ -148,8 +151,9 @@ RingMap Number := (p,m) -> fff(p, promote(m,source p))
 RingMap Matrix := Matrix => (p,m) -> (
      R := source p;
      S := target p;
-     if R =!= ring m 
-     then error "expected source of ring map to be the same as ring of matrix";
+     if R =!= ring m then (
+	  m = try promote(m,R) else error "ring of matrix not source of ring map, and not promotable to it";
+	  );
      F := p target m;
      E := p source m;
      map(F,E,map(S,rawRingMapEval(raw p, raw cover F, raw m)), Degree => p.cache.DegreeMap degree m))
@@ -239,11 +243,12 @@ kernel RingMap := Ideal => opts -> (cacheValue (symbol kernel => opts)) (
 	       SS := ring graph;
 	       chh := checkHilbertHint graph;
 	       if chh then (
-		   hf := poincare (target f)^1;
-		   T := (ring hf)_0;
-		   degs := degrees source graph;
-		   hf = hf * product(numgens source graph, i -> 1 - T^(degs#i#0));
-		   (cokernel graph).cache.poincare = hf;
+		   -- compare with pushNonLinear
+		   hf := poincare module target f;
+		   T := degreesRing SS;
+		   hf = hf * product(degrees source graph, d -> 1 - T_d);
+		   -- cache poincare
+		   poincare cokernel graph = hf;
 		   );
 	       mapback := map(R, ring graph, map(R^1, R^n1, 0) | vars R);
 	       G := gb(graph,opts);
@@ -267,7 +272,7 @@ kernel RingMap := Ideal => opts -> (cacheValue (symbol kernel => opts)) (
 	       k = F.baseRings#(numsame-1);
 	       (R',p) := flattenRing(R, CoefficientRing => k);
 	       (F',r) := flattenRing(F, CoefficientRing => k);
-	       if R' === R and F' === F then error "kernel Ringmap: not implemented yet";
+	       if R' === R and F' === F then error "kernel RingMap: not implemented yet";
 	       p^-1 kernel (r * f * p^-1))))
 
 coimage RingMap := QuotientRing => f -> f.source / kernel f
@@ -337,7 +342,7 @@ sub2 = (S,R,v) -> (				   -- S is the target ring or might be null, meaning targ
      local dummy;
      g := generators R;
      A := R;
-     while try (A = coefficientRing A; true) else false
+     while try (A = if instance(A,FractionField) then frac coefficientRing A else coefficientRing A; true) else false
      do g = join(g, generators A);
      h := new MutableHashTable;
      for i from 0 to #g-1 do h#(g#i) = if h#?(g#i) then (h#(g#i),i) else 1:i;
@@ -347,11 +352,12 @@ sub2 = (S,R,v) -> (				   -- S is the target ring or might be null, meaning targ
 	  if class opt =!= Option or #opt =!= 2 then error "expected a list of options";
 	  x := opt#0;
 	  y := opt#1;
+	  if instance(y, Constant) then y = numeric y;
 	  if not instance(y,RingElement) and not instance(y,Number) then error "expected substitution values to be ring elements or numbers";
 	  if S === null
 	  then try commonzero = commonzero + 0_(ring y) else error "expected substitution values to be in compatible rings"
 	  else try y = promote(y,S) else error "expected to be able to promote value to target ring";
-	  if not h#?x then error( "expected ", toString x, " to be a generator of ", toString R );
+	  if not h#?x and ((try x=promote(x,R))===null or not h#?x) then error( "expected ", toString x, " to be a generator of ", toString R );
 	  for i in h#x do (
 	       if m#i =!= symbol dummy and m#i =!= y then error "multiple destinations specified for a generator";
 	       m#i = y;
@@ -368,7 +374,9 @@ sub2 = (S,R,v) -> (				   -- S is the target ring or might be null, meaning targ
 	       try commonzero = commonzero + 0_A
 	       else error "expected substitution values and omitted generators to be in compatible rings";
 	       );
-	  for i from 0 to #m-1 do m#i = promote(m#i, ring commonzero);
+	  S = ring commonzero;
+	  if instance(R,FractionField) then S=frac S;
+	  for i from 0 to #m-1 do m#i = promote(m#i, S);
 	  )
      else if R === S and S === ring commonzero then (
      	  -- if source==target, then the default is to leave generators alone
@@ -428,17 +436,8 @@ RingMap ** Matrix := Matrix => (f,m) -> (
      if source f =!= ring m then error "expected matrix over source ring";
      map(f ** target m, f ** source m, f cover m))
 
-tensor(Ring,RingMap,Module) := opts -> (S,f,M) -> (
-     if S =!= target f then error "tensor: expected ring and target of ring map to be the same";
-     f ** M)
-
-tensor(Ring,RingMap,Matrix) := opts -> (S,f,m) -> (
-     if S =!= target f then error "tensor: expected ring and target of ring map to be the same";
-     f ** m)
-
-tensor(RingMap,Module) := Module => opts -> (f,M) -> f ** M
-
-tensor(RingMap,Matrix) := Matrix => opts -> (f,m) -> f ** m
+tensor(RingMap, Module) := Module => {} >> opts -> (f, M) -> f ** M
+tensor(RingMap, Matrix) := Matrix => {} >> opts -> (f, m) -> f ** m
 
 isInjective RingMap := (f) -> kernel f == 0
 

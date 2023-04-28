@@ -52,6 +52,11 @@ static enum factoryCoeffMode coeffMode(const PolynomialRing *P)
   // if (F->cast_to_QQ()) return modeQQ;
   if (F->is_QQ()) return modeQQ;
   if (F->cast_to_RingZZ()) return modeZZ;
+  // factory will abort if the characteristic is too large
+  if (F->characteristic() > 536870909) {
+    ERROR("characteristic is too large (max is 2^29)");
+    return modeError;
+  }
   if (F->isFinitePrimeField()) return modeZn;
   if (F->isGaloisField()) return modeGF;
   ERROR("expected coefficient ring of the form ZZ/n, ZZ, QQ, or GF");
@@ -535,6 +540,7 @@ const RingElement /* or null */ *rawGCDRingElement(const RingElement *f,
         return NULL;
       }
   }
+  if (ret->is_zero()) return ret;
   ring_elem a = P->getNumeratorRing()->preferred_associate_divisor(
       ret->get_value());  // an element in the coeff ring
   ring_elem b = P->getCoefficients()->invert(a);

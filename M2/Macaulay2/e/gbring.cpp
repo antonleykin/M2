@@ -28,8 +28,6 @@ void GBRing::memstats()
 gbvector *GBRing::new_raw_term()
 {
   void *p = mem->new_elem();
-  // void *p = GC_MALLOC(gbvector_size);
-  //  if (p == 0) outofmem2(gbvector_size);
   return (reinterpret_cast<gbvector *>(p));
 }
 
@@ -43,7 +41,7 @@ exponents GBRing::exponents_make()
   return e;
 }
 
-void GBRing::exponents_delete(exponents e) { deletearray(e); }
+void GBRing::exponents_delete(exponents e) { freemem(e); }
 ////////////////////////////////////////////////////////////////
 GBRing::~GBRing()
 {
@@ -281,9 +279,10 @@ void GBRing::gbvector_remove_term(gbvector *f)
   // GC_FREE(reinterpret_cast<char *>(f));
 }
 
-void GBRing::gbvector_remove(gbvector *f)
+void GBRing::gbvector_remove(gbvector *f0)
 {
   // It is not clear whether we should try to free elements of K
+  gbvector *f = f0;
   while (f != 0)
     {
       gbvector *g = f;
@@ -1197,12 +1196,17 @@ void GBRing::gbvector_combine_lead_terms_ZZ(const FreeModule *F,
   mpz_init(u1);
   mpz_init(v1);
   mpz_gcdext(gab, u1, v1, a.get_mpz(), b.get_mpz());
+  mpz_clear(gab);
+  //these ring_elem must not escape the function, because they aren't allocated on
+  //the gc heap
   ring_elem u = ring_elem(u1);
   ring_elem v = ring_elem(v1);
   if (globalZZ->is_zero(u) || globalZZ->is_zero(v))
     {
       result = 0;
       result_syz = 0;
+      mpz_clear(u1);
+      mpz_clear(v1);
       return;
     }
   gbvector_get_lead_exponents(F, f, EXP1);  // Removes the Schreyer part
@@ -1231,6 +1235,8 @@ void GBRing::gbvector_combine_lead_terms_ZZ(const FreeModule *F,
       gbvector *result_syz1 = mult_by_term(Fsyz, gsyz, v, MONOM2, comp);
       gbvector_add_to(Fsyz, result_syz, result_syz1);
     }
+  mpz_clear(u1);
+  mpz_clear(v1);
 }
 
 void GBRing::gbvector_apply(const FreeModule *F,

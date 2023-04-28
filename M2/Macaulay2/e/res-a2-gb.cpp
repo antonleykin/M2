@@ -95,7 +95,7 @@ void gb2_comp::remove_pair(s_pair *&p)
   p->second = NULL;
   p->next = NULL;
   M->remove(p->lcm);
-  deleteitem(p);
+  freemem(p);
   p = NULL;
 }
 
@@ -197,8 +197,7 @@ void gb2_comp::find_pairs(gb_elem *p)
 // (includes cases m * lead(p) = 0).
 // Returns a list of new s_pair's.
 {
-  queue<Bag *> elems;
-  Index<MonomialIdeal> j;
+  VECTOR(Bag *) elems;
   intarray vplcm;
   int *find_pairs_m = M->make_one();
   int *f_m = M->make_one();
@@ -222,9 +221,9 @@ void gb2_comp::find_pairs(gb_elem *p)
           vplcm.shrink(0);
           M->to_varpower(find_pairs_lcm, vplcm);
           s_pair *q = new_ring_pair(p, find_pairs_lcm);
-          elems.insert(new Bag(q, vplcm));
+          elems.push_back(new Bag(q, vplcm));
         }
-      deletearray(find_pairs_exp);
+      freemem(find_pairs_exp);
     }
 
   // Add in syzygies arising from a base ring
@@ -238,23 +237,23 @@ void gb2_comp::find_pairs(gb_elem *p)
           vplcm.shrink(0);
           M->to_varpower(find_pairs_lcm, vplcm);
           s_pair *q = new_ring_pair(p, find_pairs_lcm);
-          elems.insert(new Bag(q, vplcm));
+          elems.push_back(new Bag(q, vplcm));
         }
     }
 
   // Add in syzygies arising as s-pairs
   MonomialIdeal *mi1 = monideals[p->f->comp]->mi;
-  for (Index<MonomialIdeal> i = mi1->first(); i.valid(); i++)
+  for (Bag& a : *mi1)
     {
-      M->from_varpower((*mi1)[i]->monom().raw(), find_pairs_m);
+      M->from_varpower(a.monom().raw(), find_pairs_m);
       M->lcm(find_pairs_m, f_m, find_pairs_lcm);
       vplcm.shrink(0);
       M->to_varpower(find_pairs_lcm, vplcm);
       s_pair *q =
           new_s_pair(p,
-                     reinterpret_cast<gb_elem *>((*mi1)[i]->basis_ptr()),
+                     reinterpret_cast<gb_elem *>(a.basis_ptr()),
                      find_pairs_lcm);
-      elems.insert(new Bag(q, vplcm));
+      elems.push_back(new Bag(q, vplcm));
     }
 
   // Add 'p' to the correct monideal
@@ -265,10 +264,9 @@ void gb2_comp::find_pairs(gb_elem *p)
   // Now minimalize these elements, and insert them into
   // the proper degree.
 
-  queue<Bag *> rejects;
-  Bag *b;
+  VECTOR(Bag *) rejects;
   MonomialIdeal *mi = new MonomialIdeal(originalR, elems, rejects, mi_stash);
-  while (rejects.remove(b))
+  for (auto& b : rejects)
     {
       s_pair *q = reinterpret_cast<s_pair *>(b->basis_ptr());
       remove_pair(q);
@@ -276,10 +274,10 @@ void gb2_comp::find_pairs(gb_elem *p)
     }
 
   int is_ideal2 = (F->rank() == 1 && orig_syz == 0);
-  for (j = mi->first(); j.valid(); j++)
+  for (Bag& a : *mi)
     {
       n_pairs++;
-      s_pair *q = reinterpret_cast<s_pair *>((*mi)[j]->basis_ptr());
+      s_pair *q = reinterpret_cast<s_pair *>(a.basis_ptr());
       if (is_ideal2 && q->syz_type == SPAIR_PAIR)
         {
           // MES: the following line is suspect, for Schreyer orders
@@ -307,7 +305,7 @@ void gb2_comp::find_pairs(gb_elem *p)
   // Remove the local variables
   M->remove(find_pairs_m);
   M->remove(f_m);
-  deletearray(find_pairs_lcm);
+  freemem(find_pairs_lcm);
 }
 
 void gb2_comp::compute_s_pair(s_pair *p)
@@ -393,7 +391,7 @@ void gb2_comp::gb_reduce(gbvector *&f, gbvector *&fsyz)
       emit_wrapped(o.str());
     }
   f = head.next;
-  deletearray(div_totalexp);
+  freemem(div_totalexp);
 }
 
 void gb2_comp::gb_geo_reduce(gbvector *&f, gbvector *&fsyz)
@@ -455,7 +453,7 @@ void gb2_comp::gb_geo_reduce(gbvector *&f, gbvector *&fsyz)
   f = head.next;
 
   fsyz = fsyzb.value();
-  deletearray(div_totalexp);
+  freemem(div_totalexp);
 }
 
 void gb2_comp::reduce(gbvector *&f, gbvector *&fsyz) { gb_reduce(f, fsyz); }

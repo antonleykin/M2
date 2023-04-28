@@ -26,8 +26,8 @@ void tableau2::initialize(int nvars, int maxwt0)
 void tableau2::resize(int max_wt)
 {
   if (max_wt <= SCHUR_MAX_WT) return;
-  deletearray(xloc);
-  deletearray(yloc);
+  freemem(xloc);
+  freemem(yloc);
   maxwt = max_wt;
   wt = max_wt;
   xloc = newarray_atomic(int, maxwt + 1);
@@ -503,7 +503,7 @@ ring_elem SchurRing2::negate(const ring_elem f) const
 }
 
 ring_elem SchurRing2::truncate(const ring_elem f) const
-// assumption: f is a schur poly over another schur ring, with the SAME coeff
+// assumption: f is a Schur poly over another Schur ring, with the SAME coeff
 // ring
 //  each term is copied over, if the number of elements in the partition is <=
 //  n_vars()

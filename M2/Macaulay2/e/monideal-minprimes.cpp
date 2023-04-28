@@ -19,8 +19,8 @@ MinimalPrimes::MinimalPrimes(const MonomialIdeal *const &I)
 MinimalPrimes::~MinimalPrimes()
 {
   for (int i = 0; i <= nvars + 1; i++)
-    if (exps[i] != 0) deletearray(exps[i]);
-  deletearray(exps);
+    if (exps[i] != 0) freemem(exps[i]);
+  freemem(exps);
   delete primes;
   delete mi;
 }
@@ -52,11 +52,11 @@ int MinimalPrimes::codimension()
 //   ass_prime_generator(mi->first_node(), 0);
 //
 //   buffer o;
-//   o << "number of tentative minprimes is " << Q.length();
+//   o << "number of tentative minprimes is " << Q.size();
 //
 //   MonomialIdeal *result = new MonomialIdeal(mi->get_ring() , Q);
 //
-//   o << " actual number is " << result->length() << newline;
+//   o << " actual number is " << result->size() << newline;
 //   emit(o.str());
 //
 //   return result;
@@ -104,7 +104,7 @@ void MinimalPrimes::alg1_grab_prime(int depth)
     else
       exp2[i] = 0;
   varpower::from_ntuple(nvars, exp2, b->monom());
-  Q.insert(b);
+  Q.push_back(b);
 }
 
 void MinimalPrimes::alg1_min_prime_generator(int *which, int depth)
@@ -169,21 +169,21 @@ MonomialIdeal *MinimalPrimes::alg1_min_primes(int maxcodim, int count)
   depth_limit = -maxcodim - 1;
 
   long len = 1;
-  for (Index<MonomialIdeal> i = mi->first(); i.valid(); i++)
+  for (Bag& a : *mi)
     {
-      long d = varpower::simple_degree((*mi)[i]->monom().raw());
+      long d = varpower::simple_degree(a.monom().raw());
       len += d;
     }
 
-  len += mi->length();
-  len += mi->length();
+  len += mi->size();
+  len += mi->size();
   monoms = newarray_atomic(int, len);
 
   int next_monom = 0;
 
-  for (Index<MonomialIdeal> i = mi->first(); i.valid(); i++)
+  for (Bag& a : *mi)
     {
-      int *m = (*mi)[i]->monom().raw();
+      int *m = a.monom().raw();
       int d = varpower::simple_degree(m);
 
       monoms[next_monom++] = d + 2;
@@ -199,15 +199,15 @@ MonomialIdeal *MinimalPrimes::alg1_min_primes(int maxcodim, int count)
 
   alg1_min_prime_generator(monoms, -1);
 
-  deletearray(monoms);
-  deletearray(exp);
+  freemem(monoms);
+  freemem(exp);
 
   buffer o;
-  o << "number of tentative minprimes is " << Q.length();
+  o << "number of tentative minprimes is " << Q.size();
 
   MonomialIdeal *result = new MonomialIdeal(mi->get_ring(), Q);
 
-  o << " actual number is " << result->length() << newline;
+  o << " actual number is " << result->size() << newline;
   emit(o.str());
 
   return result;

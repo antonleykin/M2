@@ -71,7 +71,7 @@ SLP<Field>::SLP()
 template <class Field>
 SLP<Field>::~SLP()
 {
-  deletearray(nodes);
+  freemem(nodes);
   if (handle != NULL)
     {
       printf("closing library\n");
@@ -122,7 +122,7 @@ SLP<Field> /* or null */* SLP<Field>::make(const Matrix* m_consts,
                          res->num_consts + res->num_inputs +
                              res->rows_out * res->cols_out);
               char libname[100];
-              sprintf(libname,
+              snprintf(libname, 100,
                       "%s%d.dylib",
                       libPREFIX,
                       program->array[5]);  // Mac OS
@@ -789,7 +789,7 @@ void SLP<Field>::evaluate(int n, const element_type* values, element_type* ret)
         copy_complex_array<Field>(rows_out * cols_out, out, ret);
         break;
       default:
-        // interptretation
+        // interpretation
         element_type* c = ret;
         for (i = 0; i < rows_out; i++)
           for (int j = 0; j < cols_out; j++, c++)
@@ -974,7 +974,7 @@ void SLP<Field>::text_out(buffer& o) const
   for (i = 0; i < num_consts; i++, cur_node++)
     {
       char s[100];
-      nodes[cur_node].sprint(s);
+      nodes[cur_node].snprint(s, 100);
       o << s << ", ";
     }
   o << newline;
@@ -1101,15 +1101,15 @@ void SLP<Field>::text_out(buffer& o) const
 //     add_to_complex_array(n,dx4,dx3);
 //     multiply_complex_array_scalar(n,dx4,1.0/6);
 //     copy_complex_array<ComplexField>(n,dx4,dx);
-//     deletearray(dx1);
-//     deletearray(dx2);
-//     deletearray(dx3);
-//     deletearray(dx4);
+//     freemem(dx1);
+//     freemem(dx2);
+//     freemem(dx3);
+//     freemem(dx4);
 //   } break;
 //   default: ERROR("unknown predictor");
 //   };
-//   deletearray(LHS);
-//   deletearray(RHS);
+//   freemem(LHS);
+//   freemem(RHS);
 // }
 
 // template <class Field>
@@ -1149,9 +1149,9 @@ i<maxCorSteps);
 
 //   copy_complex_array<ComplexField>(n,x1t,x1);
 
-//   deletearray(x1t);
-//   deletearray(LHS);
-//   deletearray(RHS);
+//   freemem(x1t);
+//   freemem(LHS);
+//   freemem(RHS);
 // }
 */
 
@@ -1205,8 +1205,8 @@ bool solve_via_lapack(int size,
       ret = false;
     }
 
-  deletearray(permutation);
-  deletearray(At);
+  freemem(permutation);
+  freemem(At);
 
   return ret;
 }
@@ -1256,7 +1256,7 @@ bool solve_via_lapack_without_transposition(
       ret = false;
     }
 
-  deletearray(permutation);
+  freemem(permutation);
 
   return ret;
 }
@@ -1321,12 +1321,12 @@ bool cond_number_via_svd(int size, complex* A, double& cond)
       // printf("(s_large=%lf, s_small=%lf)\n", sigma[0], sigma[size-1]);
     }
 
-  deletearray(workspace);
-  deletearray(rwork);
-  // deletearray(copyA);
-  deletearray(u);
-  deletearray(vt);
-  deletearray(sigma);
+  freemem(workspace);
+  freemem(rwork);
+  // freemem(copyA);
+  freemem(u);
+  freemem(vt);
+  freemem(sigma);
 
   return ret;
 }
@@ -1394,12 +1394,12 @@ bool norm_of_inverse_via_svd(int size, complex* A, double& norm)
       norm = 1 / sigma[size - 1];
     }
 
-  deletearray(workspace);
-  deletearray(rwork);
-  // deletearray(copyA);
-  deletearray(u);
-  deletearray(vt);
-  deletearray(sigma);
+  freemem(workspace);
+  freemem(rwork);
+  // freemem(copyA);
+  freemem(u);
+  freemem(vt);
+  freemem(sigma);
 
   return ret;
 }
@@ -1422,8 +1422,8 @@ PathTracker::PathTracker()
 PathTracker::~PathTracker()
 {
   for (int i = 0; i < n_sols; i++) raw_solutions[i].release();
-  deletearray(raw_solutions);
-  deletearray(DMforPN);
+  freemem(raw_solutions);
+  freemem(DMforPN);
 }
 
 // creates a PathTracker object (case: is_projective), builds slps for predictor
@@ -1454,7 +1454,7 @@ PathTracker /* or null */* PathTracker::make(const Matrix* S,
       ERROR("complex coefficients expected");
       return NULL;
     }
-  p->productST = mpfr_get_d(productST, GMP_RNDN);
+  p->productST = mpfr_get_d(productST, MPFR_RNDN);
   // p->bigT = asin(sqrt(1-p->productST*p->productST));
   // const double pi = 3.141592653589793238462643383279502;
   // if (p->productST < 0)
@@ -1637,15 +1637,15 @@ const Matrix /* or null */* rawRefinePT(PathTracker* PT,
 int PathTracker::track(const Matrix* start_sols)
 {
   double the_smallest_number = 1e-13;
-  double epsilon2 = mpfr_get_d(epsilon, GMP_RNDN);
+  double epsilon2 = mpfr_get_d(epsilon, MPFR_RNDN);
   epsilon2 *= epsilon2;                           // epsilon^2
-  double t_step = mpfr_get_d(init_dt, GMP_RNDN);  // initial step
-  double dt_min_dbl = mpfr_get_d(min_dt, GMP_RNDN);
-  double dt_increase_factor_dbl = mpfr_get_d(dt_increase_factor, GMP_RNDN);
-  double dt_decrease_factor_dbl = mpfr_get_d(dt_decrease_factor, GMP_RNDN);
-  double infinity_threshold2 = mpfr_get_d(infinity_threshold, GMP_RNDN);
+  double t_step = mpfr_get_d(init_dt, MPFR_RNDN);  // initial step
+  double dt_min_dbl = mpfr_get_d(min_dt, MPFR_RNDN);
+  double dt_increase_factor_dbl = mpfr_get_d(dt_increase_factor, MPFR_RNDN);
+  double dt_decrease_factor_dbl = mpfr_get_d(dt_decrease_factor, MPFR_RNDN);
+  double infinity_threshold2 = mpfr_get_d(infinity_threshold, MPFR_RNDN);
   infinity_threshold2 *= infinity_threshold2;
-  double end_zone_factor_dbl = mpfr_get_d(end_zone_factor, GMP_RNDN);
+  double end_zone_factor_dbl = mpfr_get_d(end_zone_factor, MPFR_RNDN);
 
   if (C == NULL)
     C = cast_to_CCC(
@@ -1717,7 +1717,7 @@ int PathTracker::track(const Matrix* start_sols)
               !end_zone)
             {
               end_zone = true;
-              // to do: see if this path coinsides with any other path on entry
+              // to do: see if this path coincides with any other path on entry
               // to the end zone
             }
           if (end_zone)
@@ -1955,19 +1955,19 @@ int PathTracker::track(const Matrix* start_sols)
   if (M2_numericalAlgebraicGeometryTrace > 0) printf("\n");
 
   // clear arrays
-  // deletearray(t_sols); // do not delete (same as raw_solutions)
-  deletearray(s_sols);
-  deletearray(x0t0);
-  deletearray(x1t1);
-  deletearray(dxdt);
-  deletearray(xt);
-  deletearray(dx1);
-  deletearray(dx2);
-  deletearray(dx3);
-  deletearray(dx4);
-  deletearray(Hxt);
-  deletearray(HxtH);
-  deletearray(HxH);
+  // freemem(t_sols); // do not delete (same as raw_solutions)
+  freemem(s_sols);
+  freemem(x0t0);
+  freemem(x1t1);
+  freemem(dxdt);
+  freemem(xt);
+  freemem(dx1);
+  freemem(dx2);
+  freemem(dx3);
+  freemem(dx4);
+  freemem(Hxt);
+  freemem(HxtH);
+  freemem(HxH);
 
   return n_sols;
 }
@@ -1976,7 +1976,7 @@ Matrix /* or null */* PathTracker::refine(const Matrix* sols,
                                           gmp_RR tolerance,
                                           int max_corr_steps_refine)
 {
-  double epsilon2 = mpfr_get_d(tolerance, GMP_RNDN);
+  double epsilon2 = mpfr_get_d(tolerance, MPFR_RNDN);
   epsilon2 *= epsilon2;
   int n = n_coords;
   if (!cast_to_CCC(sols->get_ring()))
@@ -2049,8 +2049,8 @@ Matrix /* or null */* PathTracker::refine(const Matrix* sols,
   for (i = 0; i < n_sols; i++)
     for (j = 0; j < n; j++, c++)
       {
-        // mpfr_set_d(re, c->getreal(), GMP_RNDN);
-        // mpfr_set_d(im, c->getimaginary(), GMP_RNDN);
+        // mpfr_set_d(re, c->getreal(), MPFR_RNDN);
+        // mpfr_set_d(im, c->getimaginary(), MPFR_RNDN);
         // ring_elem e = from_BigReals(C,re,im);
         ring_elem e = from_doubles(C, c->getreal(), c->getimaginary());
 
@@ -2060,10 +2060,10 @@ Matrix /* or null */* PathTracker::refine(const Matrix* sols,
   mpfr_clear(im);
 
   // clear arrays
-  deletearray(s_sols);
-  deletearray(dx);
-  deletearray(x1t1);
-  deletearray(HxH);
+  freemem(s_sols);
+  freemem(dx);
+  freemem(x1t1);
+  freemem(HxH);
 
   return mat.to_matrix();
 }
@@ -2082,8 +2082,8 @@ Matrix /* or null */* PathTracker::getSolution(int solN)
   complex* c = s->x;
   for (int j = 0; j < n_coords; j++, c++)
     {
-      // mpfr_set_d(re, c->getreal(), GMP_RNDN);
-      // mpfr_set_d(im, c->getimaginary(), GMP_RNDN);
+      // mpfr_set_d(re, c->getreal(), MPFR_RNDN);
+      // mpfr_set_d(im, c->getimaginary(), MPFR_RNDN);
       // ring_elem e = from_BigReals(C,re,im);
       ring_elem e = from_doubles(C, c->getreal(), c->getimaginary());
 
@@ -2109,8 +2109,8 @@ Matrix /* or null */* PathTracker::getAllSolutions()
       complex* c = s->x;
       for (int j = 0; j < n_coords; j++, c++)
         {
-          // mpfr_set_d(re, c->getreal(), GMP_RNDN);
-          // mpfr_set_d(im, c->getimaginary(), GMP_RNDN);
+          // mpfr_set_d(re, c->getreal(), MPFR_RNDN);
+          // mpfr_set_d(im, c->getimaginary(), MPFR_RNDN);
           // ring_elem e = from_BigReals(C,re,im);
           ring_elem e = from_doubles(C, c->getreal(), c->getimaginary());
 
@@ -2139,7 +2139,7 @@ gmp_RRorNull PathTracker::getSolutionLastT(int solN)
   if (solN < 0 || solN >= n_sols) return NULL;
   gmp_RRmutable result = getmemstructtype(gmp_RRmutable);
   mpfr_init2(result, C->get_precision());
-  mpfr_set_d(result, raw_solutions[solN].t, GMP_RNDN);
+  mpfr_set_d(result, raw_solutions[solN].t, MPFR_RNDN);
   return moveTo_gmpRR(result);
 }
 
@@ -2148,7 +2148,7 @@ gmp_RRorNull PathTracker::getSolutionRcond(int solN)
   if (solN < 0 || solN >= n_sols) return NULL;
   gmp_RRmutable result = getmemstructtype(gmp_RRmutable);
   mpfr_init2(result, C->get_precision());
-  mpfr_set_d(result, raw_solutions[solN].cond, GMP_RNDN);
+  mpfr_set_d(result, raw_solutions[solN].cond, MPFR_RNDN);
   return moveTo_gmpRR(result);
 }
 

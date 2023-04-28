@@ -10,7 +10,6 @@
 #include "exceptions.hpp"
 #include "finalize.hpp"
 #include "hilb.hpp"
-#include "index.hpp"
 #include "int-bag.hpp"
 #include "intarray.hpp"
 #include "matrix.hpp"
@@ -65,7 +64,7 @@ M2_string MonomialIdeal_to_string(const MonomialIdeal *I)
   }
 }
 
-int IM2_MonomialIdeal_n_gens(const MonomialIdeal *I) { return I->length(); }
+int IM2_MonomialIdeal_n_gens(const MonomialIdeal *I) { return I->size(); }
 int IM2_MonomialIdeal_is_equal(const MonomialIdeal *I, const MonomialIdeal *J)
 // 1 = true, 0 = false, -1 = error
 {
@@ -297,7 +296,7 @@ class MyIdealConsumer : public Frobby::IdealConsumer, our_new_delete
   }
   ~MyIdealConsumer()
   {
-    deletearray(exp);
+    freemem(exp);
     J = 0;
   }
   virtual void consume(mpz_ptr *exponentVector)
@@ -327,10 +326,9 @@ static MonomialIdeal *FrobbyAlexanderDual(const MonomialIdeal *I,
   int nv = I->topvar() + 1;
   int *exp = newarray_atomic(int, nv);
   Frobby::Ideal F(nv);
-  for (Index<MonomialIdeal> i = I->first(); i.valid(); i++)
+  for (Bag& b : *I)
     {
-      Bag *b = I->operator[](i);
-      varpower::to_ntuple(nv, b->monom().raw(), exp);
+      varpower::to_ntuple(nv, b.monom().raw(), exp);
 
       if (M2_gbTrace >= 4) fprintf(stderr, "adding ");
       for (int j = 0; j < nv; j++)
@@ -344,7 +342,7 @@ static MonomialIdeal *FrobbyAlexanderDual(const MonomialIdeal *I,
   // Now create the consumer object, and call Frobby
   MyIdealConsumer M(I->get_ring(), nv);
   Frobby::alexanderDual(F, topvec, M);
-  deletearray(exp);
+  freemem(exp);
   // Extract the answer as a MonomialIdeal
   return M.result();
 }
@@ -376,7 +374,7 @@ static MonomialIdeal *wrapperFrobbyAlexanderDual(const MonomialIdeal *I,
   if (topvec != 0)
     {
       for (int i = 0; i < top->len; i++) mpz_clear(topvec[i]);
-      deletearray(topvec);
+      freemem(topvec);
     }
 
   return result;

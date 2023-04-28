@@ -15,7 +15,9 @@ ReducedGB_ZZ::ReducedGB_ZZ(GBRing *R0,
                            const PolynomialRing *originalR0,
                            const FreeModule *F0,
                            const FreeModule *Fsyz0)
-    : ReducedGB(R0, originalR0, F0, Fsyz0), T(0)
+    : ReducedGB(R0, originalR0, F0, Fsyz0),
+      T(nullptr),
+      ringtableZZ(nullptr)
 {
   T = MonomialTableZZ::make(R0->n_vars());
   if (originalR->is_quotient_ring())
@@ -23,7 +25,7 @@ ReducedGB_ZZ::ReducedGB_ZZ(GBRing *R0,
 }
 
 void ReducedGB_ZZ::set_gb(VECTOR(POLY) & polys0) {}
-struct ReducedGB_ZZ_sorter : public std::binary_function<int, int, bool>
+struct ReducedGB_ZZ_sorter
 {
   GBRing *R;
   const FreeModule *F;
