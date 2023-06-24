@@ -8,7 +8,9 @@
 #include <cstdlib>
 #include <algorithm>
 #include <dlfcn.h>
-#include "timing.hpp"
+//#include "timing.hpp"
+#define TIME(t, call) {}
+#include <tbb/parallel_for.h>
 
 // SLEvaluator
 template <typename RT>
@@ -352,10 +354,10 @@ bool HomotopyConcrete<RT, FixedPrecisionHomotopyAlgorithm>::track(
     gmp_RR infinity_threshold,
     bool checkPrecision)
 {
-  std::chrono::steady_clock::time_point start =
+  /*  std::chrono::steady_clock::time_point start =
       std::chrono::steady_clock::now();
+  */
   size_t solveLinearTime = 0, solveLinearCount = 0, evaluateTime = 0;
-
   // std::cout << "inside
   // HomotopyConcrete<RT,FixedPrecisionHomotopyAlgorithm>::track" << std::endl;
   // double the_smallest_number = 1e-13;
@@ -411,59 +413,62 @@ bool HomotopyConcrete<RT, FixedPrecisionHomotopyAlgorithm>::track(
   typedef typename RT::RealRingType::ElementType RealElementType;
   typedef MatElementaryOps<DMat<RT> > MatOps;
 
-  RealElement t_step(R), min_step2(R), epsilon2(R), infinity_threshold2(R);
-  R.set_from_BigReal(t_step, init_dt);  // initial step
-  R.set_from_BigReal(min_step2, min_dt);
-  R.mult(min_step2, min_step2, min_step2);  // min_step^2
-  R.set_from_BigReal(epsilon2, epsilon);
-  int tolerance_bits = int(log2(fabs(R.coerceToDouble(epsilon2))));
-  R.mult(epsilon2, epsilon2, epsilon2);  // epsilon^2
-  R.set_from_BigReal(infinity_threshold2, infinity_threshold);
-  R.mult(infinity_threshold2, infinity_threshold2, infinity_threshold2);
-  int num_successes_before_increase = 3;
+  tbb::parallel_for( tbb::blocked_range<int>(0,n_sols),
+  [&](tbb::blocked_range<int> r) {
+    RealElement t_step(R), min_step2(R), epsilon2(R), infinity_threshold2(R);
+    R.set_from_BigReal(t_step, init_dt);  // initial step
+    R.set_from_BigReal(min_step2, min_dt);
+    R.mult(min_step2, min_step2, min_step2);  // min_step^2
+    R.set_from_BigReal(epsilon2, epsilon);
+    int tolerance_bits = int(log2(fabs(R.coerceToDouble(epsilon2))));
+    R.mult(epsilon2, epsilon2, epsilon2);  // epsilon^2
+    R.set_from_BigReal(infinity_threshold2, infinity_threshold);
+    R.mult(infinity_threshold2, infinity_threshold2, infinity_threshold2);
+    int num_successes_before_increase = 3;
 
-  RealElement t0(R), dt(R), one_minus_t0(R), dx_norm2(R), x_norm2(R), abs2dc(R);
+    RealElement t0(R), dt(R), one_minus_t0(R), dx_norm2(R), x_norm2(R), abs2dc(R);
 
-  // constants
-  RealElement one(R), two(R), four(R), six(R), one_half(R), one_sixth(R);
-  RealElementType& dt_factor = one_half;
-  R.set_from_long(one, 1);
-  R.set_from_long(two, 2);
-  R.set_from_long(four, 4);
-  R.set_from_long(six, 6);
-  R.divide(one_half, one, two);
-  R.divide(one_sixth, one, six);
+    // constants
+    RealElement one(R), two(R), four(R), six(R), one_half(R), one_sixth(R);
+    RealElementType& dt_factor = one_half;
+    R.set_from_long(one, 1);
+    R.set_from_long(two, 2);
+    R.set_from_long(four, 4);
+    R.set_from_long(six, 6);
+    R.divide(one_half, one, two);
+    R.divide(one_sixth, one, six);
 
-  Element c_init(C), c_end(C), dc(C), one_half_dc(C);
+    Element c_init(C), c_end(C), dc(C), one_half_dc(C);
 
-  // think: x_0..x_(n-1), c
-  // c = the homotopy continuation parameter "t" upstair, varies on a (staight
-  // line) segment of complex plane (from c_init to c_end)
-  // t = a real running in the interval [0,1]
+    // think: x_0..x_(n-1), c
+    // c = the homotopy continuation parameter "t" upstair, varies on a (staight
+    // line) segment of complex plane (from c_init to c_end)
+    // t = a real running in the interval [0,1]
 
-  DMat<RT> x0c0(C, n + 1, 1);
-  DMat<RT> x1c1(C, n + 1, 1);
-  DMat<RT> xc(C, n + 1, 1);
-  DMat<RT> HxH(C, n, n + 1);
-  DMat<RT>& Hxt = HxH;  // the matrix has the same shape: reuse memory
-  DMat<RT> LHSmat(C, n, n);
-  auto LHS = submatrix(LHSmat);
-  DMat<RT> RHSmat(C, n, 1);
-  auto RHS = submatrix(RHSmat);
-  DMat<RT> dx(C, n, 1);
-  DMat<RT> dx1(C, n, 1);
-  DMat<RT> dx2(C, n, 1);
-  DMat<RT> dx3(C, n, 1);
-  DMat<RT> dx4(C, n, 1);
-  DMat<RT> Jinv_times_random(C, n, 1);
+    DMat<RT> x0c0(C, n + 1, 1);
+    DMat<RT> x1c1(C, n + 1, 1);
+    DMat<RT> xc(C, n + 1, 1);
+    DMat<RT> HxH(C, n, n + 1);
+    DMat<RT>& Hxt = HxH;  // the matrix has the same shape: reuse memory
+    DMat<RT> LHSmat(C, n, n);
+    auto LHS = submatrix(LHSmat);
+    DMat<RT> RHSmat(C, n, 1);
+    auto RHS = submatrix(RHSmat);
+    DMat<RT> dx(C, n, 1);
+    DMat<RT> dx1(C, n, 1);
+    DMat<RT> dx2(C, n, 1);
+    DMat<RT> dx3(C, n, 1);
+    DMat<RT> dx4(C, n, 1);
+    DMat<RT> Jinv_times_random(C, n, 1);
 
-  ElementType& c0 = x0c0.entry(n, 0);
-  ElementType& c1 = x1c1.entry(n, 0);
-  ElementType& c = xc.entry(n, 0);
-  RealElementType& tol2 = epsilon2;  // current tolerance squared
-  bool linearSolve_success;
-  for (size_t s = 0; s < n_sols; s++)
-    {
+    ElementType& c0 = x0c0.entry(n, 0);
+    ElementType& c1 = x1c1.entry(n, 0);
+    ElementType& c = xc.entry(n, 0);
+    RealElementType& tol2 = epsilon2;  // current tolerance squared
+    bool linearSolve_success;
+    //end// initial vars setup
+    std::cout << "r = [" << r.begin() << "," << r.end() << ")\n";
+    for (size_t s = r.begin(); s < r.end(); ++s) {
       SolutionStatus status = PROCESSING;
       // set initial solution and initial value of the continuation parameter
       // for(size_t i=0; i<=n; i++)
@@ -746,8 +751,9 @@ bool HomotopyConcrete<RT, FixedPrecisionHomotopyAlgorithm>::track(
       oe.ring().set_from_long(oe.entry(0, s), status);
       oe.ring().set_from_long(oe.entry(1, s), count);
     }
+  }); //(end) tbb::parallel_for
 
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  /*std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   if (M2_numericalAlgebraicGeometryTrace > 1)
     {
       std::cout << "-- track took "
@@ -762,6 +768,7 @@ bool HomotopyConcrete<RT, FixedPrecisionHomotopyAlgorithm>::track(
       std::cout << "-- time of evaluate calls = " << evaluateTime << " ns."
                 << std::endl;
     }
+  */
   return true;
 }
 
