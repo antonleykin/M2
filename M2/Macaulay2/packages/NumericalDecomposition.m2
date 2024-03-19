@@ -1,7 +1,7 @@
 -- -*- coding: utf-8 -*-
 -- licensed under GPL v2 or any later version
 
-newPackage {
+newPackage (
      "NumericalDecomposition",
      Version => "1.22",
      Date => "Oct 2023",
@@ -21,7 +21,7 @@ newPackage {
 	 "NumericalAlgebraicGeometry",
 	 },
      DebuggingMode => true
-     }
+     )
 -- Any symbols or functions that the user is to have access to
 -- must be placed in one of the following two lists
 export {"uGeneration"}
