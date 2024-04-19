@@ -114,7 +114,9 @@ uGeneration {sph*(x-1)*(y-x^2), sph*(y-2)*(z-x^3)}
 end--
 restart
 needsPackage "NumericalDecomposition"
-n = 3
+n = 6
 R = CC[x_1..x_n,y_1..y_n]
 M = genericMatrix(R,n,2)
 F = for i from 1 to n-1 list det M^{i-1,i}
+V = uGeneration F
+decompose \ components V
