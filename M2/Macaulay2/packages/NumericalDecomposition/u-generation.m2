@@ -1,4 +1,4 @@
-DBG = 1;
+DBG = 3;
 
 uGeneration = method(Options=>{})
 uGeneration List -*System???*- := NumericalVariety => o -> F -> (
@@ -24,14 +24,37 @@ uHypersurfaceSection(NumericalVariety,RingElement-*System???*-) := o -> (c1,f) -
     d := sum degree f;
     R := ring f;
     -- if getDefault Normalize then f = f/sqrt(numgens R * BombieriWeylNormSquared f); 
-    c2 := new MutableHashTable; -- new components
+    c2 := new NumericalVariety; -- new components
     for comp in components c1 do (
 	if DBG>2 then << "*** processing component " << peek comp << endl;
 	result := uHypersurfaceSection(comp,f);
         -- postprocess into c2 ...
+	for newComponent in components result do insert(newComponent, c2);
     	);
-    numericalVariety flatten apply(keys c2, i->apply(keys c2#i, j->c2#i#j))
+    c2
     )
+uHypersurfaceSection(WitnessSet,RingElement-*System???*-) := o -> (comp,f) -> (
+    (cIn,cOut) := splitWitness(comp,f); 
+    result := numericalVariety{};
+    if cIn =!= null then (
+	if DBG>2 then << "( u-generation: " << net cIn << " is contained in V(f) for" << endl <<  
+	<< "  f = " << f << " )" << endl;
+	insert(cIn,result);
+	); 
+    if cOut =!= null and dim cOut > 0 -- 0-dimensional components outside V(f) discarded
+    then (
+	newComponent := hypersurfaceSection(numericalVariety {cOut}, f); -- todo: replace with u-generation call
+	if newComponent =!= null then -- null is returned when the intersection is empty (otherwise it is of dimension one less) 
+	-*
+	using old code that may return several components
+	*-
+	newComponentsFromOldNumericalVariety := components newComponent;
+	scan(newComponentsFromOldNumericalVariety, c -> insert(c,result));
+--	insert(newComponent, result); -- todo: reinstate this syntax
+	);
+    result
+    ) -- end uHypersurfaceSection(WitnessSet,...)
+
 
 isPointOnAnyComponent = method()
 isPointOnAnyComponent(AbstractPoint,HashTable) := (p,H) -> any(keys H, d -> any(keys H#d, k -> isOn(p,H#d#k)))
@@ -56,25 +79,10 @@ splitWitness (WitnessSet,RingElement) := Sequence => o -> (w,f) -> (
 
 insert(WitnessSet,NumericalVariety) := (comp,V) -> (
     d := dim comp; 
-    if not V?#d then V#d = {};
+    if not V#?d then V#d = {};
     V#d = V#d | {comp};
-    )  
-uHypersurfaceSection(WitnessSet,RingElement-*System???*-) := o -> (comp,f) -> (
-    (cIn,cOut) := splitWitness(comp,f); 
-    result := numericalVariety{};
-    if cIn =!= null then (
-	if DBG>2 then << "( u-generation: " << net cIn << " is contained in V(f) for" << endl <<  
-	<< "  f = " << f << " )" << endl;
-	insert(cIn,result);
-	); 
-    if cOut =!= null and dim cOut > 0 -- 0-dimensional components outside V(f) discarded
-    then (
-	newComponent := null; -- (replace with a call to u-generation implementation) 
-	if newComponent != null then -- null is returned when the intersection is empty (otherwise it is of dimension one less) 
-	insert(newComponent,result);
-	) 
-    ) -- end uHypersurfaceSection(WitnessSet,...)
-    
+    )      
+
 
 TEST ///
 restart
@@ -84,9 +92,29 @@ numericalAffineSpace R
 NV = numericalAffineSpace R
 comps = components NV
 C = first comps
-
 sph = (x^2+y^2+z^2-1); 
-
-uGeneration {sph*(x-1)*(y-x^2), sph*(y-2)*(z-x^3)}
-
+--NAGtrace 4
+uGeneration {sph*(y-x^2), sph*(z-x^3)}
 ///
+
+
+TEST ///
+restart
+needsPackage "NumericalDecomposition"
+R = CC[x,y,z]
+numericalAffineSpace R
+NV = numericalAffineSpace R
+comps = components NV
+C = first comps
+sph = (x^2+y^2+z^2-1); 
+uGeneration {sph*(x-1)*(y-x^2), sph*(y-2)*(z-x^3)}
+///
+
+
+end--
+restart
+needsPackage "NumericalDecomposition"
+n = 3
+R = CC[x_1..x_n,y_1..y_n]
+M = genericMatrix(R,n,2)
+F = for i from 1 to n-1 list det M^{i-1,i}
