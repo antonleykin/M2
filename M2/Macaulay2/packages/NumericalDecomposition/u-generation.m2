@@ -1,4 +1,5 @@
-DBG = 3;
+debug NumericalAlgebraicGeometry;
+DBG = 0;
 
 uGeneration = method(Options=>{})
 uGeneration List -*System???*- := NumericalVariety => o -> F -> (
@@ -12,7 +13,12 @@ uGeneration List -*System???*- := NumericalVariety => o -> F -> (
      
      R := ring F#0;
      V := numericalAffineSpace R; -- current solution components
-     for f in F do V = uHypersurfaceSection(V,f,o); -- intersect with hypersurface	 
+     for f in F do (
+	 print ("before: V" => V);
+	 print ("before: f" => f);
+	 V = uHypersurfaceSection(V,f,o); -- intersect with hypersurface
+	 print ("after: V" => V);
+	 );
      V
      )
 
@@ -43,23 +49,25 @@ uHypersurfaceSection(WitnessSet,RingElement-*System???*-) := o -> (comp,f) -> (
 	); 
     if cOut =!= null and dim cOut > 0 -- 0-dimensional components outside V(f) discarded
     then (
-	newComponent := hypersurfaceSection(numericalVariety {cOut}, f); -- todo: replace with u-generation call
+	newComponent := hypersurfaceSection(cOut, numericalVariety(
+		if cIn===null then {} else {cIn}
+		), f); -- todo: replace with u-generation call
 	if newComponent =!= null then -- null is returned when the intersection is empty (otherwise it is of dimension one less) 
 	-*
 	using old code that may return several components
 	*-
-	newComponentsFromOldNumericalVariety := components newComponent;
-	scan(newComponentsFromOldNumericalVariety, c -> insert(c,result));
---	insert(newComponent, result); -- todo: reinstate this syntax
+	-- newComponentsFromOldNumericalVariety := components newComponent;
+	-- scan(newComponentsFromOldNumericalVariety, c -> insert(c,result));
+	insert(newComponent, result);
 	);
     result
     ) -- end uHypersurfaceSection(WitnessSet,...)
 
 
-isPointOnAnyComponent = method()
-isPointOnAnyComponent(AbstractPoint,HashTable) := (p,H) -> any(keys H, d -> any(keys H#d, k -> isOn(p,H#d#k)))
+--isPointOnAnyComponent = method()
+isPointOnAnyComponent(AbstractPoint,NumericalVariety) := (p,V) -> any(components V, c-> isOn(p,c))
 
-splitWitness = method(TypicalValue=>Sequence, Options =>{Tolerance=>1e-6})
+--splitWitness = method(TypicalValue=>Sequence, Options =>{Tolerance=>1e-6})
 splitWitness (WitnessSet,RingElement) := Sequence => o -> (w,f) -> (
 -- splits the witness set into two parts: one contained in {f=0}, the other not
 -- IN:  comp = a witness set
@@ -67,7 +75,7 @@ splitWitness (WitnessSet,RingElement) := Sequence => o -> (w,f) -> (
 -- OUT: (w1,w2) = two witness sets   
      w1 := {}; w2 := {};
      for x in points w do 
-	 if residual(matrix {{f}}, matrix x) < o.Tolerance 
+	 if residual(matrix {{f}}, matrix x) < 1e-6 -- o.Tolerance 
 	 then w1 = w1 | {x}
 	 else w2 = w2 | {x};   
      ( if #w1===0 then null else witnessSet(ideal equations w + ideal f, 
@@ -84,8 +92,72 @@ insert(WitnessSet,NumericalVariety) := (comp,V) -> (
     )      
 
 
+---------------------------
+-------- OLD CODE below !!!
+
+hypersurfaceSection(WitnessSet,NumericalVariety,RingElement) := o -> (cOut,varietyToAvoid,f) -> (
+    if DBG>1 then << "-- hypersurfaceSection: "<< endl << 
+    "equidimensional component: " << cOut << endl <<
+    "hypersurface: " << f << endl;
+    d := sum degree f;
+    R := ring f;
+    if DBG>2 then << "*** processing component " << peek cOut << endl;
+    if dim cOut == 0 -- 0-dimensional components outside V(f) discarded
+    then null else (
+	s := cOut#Slice;
+	-- RM := (randomUnitaryMatrix numcols s)^(toList(0..d-2)); -- pick d-1 random orthogonal row-vectors (this is wrong!!! is there a good way to pick d-1 random hyperplanes???)
+	RM := random(CC^(d-1),CC^(numcols s));
+	dWS := {cOut} | apply(d-1, i->(
+		newSlice := RM^{i} || submatrix'(s,{0},{}); -- replace the first row
+		moveSlice(cOut,newSlice,Software=>o.Software)
+		));
+	slice' := submatrix'(cOut#Slice,{0},{});
+	local'regular'seq := equations polySystem cOut;
+	    
+
+	S := polySystem( local'regular'seq
+	    | { product flatten apply( dWS, w->sliceEquations(w.Slice^{0},R) ) } -- product of linear factors
+	    | sliceEquations(slice',R) );
+	T := polySystem( local'regular'seq
+	    | {f}
+	    | sliceEquations(slice',R) );
+    
+	P := first cOut.Points;
+	if status P =!= Singular then targetPoints := track(S,T,flatten apply(dWS,points), 
+	    NumericalAlgebraicGeometry$gamma=>exp(random(0.,2*pi)*ii),
+	    Software=>o.Software)
+	else (
+	    << "warning: singular points encountered in the INPUT by hypersurfaceSection(WitnessSet,...): " << endl;
+	    -- do nothing: discard
+	    );
+	-*
+	LARGE := 100; ---!!!
+	refinedPoints := refine(T, targetPoints, 
+	    ErrorTolerance=>DEFAULT.ErrorTolerance*LARGE,
+	    ResidualTolerance=>DEFAULT.ResidualTolerance*LARGE,
+	    Software=>o.Software);
+	*-
+	refinedPoints := targetPoints;
+	regPoints := select(refinedPoints, p->p.cache.SolutionStatus===Regular);
+	singPoints := select(refinedPoints, p->p.cache.SolutionStatus===Singular);
+	if #singPoints > 0 then
+	  << "warning: singular points encountered in the COMPUTATION by hypersurfaceSection(WitnessSet,...): " << endl;
+	targetPoints = regPoints;
+	if DBG>2 then << "( regeneration: " << net cOut << " meets V(f) at " 
+	<< #targetPoints << " points for" << endl 
+	<< "  f = " << f << " )" << endl;
+	f' := ideal (equations cOut | {f});
+	nonJunkPoints := select(targetPoints, p-> not isPointOnAnyComponent(p,varietyToAvoid)); -- this is very slow		    
+	newW := witnessSet(f',slice',selectUnique(nonJunkPoints, Tolerance=>1e-4));--!!!
+	if DBG>2 then << "   new component " << peek newW << endl;
+	check newW;
+	newW
+	)
+    )
+
 TEST ///
 restart
+--errorDepth = 0
 needsPackage "NumericalDecomposition"
 R = CC[x,y,z]
 numericalAffineSpace R
