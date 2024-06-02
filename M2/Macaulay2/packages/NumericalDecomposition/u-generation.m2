@@ -123,13 +123,14 @@ hypersurfaceSection(WitnessSet,NumericalVariety,RingElement) := o -> (cOut,varie
 	    | sliceEquations(slice',R) );
     
 	P := first cOut.Points;
-	if status P =!= Singular then targetPoints := track(S,T,flatten apply(dWS,points), 
-	    NumericalAlgebraicGeometry$gamma=>exp(random(0.,2*pi)*ii),
-	    Software=>o.Software)
-	else (
+
+	targetPoints := if any(cOut.Points, p->status p === Singular) then (
 	    << "warning: singular points encountered in the INPUT by hypersurfaceSection(WitnessSet,...): " << endl;
 	    -- do nothing: discard
-	    );
+	    {}
+	    )
+	else trackHomotopy(segmentHomotopy(S,T,NumericalAlgebraicGeometry$gamma=>exp(random(0.,2*pi)*ii)),
+		flatten apply(dWS,points), Software=>o.Software);
 	-*
 	LARGE := 100; ---!!!
 	refinedPoints := refine(T, targetPoints, 
@@ -140,14 +141,17 @@ hypersurfaceSection(WitnessSet,NumericalVariety,RingElement) := o -> (cOut,varie
 	refinedPoints := targetPoints;
 	regPoints := select(refinedPoints, p->p.cache.SolutionStatus===Regular);
 	singPoints := select(refinedPoints, p->p.cache.SolutionStatus===Singular);
+	print (#regPoints, #singPoints);
 	if #singPoints > 0 then
-	  << "warning: singular points encountered in the COMPUTATION by hypersurfaceSection(WitnessSet,...): " << endl;
+ 	  << "warning: singular points encountered in the COMPUTATION by hypersurfaceSection(WitnessSet,...): " << endl;
 	targetPoints = regPoints;
 	if DBG>2 then << "( regeneration: " << net cOut << " meets V(f) at " 
 	<< #targetPoints << " points for" << endl 
 	<< "  f = " << f << " )" << endl;
 	f' := ideal (equations cOut | {f});
 	nonJunkPoints := select(targetPoints, p-> not isPointOnAnyComponent(p,varietyToAvoid)); -- this is very slow		    
+	junkPoints := select(targetPoints, p-> isPointOnAnyComponent(p,varietyToAvoid)); -- this is very slow		    
+	if #junkPoints > 0 and DBG>2 then << "   #junk points = " << #junkPoints << endl;
 	newW := witnessSet(f',slice',selectUnique(nonJunkPoints, Tolerance=>1e-4));--!!!
 	if DBG>2 then << "   new component " << peek newW << endl;
 	check newW;
