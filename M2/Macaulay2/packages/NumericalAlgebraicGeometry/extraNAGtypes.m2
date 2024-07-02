@@ -207,7 +207,7 @@ code x
 
 specialize (GateSystem, AbstractPoint) := GateSystem => (GS,p) -> (
     if numParameters GS != #coordinates p then error "wrong number of parameter values"; 
-    gateSystem(vars GS, sub(gateMatrix GS, gateMatrix matrix p, vars GS))
+    gateSystem(vars GS, sub(gateMatrix GS, parameters GS, gateMatrix matrix p))
     )
 
 -- jacobian PolySystem := ??? -- where is this used?
