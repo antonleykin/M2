@@ -277,8 +277,8 @@ Node
 
 	      For all functions the option Verbosity can be used. It has levels 0, 1, 2. The default is 0. 
 
-	      Msolve supports parelllel computations. The option "number of threads" is used to set this. 
-	      The defualt value is allowableThreads, but this can be set manually by the user when 
+	      Msolve supports parallel computations. The option "number of threads" is used to set this. 
+	      The default value is allowableThreads, but this can be set manually by the user when 
 	      calling a function. E.g. for an ideal I:
 	      msolveGB(I, Verbosity=>2, "number of threads"=>6)
 	      
