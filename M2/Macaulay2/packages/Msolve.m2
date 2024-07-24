@@ -49,12 +49,12 @@ inputOkay(Ideal):=I->(
     if not instance(R,PolynomialRing) then (print "input must be in a polynomial ring over a field";return false;);
     kk:=coefficientRing(R);
     if (instance(kk,InexactFieldFamily) or instance(kk,InexactField)) then(
-        print "input must be over the rationals or a (prime) finite field of chacteristic between 2^16 and 2^32";
+        print "input must be over the rationals or a (prime) finite field of chacteristic less than 2^32";
 	return false;
 	);
     if char(kk)>0 then (
-	if (char(kk)<2^16) or (char(kk)>2^32) then(
-	    print "input must be over the rationals or a (prime) finite field of chacteristic between 2^16 and 2^32";
+	if (char(kk)>2^32) then(
+	    print "input must be over the rationals or a (prime) finite field of chacteristic less than 2^32";
 	    return false;
 	    );
 	);
@@ -296,13 +296,13 @@ Node
     	msolveGB(I)
     Inputs
     	I:Ideal
-	    an ideal in a polynomial ring with GrevLex order and either rational coefficients, integer coefficients, or finite field coefficients. For a finite field the characteristic must be between 2^16 and 2^32. 
+	    an ideal in a polynomial ring with GrevLex order and either rational coefficients, integer coefficients, or finite field coefficients. For a finite field the characteristic must be less than 2^32. 
     Outputs
         GB:Matrix
 	    a matrix whose columns form a Groebner basis for the input ideal I, in the GrevLex order.    
     Description 
         Text
-    	    This functions uses the F4 implementation in the msolve package to compute a Groebner basis, in GrevLex order, of a polynomial ideal with either rational coefficients or finite field coefficients with characteristic between 2^16 and 2^32. If the input ideal is a polynomial ring with monomial order other than GrevLex a GrevLex basis is returned (and no warning is given). The input ideal may also be given in a ring with integer coefficients, in this case a Groebner basis for the given ideal over the rationals  will be computed, denominators will be cleared, and the output will be a Groebner basis over the rationals in GrevLex order with integer coefficients.
+    	    This functions uses the F4 implementation in the msolve package to compute a Groebner basis, in GrevLex order, of a polynomial ideal with either rational coefficients or finite field coefficients with characteristic less than 2^32. If the input ideal is a polynomial ring with monomial order other than GrevLex a GrevLex basis is returned (and no warning is given). The input ideal may also be given in a ring with integer coefficients, in this case a Groebner basis for the given ideal over the rationals  will be computed, denominators will be cleared, and the output will be a Groebner basis over the rationals in GrevLex order with integer coefficients.
     	Text
 	    First an example over a finite field
 	Example
@@ -332,13 +332,13 @@ Node
     	msolveLeadMonomials(I)
     Inputs
     	I:Ideal
-	    an ideal in a polynomial ring with GrevLex order and either rational coefficients, integer coefficients, or finite field coefficients. For a finite field the characteristic must be between 2^16 and 2^32. 
+	    an ideal in a polynomial ring with GrevLex order and either rational coefficients, integer coefficients, or finite field coefficients. For a finite field the characteristic must be less than 2^32. 
     Outputs
         GB:Matrix
 	    a matrix whose columns are the leading monomials (of a Groebner basis for) the input ideal I, in the GrevLex order.    
     Description 
         Text
-    	    This functions uses the F4 implementation in the msolve package to compute leading monomials via a Groebner basis, in GrevLex order, of a polynomial ideal with either rational coefficients or finite field coefficients with characteristic between 2^16 and 2^32. If the input ideal is a polynomial ring with monomial order other than GrevLex a GrevLex basis is returned (and no warning is given). The input ideal may also be given in a ring with integer coefficients, in this case a Groebner basis for the given ideal over the rationals  will be computed, denominators will be cleared, and the output will be a Groebner basis over the rationals in GrevLex order with integer coefficients.
+    	    This functions uses the F4 implementation in the msolve package to compute leading monomials via a Groebner basis, in GrevLex order, of a polynomial ideal with either rational coefficients or finite field coefficients with characteristic less than 2^32. If the input ideal is a polynomial ring with monomial order other than GrevLex a GrevLex basis is returned (and no warning is given). The input ideal may also be given in a ring with integer coefficients, in this case a Groebner basis for the given ideal over the rationals  will be computed, denominators will be cleared, and the output will be a Groebner basis over the rationals in GrevLex order with integer coefficients.
     	Text
 	    First an example over a finite field
 	Example
@@ -468,7 +468,7 @@ Node
     	msolveSaturate(I)
     Inputs
     	I:Ideal
-	    an ideal in a polynomial ring with GrevLex order and finite field coefficients. The finite field must have characteristic between 2^16 and 2^32. 
+	    an ideal in a polynomial ring with GrevLex order and finite field coefficients. The finite field must have characteristic less than 2^32. 
 	f:RingElement
 	    a polynomial in the same ring as I.    
     Outputs
@@ -497,7 +497,7 @@ Node
     	msolveEliminate(I,elimVars)
     Inputs
     	I:Ideal
-	    an ideal in a polynomial ring with rational or finite field coefficients. If working over a finite field, it must have characteristic between 2^16 and 2^32. 
+	    an ideal in a polynomial ring with rational or finite field coefficients. If working over a finite field, it must have characteristic less than 2^32. 
 	elimVars:List
 	    a list of variables in the same ring as I, these variables will be eliminated.    
     Outputs
