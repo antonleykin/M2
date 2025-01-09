@@ -75,14 +75,6 @@ exportMutable {
     }
 debug Core 
 
-
-concatenateNets = method()
-concatenateNets List := L -> (
-    result := net "";
-    for a in L do result = result | net a;
-    result
-    )
-
 Gate = new Type of HashTable
 GateMatrix = new Type of List
 InputGate = new Type of Gate -- "abstract" unit of input  
@@ -110,8 +102,6 @@ inputGate Thing := a -> add2GC new InputGate from {
     }
 toExternalString InputGate := a -> "inputGate(" | toExternalString a.Name | ")"  
  
-net InputGate := g -> net g.Name
-
 oneGate = inputGate 1
 minusOneGate = inputGate(-1)
 zeroGate = inputGate 0
@@ -133,7 +123,6 @@ if member(class g.Name, {Symbol, IndexedVariable})
 then g.Name <- g.Name else error "expected the InputGate's Name to be a Symbol or an IndexedVariable" 
 
 SumGate = new Type of Gate
-net SumGate := g -> concatenateNets( {"("} | between(" + ", g.Inputs) | {")"} )
 Gate + Gate := (a,b) -> add2GC (
     if a===zeroGate then b else 
     if b===zeroGate then a else 
@@ -149,7 +138,6 @@ sumGate List := L -> add2GC(
     )
  
 ProductGate = new Type of Gate
-net ProductGate := g -> concatenateNets( {"("} | between(" * ", g.Inputs) | {")"} )
 Gate * Gate := (a,b) -> add2GC (
     if a===zeroGate or b===zeroGate then zeroGate else 
     if a===oneGate then b else 
@@ -187,7 +175,6 @@ RingElement - Gate := (a,b) -> inputGate a - b
 Gate - RingElement  := (a,b) -> a - inputGate b
 
 DetGate = new Type of Gate
-net DetGate := g -> concatenateNets {"det", MatrixExpression applyTable(g.Inputs,net)}
 detGate = method()
 detGate GateMatrix := M -> detGate entries M 
 detGate List := L -*doubly nested list*- -> add2GC(
@@ -198,7 +185,6 @@ detGate List := L -*doubly nested list*- -> add2GC(
     )
 
 DivideGate = new Type of Gate
-net DivideGate := g -> net Divide(first g.Inputs,last g.Inputs) 
 divideGate = method()
 divideGate List := L -> divideGate(L#0,L#1)
 divideGate (Gate, Gate) := (a,b) -> add2GC(
@@ -884,77 +870,20 @@ FY = value(diff(Y,F),h)
 assert ( value(compress diff(Y,G/F), h) == (GY*value(F,h) - value(G,h)*FY)/(value(F,h))^2 )
 ///
 
+------------------------
+-- expression, net, html
+expression InputGate := g -> expression g.Name
+expression SumGate := g -> sum(g.Inputs,expression)
+expression ProductGate := g -> product(g.Inputs,expression)
+expression DivideGate := g -> expression g.Inputs#0 / expression g.Inputs#1
+html GateMatrix := html @@ expression
+eGM:=
+expression GateMatrix := g -> new MatrixExpression from applyTable(g,expression)
+expression DetGate := g -> (expression det) eGM g.Inputs
+net Gate := net @@ expression
+html Gate := html @@ expression
+
 beginDocumentation()
--* run
-
-restart
-installPackage "SLPexpressions"
-
-to see missing docs.
- 
--------- TEMPLATE ------------------
-document {
-    Key => {,},
-    Headline => "",
-    Usage => "",
-    Inputs => { ""=>"" },
-    Outputs => { "" },
-    "", 
-    EXAMPLE lines ///
-    ///,
-    Caveat => {"" },
-    SeeAlso=>{()}
-    }
-    
-document {
-    Key => {SLPexpressions},
-    Headline => "Straight Line Programs and expressions for evaluation circuits",
-    "", 
-    EXAMPLE lines ///
-    X = inputGate x
-    f = X + 1
-    n = 12;
-    for i from 1 to n do f = f*f -- f = (x+1)^(2^n)
-    time A = value(f,valueHashTable({X},{1}))  
-    ZZ[y];
-    time B = sub((y+1)^(2^n),{y=>1})    
-    A == B
-    ///,
-    SeeAlso=>{"NumericalAlgebraicGeometry","NAGtypes"}
-    }
-    
-document {
-    Key => {Gate,InputGate,SumGate,ProductGate},
-    "Some basic gates:",
-    UL{
-	{TO InputGate, " is constructed with ", TO inputGate, TT " name", ", if ", TT "name", 
-	    " is a number then this gate is assumed to be constant"},
-	{TO SumGate, " is constructed with ", TO sumGate, TT " {list of gates}", " or ", TO (symbol +,Gate,Gate)},
-	{TO ProductGate, " is constructed with ", TO productGate, TT " {list of gates}", " or ", TO (symbol *,Gate,Gate)}	 
-	},  
-    Headline => "an expression that is a part of an evaluation circuit (abstract type)"
-    }
-
-document {
-    Key => {GateMatrix},
-    Headline => "a matrix of Gates",
-    "An object of this type is a matrix with Gates as entries. 
-    Some algebraic operations (matrix multiplication, determinant, etc.) are defined for this type. 
-    It is provided, in part, for convenience of setting up involved evaluation circuits.",
-    PARA {
-	"The package ", TO SLPexpressions, " overrides ", TO matrix, " to allow a table (a nested list) of ", TO Gate,"s as an argument." 
-	},    
-    EXAMPLE lines ///
-    X = inputGate x; Y = inputGate y; 
-    A = matrix { apply(5,i->i*X) }
-    B = matrix { apply(4,i->Y^i) }
-    C = transpose A * B    
-    numrows C, numcols C
-    ///,
-    SeeAlso=>{Gate, Matrix}
-    }
-    
-*-
 
 load "./SLPexpressions/doc.m2"
 
@@ -974,11 +903,6 @@ constants,
 (constants,ProductGate),
 (constants,SumGate),
 -- (isConstant,InputGate),
-(net,DetGate),
-(net,DivideGate),
-(net,InputGate),
-(net,ProductGate),
-(net,SumGate),
 (support,DetGate),
 (support,DivideGate),
 (support,GateMatrix),
@@ -1000,8 +924,6 @@ installPackage ("SLPexpressions",RerunExamples=>true, RemakeAllDocumentation=>tr
 installPackage ("SLPexpressions",RerunExamples=>false, RemakeAllDocumentation=>true)
 debug loadPackage("SLPexpressions", Reload => true)
 viewHelp "SLPexpressions"
-
--- (old way) installPackage("SLPexpressions", SeparateExec=>true)
 
 -- install docs with no absolute links
 uninstallPackage "Style"

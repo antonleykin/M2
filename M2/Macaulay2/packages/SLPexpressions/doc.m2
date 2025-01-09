@@ -22,6 +22,14 @@ doc ///
             time B = sub((y+1)^(2^n),{y=>1})    
             A == B
 	Text
+	    The following documentation nodes provide overview of other facilities:
+	    @TO "creating gates"@,
+	    @TO "evaluating gates"@,
+	    @TO "working with gate matrices"@,
+	    @TO "arithmetic with circuits"@,
+	    @TO "measuring the size of circuits"@,
+	    @TO "compressing circuits"@,
+	    @TO "differentiating circuits"@.
     SeeAlso
         NAGtypes
 	makeCompiledSLProgram
