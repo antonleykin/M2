@@ -873,8 +873,8 @@ assert ( value(compress diff(Y,G/F), h) == (GY*value(F,h) - value(G,h)*FY)/(valu
 ------------------------
 -- expression, net, html
 expression InputGate := g -> expression g.Name
-expression SumGate := g -> sum(g.Inputs,expression)
-expression ProductGate := g -> product(g.Inputs,expression)
+expression SumGate := g -> Parenthesize sum(g.Inputs,expression)
+expression ProductGate := g -> Parenthesize product(g.Inputs,expression)
 expression DivideGate := g -> expression g.Inputs#0 / expression g.Inputs#1
 html GateMatrix := html @@ expression
 eGM:=

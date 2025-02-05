@@ -14,7 +14,7 @@ doc ///
         Example
             declareVariable x
             f = x + 1
-            n = 12;
+	    n = 12;
             for i from 1 to n do f = f*f -- f = (x+1)^(2^n)
             slp = makeInterpretedSLProgram({x},{f})
 	    time A = evaluate(slp,matrix{{1}});
