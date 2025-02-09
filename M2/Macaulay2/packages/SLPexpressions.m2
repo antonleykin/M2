@@ -738,6 +738,27 @@ XoC = X/C
 cCode (matrix{{XXC,detXCCX,0},{XoC,1,2}},matrix{{X,C}})
 ///
 
+-----------------------------------------------
+-- gpuCode functions (use PrintTable from above)
+
+gpuCode = method()
+gpuCode (GateMatrix,GateMatrix,File):= (M,I,f) -> gpuCode(flatten entries M, flatten entries I,f)
+gpuCode (List,List,File) := (outputs,inputs,f) -> (
+    h := newPrintTable " = ";
+    scan(inputs, g->printName(g,h));
+    scan(outputs, g->printName(g,h));
+    f << "__kernel void evaluateSLPonGPUs(__global float* data,__global float* output) {
+    uint global_addr_input = get_global_id(0) * " << #inputs << ";
+    uint global_addr_output = get_global_id(0) * " << #outputs << ";" << endl;
+    f <<"    float " << concatenate between(",",apply(#inputs,i->"X"|i)) << ";" << endl;
+    scan(h#"#vars", i -> f << ("    X"|i|" = data[global_addr_input+"|i|"];") << endl);
+    scan(h#"#lines", i -> f << "    float " << h#i << ";" << endl);
+    scan(#outputs, i-> f << ("    output[global_addr_output+"|i|"] = "|printName(outputs#i,h)|";") << endl); 
+    f << "}" << endl;
+    )
+gpuCode (GateMatrix,GateMatrix) := (M,I) -> gpuCode(flatten entries M, flatten entries I)
+gpuCode (List,List) := (outputs,inputs) -> gpuCode(outputs,inputs,stdio)
+
 --fill m x n matrix with values from another matrix
 matrix (Matrix,ZZ,ZZ) := o -> (M,m,n) -> (
     R := ring M;
