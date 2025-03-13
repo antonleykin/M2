@@ -52,31 +52,15 @@ export {
     "getVarGates", "gatePolynomial",
     "ValueHashTable","valueHashTable",
     "SLProgram", "InterpretedSLProgram", "makeInterpretedSLProgram",
-    "setTryJustInTimeCompilation", "makeSLProgram",
-    "CompiledSLProgram", "makeCompiledSLProgram"
+    "makeSLProgram"
     }
-setTryJustInTimeCompilation = method()
-setTryJustInTimeCompilation Boolean := v -> if v then (
-    w := (run "gcc --version" == 0);
-    if w then (
-	print "-- SLPexpressions: Found `gcc`. Just-in-time compilation will be attempted by `makeSLProgram`.";
-    	print "-- This is an experimental feature that works only for evaluation over real and complex numbers.";
-	print "-- (To disable, `setTryJustInTimeCompilation false`)" 
-	) else (
-	print "-- SLPexpressions: Couldn't find `gcc` --- `makeSLProgram` will output `InterpretedSLProgram`.";
-	);
-    	TryJustInTimeCompilation = w
-    ) else TryJustInTimeCompilation = false
 
-TryJustInTimeCompilation = false
---setTryJustInTimeCompilation true 
-
+Gate = new Type of HashTable
+GateMatrix = new Type of List
 exportMutable {
     }
 debug Core 
 
-Gate = new Type of HashTable
-GateMatrix = new Type of List
 InputGate = new Type of Gate -- "abstract" unit of input  
 
 isConstant InputGate := a -> (instance(a.Name,Number) or instance(a.Name, RingElement))
@@ -426,122 +410,6 @@ slp = makeInterpretedSLProgram(getVarGates R,{gf})
 assert(evaluate(slp,vars R)==f)
 ///	
 
---------------------------------------------------
--- (Raw)SLProgram routines
---------------------------------------------------
-SLProgram = new Type of HashTable -- abstract type
-errorSLProgramAbstract := () -> error "not implemented (SLProgram is an abstract Type)"
-evaluate(SLProgram, MutableMatrix, MutableMatrix) := (slp,I,O) -> errorSLProgramAbstract() 
-evaluate(SLProgram, Matrix) := (slp, inp) -> (
-		I := mutableMatrix inp;
-		O := mutableMatrix(ring I, 1, numberOfOutputs slp);
-		evaluate(slp,I,O);
-		matrix O
-		)
-numberOfInputs = method()
-numberOfInputs SLProgram := slp -> errorSLProgramAbstract()
-numberOfOutputs = method()
-numberOfOutputs SLProgram := slp -> errorSLProgramAbstract()
-
-InterpretedSLProgram = new Type of SLProgram
-CompiledSLProgram = new Type of SLProgram
- 
--------------------
-makeSLProgram = method()
-makeSLProgram (List,List) := (inL,outL) -> (
-    if TryJustInTimeCompilation then  
-    makeCompiledSLProgram else makeInterpretedSLProgram
-    ) (inL,outL)
-makeSLProgram (GateMatrix,GateMatrix) := (inM,outM) -> makeSLProgram(flatten entries inM, flatten entries outM)
--------------------
-makeCompiledSLProgram = method(TypicalValue=>CompiledSLProgram)
-makeCompiledSLProgram (List,List) := (inL,outL) -> (
-    new CompiledSLProgram from {
-	"input" => inL,
-	"output" => outL,
-	cache => new CacheTable 
-	}
-    )
-makeCompiledSLProgram (GateMatrix,GateMatrix) := (inM,outM) -> makeCompiledSLProgram(flatten entries inM, flatten entries outM)
-numberOfInputs CompiledSLProgram := slp -> #(slp#"input")
-numberOfOutputs CompiledSLProgram := slp -> #(slp#"output")
-
--------------------
-makeInterpretedSLProgram = method(TypicalValue=>InterpretedSLProgram)
-makeInterpretedSLProgram (List,List) := (inL,outL) -> ( 
-    s := rawSLProgram(1); -- 1 means nothing anymore
-    t := new MutableHashTable;
-    varPositions := appendToSLProgram(s,inL,t); 
-    out := appendToSLProgram(s,outL,t);
-    rawSLPsetOutputPositions(s,out);
-    consts := constants outL;
-    constantPositions := appendToSLProgram(s,consts,t);
-    constantValues := matrix{consts/(c->c.Name)}; -- conceptually: constants should be anything that can be evaluated to any precision
-    new InterpretedSLProgram from {
-				RawSLProgram => s, 
-				"number of inputs" => #inL,
-				"number of outputs" => #outL,
-				"variable positions" => varPositions,
-				"constants" =>  constantValues,
-				"constant positions" => constantPositions,
-				cache => new CacheTable 
-				}
-    )
-makeInterpretedSLProgram (GateMatrix,GateMatrix) := (inM,outM) -> makeInterpretedSLProgram(flatten entries inM, flatten entries outM)
-numberOfInputs SLProgram := slp -> slp#"number of inputs"
-numberOfOutputs SLProgram := slp -> slp#"number of outputs"
-
-----------------
-appendToSLProgram = method()
-appendToSLProgram (RawSLProgram, InputGate, MutableHashTable) := (slp, g, t) -> 
-    if t#?g then t#g else t#g = rawSLPInputGate(slp)
-appendToSLProgram (RawSLProgram, List, MutableHashTable) := (slp, L, t) -> 
-    apply(L,a->appendToSLProgram(slp,a,t))
-appendToSLProgram (RawSLProgram, SumGate, MutableHashTable) := (slp, g, t) -> 
-    if t#?g then t#g else 
-       t#g = rawSLPSumGate(slp, appendToSLProgram(slp,g.Inputs,t))
-appendToSLProgram (RawSLProgram, ProductGate, MutableHashTable) := (slp, g, t) -> 
-    if t#?g then t#g else 
-       t#g = rawSLPProductGate(slp, appendToSLProgram(slp,g.Inputs,t))
-appendToSLProgram (RawSLProgram, DetGate, MutableHashTable) := (slp, g, t) -> 
-    if t#?g then t#g else 
-       t#g = rawSLPDetGate(slp, appendToSLProgram(slp,flatten g.Inputs,t))
-appendToSLProgram (RawSLProgram, DivideGate, MutableHashTable) := (slp, g, t) -> 
-    if t#?g then t#g else 
-       t#g = rawSLPDivideGate(slp, appendToSLProgram(slp,g.Inputs,t))
-
-TEST /// 
--*
-restart
-needsPackage "SLPexpressions"
-*-
-debug SLPexpressions
-X = inputGate symbol X
-C = inputGate symbol C
-XpC = X+C
-XXC = productGate{X,X,C}
-detXCCX = detGate{{X,C},{C,X}}
-XoC = X/C
-s = makeInterpretedSLProgram({C,X},{XXC,detXCCX,XoC,XpC+XoC}) 
-
-debug Core
-(consts,indets):=(s#"constant positions",s#"variable positions")
-assert(#consts == 0)
-(newConsts,newIndets):=(take(indets,1),drop(indets,1))
-eQQ = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_QQ}}) -- set C=3_QQ
-output = mutableMatrix(QQ,1,4)
-rawSLEvaluatorEvaluate(eQQ, raw mutableMatrix{{7_QQ}}, raw output) 
-output
-eCC = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_CC}})
-output = mutableMatrix(CC,1,4)
-rawSLEvaluatorEvaluate(eCC, raw mutableMatrix{{7_CC}}, raw output) 
-output
-R = CC_1000
-eCC = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_R}})
-rawM = mutableMatrix(R,1,4)
-rawSLEvaluatorEvaluate(eCC, raw mutableMatrix{{7_R}}, raw rawM) 
-assert (abs(last flatten entries rawM - 37/3) < 2^(-999))
-///
 
 -------------------------------------
 -- GateMatrix is NOT A GATE
@@ -738,27 +606,6 @@ XoC = X/C
 cCode (matrix{{XXC,detXCCX,0},{XoC,1,2}},matrix{{X,C}})
 ///
 
------------------------------------------------
--- gpuCode functions (use PrintTable from above)
-
-gpuCode = method()
-gpuCode (GateMatrix,GateMatrix,File):= (M,I,f) -> gpuCode(flatten entries M, flatten entries I,f)
-gpuCode (List,List,File) := (outputs,inputs,f) -> (
-    h := newPrintTable " = ";
-    scan(inputs, g->printName(g,h));
-    scan(outputs, g->printName(g,h));
-    f << "__kernel void evaluateSLPonGPUs(__global float* data,__global float* output) {
-    uint global_addr_input = get_global_id(0) * " << #inputs << ";
-    uint global_addr_output = get_global_id(0) * " << #outputs << ";" << endl;
-    f <<"    float " << concatenate between(",",apply(#inputs,i->"X"|i)) << ";" << endl;
-    scan(h#"#vars", i -> f << ("    X"|i|" = data[global_addr_input+"|i|"];") << endl);
-    scan(h#"#lines", i -> f << "    float " << h#i << ";" << endl);
-    scan(#outputs, i-> f << ("    output[global_addr_output+"|i|"] = "|printName(outputs#i,h)|";") << endl); 
-    f << "}" << endl;
-    )
-gpuCode (GateMatrix,GateMatrix) := (M,I) -> gpuCode(flatten entries M, flatten entries I)
-gpuCode (List,List) := (outputs,inputs) -> gpuCode(outputs,inputs,stdio)
-
 --fill m x n matrix with values from another matrix
 matrix (Matrix,ZZ,ZZ) := o -> (M,m,n) -> (
     R := ring M;
@@ -770,7 +617,114 @@ matrix (Ring,RawMatrix,ZZ,ZZ) := o -> (R,M,m,n) -> (
     map(R^m,R^n,(i,j)->e#(n*i+j)) 
     )
 
-rawSLEvaluatorK = method()
+SLProgram = new Type of HashTable -- abstract type
+InterpretedSLProgram = new Type of SLProgram
+CompiledSLProgram = new Type of SLProgram
+GPUEvaluatedSLProgram = new Type of SLProgram
+
+--------------------------------------------------
+-- (Raw)SLProgram routines
+--------------------------------------------------
+errorSLProgramAbstract := () -> error "not implemented (SLProgram is an abstract Type)"
+evaluate(SLProgram, MutableMatrix, MutableMatrix) := (slp,I,O) -> errorSLProgramAbstract() 
+evaluate(SLProgram, Matrix) := (slp, inp) -> (
+		I := mutableMatrix inp;
+		O := mutableMatrix(ring I, 1, numberOfOutputs slp);
+		evaluate(slp,I,O);
+		matrix O
+		)
+numberOfInputs = method()
+numberOfInputs SLProgram := slp -> errorSLProgramAbstract()
+numberOfOutputs = method()
+numberOfOutputs SLProgram := slp -> errorSLProgramAbstract()
+
+-------------------
+makeSLProgram = method()
+makeSLProgram (List,List) := (inL,outL) -> (
+    if TryJustInTimeCompilation then  
+    makeCompiledSLProgram else makeInterpretedSLProgram
+    ) (inL,outL)
+makeSLProgram (GateMatrix,GateMatrix) := (inM,outM) -> makeSLProgram(flatten entries inM, flatten entries outM)
+
+-------------------
+makeInterpretedSLProgram = method(TypicalValue=>InterpretedSLProgram)
+makeInterpretedSLProgram (List,List) := (inL,outL) -> ( 
+    s := rawSLProgram(1); -- 1 means nothing anymore
+    t := new MutableHashTable;
+    varPositions := appendToSLProgram(s,inL,t); 
+    out := appendToSLProgram(s,outL,t);
+    rawSLPsetOutputPositions(s,out);
+    consts := constants outL;
+    constantPositions := appendToSLProgram(s,consts,t);
+    constantValues := matrix{consts/(c->c.Name)}; -- conceptually: constants should be anything that can be evaluated to any precision
+    new InterpretedSLProgram from {
+				RawSLProgram => s, 
+				"number of inputs" => #inL,
+				"number of outputs" => #outL,
+				"variable positions" => varPositions,
+				"constants" =>  constantValues,
+				"constant positions" => constantPositions,
+				cache => new CacheTable 
+				}
+    )
+makeInterpretedSLProgram (GateMatrix,GateMatrix) := (inM,outM) -> makeInterpretedSLProgram(flatten entries inM, flatten entries outM)
+numberOfInputs SLProgram := slp -> slp#"number of inputs"
+numberOfOutputs SLProgram := slp -> slp#"number of outputs"
+
+----------------
+appendToSLProgram = method()
+appendToSLProgram (RawSLProgram, InputGate, MutableHashTable) := (slp, g, t) -> 
+    if t#?g then t#g else t#g = rawSLPInputGate(slp)
+appendToSLProgram (RawSLProgram, List, MutableHashTable) := (slp, L, t) -> 
+    apply(L,a->appendToSLProgram(slp,a,t))
+appendToSLProgram (RawSLProgram, SumGate, MutableHashTable) := (slp, g, t) -> 
+    if t#?g then t#g else 
+       t#g = rawSLPSumGate(slp, appendToSLProgram(slp,g.Inputs,t))
+appendToSLProgram (RawSLProgram, ProductGate, MutableHashTable) := (slp, g, t) -> 
+    if t#?g then t#g else 
+       t#g = rawSLPProductGate(slp, appendToSLProgram(slp,g.Inputs,t))
+appendToSLProgram (RawSLProgram, DetGate, MutableHashTable) := (slp, g, t) -> 
+    if t#?g then t#g else 
+       t#g = rawSLPDetGate(slp, appendToSLProgram(slp,flatten g.Inputs,t))
+appendToSLProgram (RawSLProgram, DivideGate, MutableHashTable) := (slp, g, t) -> 
+    if t#?g then t#g else 
+       t#g = rawSLPDivideGate(slp, appendToSLProgram(slp,g.Inputs,t))
+
+TEST /// 
+-*
+restart
+needsPackage "SLPexpressions"
+*-
+debug SLPexpressions
+X = inputGate symbol X
+C = inputGate symbol C
+XpC = X+C
+XXC = productGate{X,X,C}
+detXCCX = detGate{{X,C},{C,X}}
+XoC = X/C
+s = makeInterpretedSLProgram({C,X},{XXC,detXCCX,XoC,XpC+XoC}) 
+
+debug Core
+(consts,indets):=(s#"constant positions",s#"variable positions")
+assert(#consts == 0)
+(newConsts,newIndets):=(take(indets,1),drop(indets,1))
+eQQ = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_QQ}}) -- set C=3_QQ
+output = mutableMatrix(QQ,1,4)
+rawSLEvaluatorEvaluate(eQQ, raw mutableMatrix{{7_QQ}}, raw output) 
+output
+eCC = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_CC}})
+output = mutableMatrix(CC,1,4)
+rawSLEvaluatorEvaluate(eCC, raw mutableMatrix{{7_CC}}, raw output) 
+output
+R = CC_1000
+eCC = rawSLEvaluator(s#RawSLProgram,newConsts,newIndets,raw mutableMatrix{{3_R}})
+rawM = mutableMatrix(R,1,4)
+rawSLEvaluatorEvaluate(eCC, raw mutableMatrix{{7_R}}, raw rawM) 
+assert (abs(last flatten entries rawM - 37/3) < 2^(-999))
+///
+
+rawSLEvaluatorK = method() -- defined in "JIT/CompiledSLP.m2", "GPU/gpu-support.m2", and below in this file (for InterpretedSLProgram)
+
 rawSLEvaluatorK (InterpretedSLProgram, Ring) := (slp, K) -> if slp.cache#?K then 
 slp.cache#K else slp.cache#K = rawSLEvaluator(
     slp#RawSLProgram, 
@@ -778,7 +732,7 @@ slp.cache#K else slp.cache#K = rawSLEvaluator(
     slp#"variable positions",
     raw mutableMatrix promote(slp#"constants",K)
     )
-  
+
 evaluate(InterpretedSLProgram, MutableMatrix, MutableMatrix) := (slp,I,O) -> (
 		--if numrows I =!= 1 or numrows O =!= 1 then error "expected matrices with 1 row";
 		if numrows I * numcols I =!= slp#"number of inputs" then error "wrong number of inputs";
@@ -788,45 +742,8 @@ evaluate(InterpretedSLProgram, MutableMatrix, MutableMatrix) := (slp,I,O) -> (
     rawSLEvaluatorEvaluate(rawSLEvaluatorK(slp,K), raw I, raw O);
     )
 
-rawSLEvaluatorK (CompiledSLProgram, Ring) := (slp, K) -> if slp.cache#?K then 
-slp.cache#K else (
-    typeName := (
-	if K === RR_53 then "double" else 
-	if K === CC_53 then "std::complex<double>" else 
-    	error ("just-in-time compilation is not implemented for "| toString K) 
-    	);
-    fname := temporaryFileName() | "-GateSystem";
-    cppName := fname | ".cpp";
-    --cppName := fname | ".c";
-    libName := fname | ".so";
-    f := openOut cppName;
-    f << "#include <complex>" << endl; 
-    f << "std::complex<double> ii(0,1);" << endl;
-    f << "typedef " | typeName | " C;" << endl; -- << "extern" << endl; -- the type needs to be adjusted!!!
-    cCode (slp#"output", slp#"input", f);
-    f << close;
-    compileCommand := "g++ -shared -Wall -fPIC -Wextra -O3 -o "| libName | " " | cppName;
-    --compileCommand := "gcc -shared -Wall -fPIC -Wextra -o "| libName | " " | cppName;
-    print compileCommand;
-    if run compileCommand > 0 then error ("error compiling a straightline program:\n"|compileCommand);      
-    print get cppName;
-    print libName;
-    symNames := get ("!nm "|libName); 
-    (a,b) := first regex("[0-9a-zA-Z_]*evaluate[0-9a-zA-Z_]*", symNames);
-    print ("mangled function name: "|substring(symNames,a,b)); 
-    slp.cache#K = rawCompiledSLEvaluator(libName, #(slp#"input"), #(slp#"output"),
-	 raw mutableMatrix(K,0,0) -- we need to pass only the field 
-	 )
-    )
-
-evaluate(CompiledSLProgram, MutableMatrix, MutableMatrix) := (slp,I,O) -> (
-		--if numrows I =!= 1 or numrows O =!= 1 then error "expected matrices with 1 row";
-		if numrows I * numcols I =!= #(slp#"input") then error "wrong number of inputs";
-		if numrows O * numcols O =!= #(slp#"output") then error "wrong number of outputs";
-		K := ring I; 
-    if ring O =!= K then error "expected same Ring for input and output";
-    rawSLEvaluatorEvaluate(rawSLEvaluatorK(slp,K), raw I, raw O);
-    )
+load "./SLPexpressions/JIT/CompiledSLP.m2"
+load "./SLPexpressions/GPU/gpu-support.m2"
 
 TEST /// 
 X = inputGate symbol X

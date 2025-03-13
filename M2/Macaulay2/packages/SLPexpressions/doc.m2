@@ -32,7 +32,6 @@ doc ///
 	    @TO "differentiating circuits"@.
     SeeAlso
         NAGtypes
-	makeCompiledSLProgram
 ///
 
 doc ///

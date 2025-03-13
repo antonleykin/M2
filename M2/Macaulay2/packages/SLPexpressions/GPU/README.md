@@ -15,9 +15,8 @@ Make an GIT-compiled evaluator for SLPexpressions.
   Compile as a DLL.
 - [ ] Use `ForeignFunctions` to invoke functions from DLL.
 
-### Medium Priority
-
 ### Low Priority
+- [ ] Attempt to do homotopy continuation with GPUs.
 
 ## Completed Tasks
 - [x] `gpuCode` produces a "kernel" that evaluates a `GateMatrix`.
@@ -27,5 +26,6 @@ g++ cl-SLPtoGPUs.cpp -framework OpenCL
 ```
 
 ## Notes
-Platform dependent. 
-[Mar 2025] Everything experiments are done on Apple M1 Pro (GPU with 16 cores).
+Platform dependent.
+
+[Mar 2025] Experiments are done on Apple M1 Pro (GPU with 16 cores).
