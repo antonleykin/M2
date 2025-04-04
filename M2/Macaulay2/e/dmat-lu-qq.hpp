@@ -1,7 +1,7 @@
-// This file should only be included once, by what?
+// This file is included only once (by dmat-lu.hpp)
 
 //////////////////////
-// ZZpFlint //////////
+// ZZpFlint ////////// what is this supposed to suggest???
 //////////////////////
 
 #include "dmat-qq-interface-flint.hpp"

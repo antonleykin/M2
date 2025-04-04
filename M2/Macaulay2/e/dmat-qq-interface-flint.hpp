@@ -3,11 +3,11 @@
 #ifndef _flintqq_mat_hpp_
 #define _flintqq_mat_hpp_
 
-// This class is designed to use DMat<M2::ARingQQ>, which stores elements as gmp
+// This class is designed to use DMat<M2::ARingZZ>, which stores elements as gmp
 // ints
 // This sets up flint fmpq_mat matrices, and provides translation.  This is
 // significantly faster than doing the operations in a naive manner.
-// This will become un-needed once DMat<ARingQQ> starts using flint
+// This will become un-needed once DMat<ARingZZ> starts using flint
 // integers/rationals.
 
 class FlintZZMat
@@ -57,6 +57,13 @@ class FlintZZMat
       }
   }
 };
+
+// This class is designed to use DMat<M2::ARingQQ>, which stores elements as gmp
+// ints
+// This sets up flint fmpq_mat matrices, and provides translation.  This is
+// significantly faster than doing the operations in a naive manner.
+// This will become un-needed once DMat<ARingQQ> starts using flint
+// integers/rationals.
 
 class FlintQQMat
 {
