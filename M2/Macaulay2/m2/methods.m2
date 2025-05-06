@@ -237,6 +237,7 @@ options Command  := C   -> options C#0
 options Sequence := key -> (
     if (m := lookup key) =!= null then options m
     else error("no method installed for ", toString key))
+options List := L -> apply(L, options)
 
 oftab := new HashTable from {
     -- MethodFunctionWithOptions
@@ -628,6 +629,7 @@ addHook(MutableHashTable, Thing, Function) := opts -> (store, key, hook) -> (
     store = store#key;
     ind := #store.HookPriority; -- index to add the hook in the list; TODO: use Priority to insert in the middle?
     alg := if opts.Strategy =!= null then opts.Strategy else ind;
+    if not store.HookAlgorithms#?alg then
     store.HookPriority#ind = alg;
     store.HookAlgorithms#alg = hook)
 
@@ -638,9 +640,11 @@ pushInfoLevel :=  n -> (
     infoLevel = infoLevel + n; n)
 popInfoLevel  := (n, s) -> (infoLevel = infoLevel - n; s)
 
+debugHooksLevel = debugLevel
+
 -- This function is mainly used by runHooks, printing a line like this:
  -- (quotient,Ideal,Ideal) with Strategy => Monomial from -*Function[../../Macaulay2/packages/Saturation.m2:196:30-205:82]*-
-debugInfo = (func, key, strategy, infoLevel) -> if debugLevel > infoLevel then printerr(
+debugInfo = (func, key, strategy, infoLevel) -> if debugHooksLevel > infoLevel then printerr(
     toString key, if strategy =!= null then (" with Strategy => ", toString strategy), " from ", toString func)
 
 -- run a single hook
@@ -656,7 +660,7 @@ runHooks(Symbol,                  Thing) := true >> opts -> (key,        args) -
 runHooks(Sequence,                Thing) := true >> opts -> (key,        args) -> runHooks(getHookStore(key, false), key, args, opts)
 runHooks(MutableHashTable, Thing, Thing) := true >> opts -> (store, key, args) -> (
     store = if store#?key then store#key else (
-	if debugLevel > 1 then printerr("runHooks: no hooks installed for ", toString key); return );
+	if debugHooksLevel > 1 then printerr("runHooks: no hooks installed for ", toString key); return );
     alg := if opts.?Strategy then opts.Strategy;
     type := class alg;
     -- if Strategy is not given, run through all available hooks

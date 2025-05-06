@@ -207,13 +207,15 @@ assembleTree := (pkg, nodes) -> (
     graph = new HashTable from apply(nodes, tag -> (
 	    checkIsTag tag;
 	    fkey := format tag;
-	    if  pkg#"raw documentation"#?fkey
-	    and pkg#"raw documentation"#fkey.?Subnodes then (
-		subnodes := pkg#"raw documentation"#fkey.Subnodes;
-		subnodes  = select(deepApply(subnodes, identity), DocumentTag);
-		subnodes  = select(fixup \ subnodes, node -> package node === pkg);
-		tag => getPrimaryTag \ subnodes)
-	    else tag => {}));
+	    rawdoc := pkg#"raw documentation"#fkey ?? ();
+	    content := apply({Description, Acknowledgement,
+		    Contributors, References, Caveat}, key -> try rawdoc#key);
+	    sublinks := deepSelect(content,
+		e -> try e#0 === ("class" => "subnode") else false);
+	    subnodes := rawdoc.Subnodes ?? ();
+	    subnodes  = deepSelect(join(sublinks, subnodes), DocumentTag);
+	    subnodes  = select(fixup \ subnodes, node -> package node === pkg);
+	    tag => getPrimaryTag \ subnodes));
     -- build the forest
     tableOfContents := makeForest(graph, visits);
     -- signal errors
@@ -221,11 +223,11 @@ assembleTree := (pkg, nodes) -> (
 	scan(keys visits#"missing",
 	    node -> (
 		printerr("error: missing reference(s) to subnode documentation: ", format node);
-		printerr("  Parent nodes: ", demark_", " (format \ unique visits#"parents"#node))));
+		printerr("\t", net TABLE apply(unique visits#"parents"#node, tag -> { locate tag, format tag }))));
 	scan(keys visits#"repeated",
 	    node -> (
 		printerr("error: repeated references to subnode documentation: ", format node);
-		printerr("  Parent nodes: ", demark_", " (format \ unique visits#"parents"#node))));
+		printerr("\t", net TABLE apply(unique visits#"parents"#node, tag -> { locate tag, format tag }))));
 	error("installPackage: error in assembling the documentation tree"));
     -- build the navigation links
     buildLinks tableOfContents;
@@ -249,7 +251,8 @@ homeButton     := HREF {"https://macaulay2.com/", "Macaulay2"};
 searchBox      := LITERAL ///<form method="get" action="https://www.google.com/search">
   <input placeholder="Search" type="text" name="q" value="">
   <input type="hidden" name="q" value="site:macaulay2.com/doc">
-</form>///
+</form>
+///
 
 nextButton     := tag -> if NEXT#?tag then HREF { htmlFilename NEXT#tag, "next" }     else "next"
 prevButton     := tag -> if PREV#?tag then HREF { htmlFilename PREV#tag, "previous" } else "previous"
@@ -258,8 +261,8 @@ backwardButton := tag -> ( b := BACKWARD tag; if b =!= null then HREF { htmlFile
 upButton       := tag -> if   UP#?tag then HREF { htmlFilename   UP#tag, "up" } else "up"
 topButton      := tag -> if tag =!= topDocumentTag then topNodeButton(htmlDirectory, topFileName) else "top"
 
-upAncestors := tag -> reverse(
-    n := 0; prepend(tag, while UP#?tag and n < 20 list (n = n+1; tag = UP#tag)))
+upAncestors := tag -> unique prepend(topDocumentTag,
+    fold(1..5, {tag}, (i, prev) -> prepend(UP#(prev#0) ?? break prev, prev)))
 
 -- TODO: revamp this using Bootstrap
 buttonBar := tag -> DIV {

@@ -13,7 +13,7 @@
 
 needs "system.m2" -- for chkrun
 needs "document.m2"
-needs "installPackage.m2" -- TODO: can this be removed?
+needs "installPackage.m2" -- for topFileName
 
 -----------------------------------------------------------------------------
 -- Local variables
@@ -75,6 +75,7 @@ smenuCLASS := s -> ul (last \ sort \\ nonnull \\ optTOCLASS \ toList s)
 
 -- this is a simplified version of submenu in SimpleDoc
 -- used in html.m2 and format.m2
+-- TODO: this seems to be very slow
 redoMENU = contents -> (
     contents = deepApply'(contents, identity, item -> instance(item, BasicList) and not isLink item);
     DIV prepend(
@@ -267,20 +268,12 @@ documentationValue(Symbol, Package)         := (S, pkg) -> if pkg =!= Core then 
 	    SUBSECTION "Version",
 	    PARA { "This documentation describes version ", BOLD pkg.Options.Version, " of ",
 		if pkg#"pkgname" === "Macaulay2Doc" then "Macaulay2" else pkg#"pkgname", "." }},
-	if pkg#"pkgname" =!= "Macaulay2Doc" then DIV {
-	    SUBSECTION "Source code",
-	    PARA { "The source code from which this documentation is derived is in the file ",
-		HREF { if installLayout =!= null then installLayout#"packages" | fn else pkg#"source file", fn }, ".",
-		if pkg#?"auxiliary files" then (
-		    " The auxiliary files accompanying it are in the directory ",
-		    HREF { if installLayout =!= null then installLayout#"packages" | pkg#"pkgname" | "/" else pkg#"auxiliary files", pkg#"pkgname" | "/" }, ".")
-		}
-	    },
 	if pkg#"pkgname" =!= "Macaulay2Doc" and #e + #m > 0 then DIV {
 	    SUBSECTION "Exports",
 	    DIV { "class" => "exports",
 		fixup UL {
 		    if #b > 0 then LI {"Types",                  smenu b},
+		    -- FIXME: this line is displayed empty for Truncations
 		    if #a > 0 then LI {"Functions and commands", smenu a},
 		    if #m > 0 then LI {"Methods",                smenu m},
 		    if #c > 0 then LI {"Symbols",                smenu c},
@@ -289,9 +282,24 @@ documentationValue(Symbol, Package)         := (S, pkg) -> if pkg =!= Core then 
 	    }))
 
 -----------------------------------------------------------------------------
--- Handling operators
+-- Details for developers
 -----------------------------------------------------------------------------
 
+-- temporarily disabled because sometime the links are broken
+linkToFile := (src, fn, pos) -> TT { fn | pos } -- HREF { if installLayout === null then src else installLayout#"packages" | fn, fn | pos };
+
+-- TODO: support more objects
+getSource = method()
+getSource(Symbol, Thing)   := (S, x) -> null
+getSource(Symbol, Package) := (S, pkg) -> (
+    -- TODO: for packages, should we link to the location on GitHub instead?
+    ", defined in ", linkToFile(pkg#"source file", pkg#"pkgname" | ".m2", ""),
+    if pkg#?"auxiliary files" then (
+	", with auxiliary files in ",
+	linkToFile(pkg#"auxiliary files", pkg#"pkgname" | "/", ""))
+    )
+
+-- Handling operators
 -- e.g. symbol +
 getOperator := key -> if operator#?key then (
     op := toString key;
@@ -327,13 +335,28 @@ getOperator := key -> if operator#?key then (
 getTechnical := (S, s) -> DIV nonnull ( "class" => "waystouse",
     SUBSECTION "For the programmer",
     fixup PARA deepSplice {
-	"The object ", TO S, " is ", ofClass class s,
+	"The object ", TO S, " is ", ofClass class s, getSource(S, s),
 	if parent s =!= Nothing then (
 	    f := drop(ancestors s, 1);
-	    if #f > 1 then ", with ancestor classes " else if #f == 1 then ", with ancestor class " else ", with no ancestor class.",
-	    toSequence between(" < ", f / (T -> TO T))),
+	    if #f == 1 then ", with ancestor class "   else
+	    if #f >= 2 then ", with ancestor classes " else ", with no ancestor class.",
+	    toSequence between(" < ", TO \ f)),
 	"."},
     getOperator S)
+
+getLocation := tag -> if tag =!= null then (
+    pkg := package tag;
+    docpos := locate tag;
+    linepos := ":" | docpos#1 | ":" | docpos#2;
+    docfile := toAbsolutePath docpos#0;
+    filename := replace(pkg#"source directory", "", docfile);
+    HR{},
+    DIV ( "class" => "waystouse",
+	fixup PARA (
+	    "The source of this document is in ",
+	    linkToFile(docfile, filename, linepos), ".")
+        )
+    )
 
 -----------------------------------------------------------------------------
 -- helper functions for help
@@ -346,8 +369,10 @@ headline Thing := key -> getOption(fetchRawDocumentationNoLoad makeDocumentTag k
 headline DocumentTag := tag -> getOption(fetchRawDocumentation getPrimaryTag tag, Headline)
 
 headlines = method()
-headlines List := L -> TABLE apply(#L, i -> { pad(floor log_10(#L) + 2, i | "."),
-	TO2(tag := makeDocumentTag L#i, net tag), commentize headline tag })
+headlines List := L -> (
+    lastabout = tags := apply(L, makeDocumentTag);
+    TABLE apply(#L, i -> { pad(floor log_10(#L) + 2, i | "."),
+	TO2(tags#i, net tags#i), commentize headline tags#i }))
 
 -- Compare with SYNOPSIS in document.m2
 getSynopsis := (key, tag, rawdoc) -> (
@@ -388,7 +413,8 @@ getDescription := (key, tag, rawdoc) -> (
     desc := getOption(rawdoc, Description);
     if desc =!= null and #desc > 0 then (
 	desc = processExamples(package' tag, format tag, desc);
-	if instance(key, String) then DIV { desc } -- overview key
+	if instance(key, String) -- overview key
+	or instance(key, Package) then DIV { desc }
 	else DIV { SUBSECTION "Description", desc })
     else DIV { COMMENT "empty documentation body" })
 
@@ -419,7 +445,8 @@ getData = (key, tag, rawdoc) -> (
 		if instance(opt := key#1, Option)
 		then documentationValue(opt#0, opt)
 		else documentationValue(opt, value opt),
-		getDefaultOptions(key#0, key#1))),
+		getDefaultOptions(key#0, key#1)),
+	    getLocation tag),
     };
     result = applyValues(result,  val -> fixup val);
     result = selectValues(result, val -> val =!= null and val =!= () and val =!= DIV{});
@@ -448,6 +475,7 @@ help = method(Dispatch => Thing)
 help DocumentTag := tag -> (
     rawdoc := fetchAnyRawDocumentation tag;
     rawtag := if rawdoc =!= null then rawdoc.DocumentTag else tag;
+    -- TODO: if the symbol is not defined, perhaps call 'about'?
     getBody(tag.Key, rawtag, rawdoc))
 
 help Sequence := key -> (
@@ -579,6 +607,7 @@ matchfun := (re, db) -> key -> (
 about = method(Options => {Body => false})
 about Type     :=
 about Symbol   :=
+about ScriptedFunctor :=
 about Function := o -> f -> about("\\b" | toString f | "\\b", o)
 about String   := o -> re -> lastabout = (
     packagesSeen := new MutableHashTable;
