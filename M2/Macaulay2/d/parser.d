@@ -32,6 +32,41 @@ export parseRR(s:string):RRorNull := (			    -- 4.33234234234p345e-9
 	  );
       if overflow then RRorNull(null())
       else RRorNull(toRR(ss, prec)));
+
+export parseRRb(s:string):RRborNull := (			    -- 4.33234234234p345e-9b
+     prec := defaultPrecision;
+     overflow := false;
+     -- Remove the 'b' suffix before parsing
+     baseString := if s.length > 0 && s.(s.length-1) == 'b' then 
+          new string len s.length - 1 do for i from 0 to s.length - 2 do provide s.i
+          else s;
+     ss := new string len length(baseString) + 1 do (	    -- we add 1 to get at least one null character at the end
+     	  inPrec := false;
+	  foreach c in baseString do (
+	       if c == 'p' then (
+		    inPrec = true;
+		    prec = ulong(0);
+		    )
+	       else if inPrec then (
+		    if isdigit(c) then (
+			 if !overflow then (
+			     newprec := 10 * prec + (c - '0');
+			     if newprec < prec
+			     then overflow = true
+			     else prec = newprec)
+			 )
+		    else (
+			 inPrec = false;
+		    	 provide c;
+			 )
+		    )
+	       else (
+		    provide c;
+		    ));
+	  while true do provide char(0);
+	  );
+      if overflow then RRborNull(null())
+      else RRborNull(toRRb(ss, prec)));	  -- We'll need to implement toRRb
 parseError := false;
 parseMessage := "";
 utf8(w:varstring,i:int):varstring := (

@@ -62,10 +62,11 @@ export TCnone := 0;			-- for artificial words: dummyWord, wordEOF, wordEOC
 export TCid := 1;			-- identifiers and operators
 export TCint := 2;
 export TCRR := 3;
-export TCstring := 4;
+export TCRRb := 4;
+export TCstring := 5;
 export Word := {		-- a word, one for each name made by makeUniqueWord()
      name:string,		--   the string representing it in this language
-     typecode:int,		--   TCid, TCint, TCRR, or TCstring
+     typecode:int,		--   TCid, TCint, TCRR, TCRRb, or TCstring
      hash:hash_t,               --   the hash value
      parse:parseinfo		--   parsing information
      };
@@ -219,6 +220,7 @@ export evaluatedCode := {+ expr:Expr, position:Position};
 
 export nullCode := {+};
 export realCode := {+x:RR,position:Position};
+export realRRbCode := {+x:RRb,position:Position};
 export integerCode := {+x:ZZ,position:Position};
 export stringCode := {+x:string,position:Position};
 export unaryCode := {+f:unop,rhs:Code,position:Position};
@@ -259,7 +261,7 @@ export functionCode := {+ -- this is called FunctionBody in the top-level
      };
 export Code := (
     -- when adding or removing classes of core here, also update debugging.dd
-     nullCode or realCode or stringCode or integerCode 
+     nullCode or realCode or realRRbCode or stringCode or integerCode 
      or globalMemoryReferenceCode or threadMemoryReferenceCode or localMemoryReferenceCode 
      or globalAssignmentCode or localAssignmentCode 
      or globalSymbolClosureCode or threadSymbolClosureCode or localSymbolClosureCode
@@ -361,6 +363,7 @@ export atomicIntCell := {+ v:atomicField, hash:hash_t };
 export Expr := (
      CCcell or
      RRcell or
+     RRbcell or
      RRicell or
      Boolean or
      PseudocodeClosure or

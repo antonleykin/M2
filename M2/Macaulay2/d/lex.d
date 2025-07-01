@@ -406,6 +406,12 @@ gettoken1(file:PosFile,sawNewline:bool):Token := (
 	       	    c = peek(file);
 	       	    if int('.') == c then printWarningMessage(position(file),"character '"+char(c)+"' immediately following floating point number");
 		    );
+	       -- Check for 'b' suffix to indicate RRb type
+	       c = peek(file);
+	       if c == int('b') && typecode == TCRR then (
+		    tokenbuf << char(getc(file));
+		    typecode = TCRRb;
+		    );
 	       c = peek(file);
 	       if isalpha(c) && !ismathoperator(peek2(file))
 	       then printWarningMessage(position(file),"character '"+char(c)+"' immediately following number");

@@ -45,6 +45,12 @@ export RRorNull := RR or null;
 
 export RRcell := {+v:RR};
 
+export RRb := Pointer "mpfr_srcptr";  -- Alternative RR implementation
+
+export RRborNull := RRb or null;
+
+export RRbcell := {+v:RRb};
+
 export RRimutable := Pointer "mpfi_ptr";
 
 export RRi := Pointer "mpfi_srcptr";
