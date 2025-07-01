@@ -7,6 +7,7 @@ export codePosition(c:Code):Position := ( -- TODO retire
     when c
     is f:nullCode                  do dummyPosition
     is f:realCode                  do f.position
+    is f:realRRbCode               do f.position
     is f:stringCode                do f.position
     is f:integerCode               do f.position
     is f:globalMemoryReferenceCode do f.position

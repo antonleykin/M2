@@ -51,6 +51,19 @@ export RRborNull := RRb or null;
 
 export RRbcell := {+v:RRb};
 
+export RRbmutable := Pointer "mpfr_ptr";
+
+-- Basic RRb functions (same underlying implementation as RR for now)
+export toRRb(s:string, prec:ulong):RRb := toRR(s, prec);  -- For now, use same implementation
+export toRRb(x:double, prec:ulong):RRb := toRR(x, prec);
+export toRRb(x:RR):RRb := x;  -- Direct cast since they have same underlying type
+
+export newRRbmutable(prec:ulong):RRbmutable := newRRmutable(prec);
+
+export moveToRRb(z:RRbmutable):RRb := moveToRR(z);
+
+export moveToRRbandclear(z:RRbmutable):RRb := moveToRRandclear(z);
+
 export RRimutable := Pointer "mpfi_ptr";
 
 export RRi := Pointer "mpfi_srcptr";
@@ -1179,6 +1192,7 @@ export toCC(x:double,y:double,prec:ulong):CC := CC(toRR(x,prec),toRR(y,prec));
 export toFloat(x:RR):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
 export toFloat(x:RRi):float := toFloat(midpointRR(x));
 export toFloat(x:RRcell):float := toFloat(x.v);
+export toFloat(x:RRbcell):float := toFloat(x.v);
 export toFloat(x:RRicell):float := toFloat(x.v);
 
 export toDouble(x:RR):double := Ccode( double, "mpfr_get_d(",  x, ", MPFR_RNDN)" );
@@ -1186,6 +1200,7 @@ export toDouble(x:RR):double := Ccode( double, "mpfr_get_d(",  x, ", MPFR_RNDN)"
 export toDouble(x:RRi):double := toDouble(midpointRR(x));
 
 export toDouble(x:RRcell):double := Ccode( double, "mpfr_get_d(",  x.v, ", MPFR_RNDN)" );
+export toDouble(x:RRbcell):double := Ccode( double, "mpfr_get_d(",  x.v, ", MPFR_RNDN)" );
                                     
 export toDouble(x:RRicell):double := toDouble(midpointRR(x.v));
 

@@ -120,6 +120,12 @@ convertTokenReference(token:Token):Code := (
 	is y:RR do Code(realCode(y, pos))
 	is null do Code(Error(
 		pos, "expected precision to be a small non-negative integer", nullE, false, dummyFrame)))
+    else if wrd.typecode == TCRRb
+    then (
+	when parseRRb(wrd.name)
+	is y:RRb do Code(realRRbCode(y, pos))
+	is null do Code(Error(
+		pos, "expected precision to be a small non-negative integer", nullE, false, dummyFrame)))
     else (
 	if var.frameID == 0 then
 	if var.thread

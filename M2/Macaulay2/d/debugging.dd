@@ -16,6 +16,7 @@ export tostring(c:Code):string := (
     when c
     is x:nullCode    do "(null)"
     is x:realCode    do tostringRR(x.x)
+    is x:realRRbCode do tostringRR(x.x)  -- Use same toString function for now
     is x:integerCode do tostring(x.x)
     is x:stringCode  do concatenate(array(string)("\"", present(x.x), "\""))
     is x:Error       do concatenate(array(string)("(error \"", x.message, "\")"))
@@ -93,6 +94,7 @@ export toList(c:Code):Expr := (
     when c
     is x:nullCode    do nullE
     is x:realCode    do toExpr(x.x)
+    is x:realRRbCode do toExpr(x.x)
     is x:integerCode do toExpr(x.x)
     is x:stringCode  do toExpr(tostring(c))
     is x:Error do list(toExpr("error"), toExpr(x.message))

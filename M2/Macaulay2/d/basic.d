@@ -23,6 +23,7 @@ export hash(e:Expr):hash_t := (
      is x:DictionaryClosure do x.dictionary.hash -- there may be many dictionary closures with the same dictionary and different frames, too bad
      is x:QQcell do hash(x.v)
      is x:RRcell do hash(x.v)
+is x:RRbcell do hash(x.v)
      is x:RRicell do hash(x.v)
      is x:CCcell do hash(x.v)
      is x:Sequence do (
