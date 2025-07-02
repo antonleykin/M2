@@ -53,17 +53,6 @@ export RRbcell := {+v:RRb};
 
 export RRbmutable := Pointer "mpfr_ptr";
 
--- Basic RRb functions (same underlying implementation as RR for now)
-export toRRb(s:string, prec:ulong):RRb := toRR(s, prec);  -- For now, use same implementation
-export toRRb(x:double, prec:ulong):RRb := toRR(x, prec);
-export toRRb(x:RR):RRb := x;  -- Direct cast since they have same underlying type
-
-export newRRbmutable(prec:ulong):RRbmutable := newRRmutable(prec);
-
-export moveToRRb(z:RRbmutable):RRb := moveToRR(z);
-
-export moveToRRbandclear(z:RRbmutable):RRb := moveToRRandclear(z);
-
 export RRimutable := Pointer "mpfi_ptr";
 
 export RRi := Pointer "mpfi_srcptr";
@@ -1188,6 +1177,20 @@ export toCC(x:ulong,prec:ulong):CC := CC(toRR(x,prec),toRR(0,prec));
 export toCC(x:double,prec:ulong):CC := CC(toRR(x,prec),toRR(0,prec));
 
 export toCC(x:double,y:double,prec:ulong):CC := CC(toRR(x,prec),toRR(y,prec));
+
+-- RRb functions (same underlying implementation as RR for now)
+export toRRb(s:string, prec:ulong):RRb := toRR(s, prec);  -- Use same implementation as RR
+export toRRb(x:double, prec:ulong):RRb := toRR(x, prec);
+export toRRb(x:RR):RRb := x;  -- Direct cast since they have same underlying type
+export toRRb(x:QQ, prec:ulong):RRb := toRR(x, prec);
+export toRRb(x:ZZ, prec:ulong):RRb := toRR(x, prec);
+export toRRb(x:int, prec:ulong):RRb := toRR(x, prec);
+
+export newRRbmutable(prec:ulong):RRbmutable := newRRmutable(prec);
+
+export moveToRRb(z:RRbmutable):RRb := moveToRR(z);
+
+export moveToRRbandclear(z:RRbmutable):RRb := moveToRRandclear(z);
 
 export toFloat(x:RR):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
 export toFloat(x:RRi):float := toFloat(midpointRR(x));

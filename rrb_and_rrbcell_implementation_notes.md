@@ -76,6 +76,7 @@ This document describes the implementation of RRb and RRbcell as alternative typ
 - ✅ Hash functions
 - ✅ Debug printing
 - ✅ Expression conversion
+- ✅ Fixed function declaration order (toRR dependencies resolved)
 
 ### What's Missing
 - ❌ Arithmetic operations (+, -, *, /, ^)
@@ -95,6 +96,13 @@ y = 2.5p53b      -- Creates an RRb with precision 53
 ## Current Limitation
 
 The current implementation treats RRb as identical to RR at the underlying level. For RRb to be truly "alternative," additional differentiation would need to be implemented in the arithmetic and mathematical functions.
+
+## Build Dependencies Fixed
+
+The initial implementation had function declaration order issues:
+- **Problem**: `toRR` functions were called before being declared
+- **Solution**: Moved RRb function definitions to after line 1170 in `gmp.d`, after all `toRR` functions are declared
+- **Functions added**: `toRRb`, `newRRbmutable`, `moveToRRb`, `moveToRRbandclear`
 
 ## Next Steps
 
