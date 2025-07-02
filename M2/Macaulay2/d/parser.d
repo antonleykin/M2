@@ -37,8 +37,8 @@ export parseRRb(s:string):RRborNull := (			    -- 4.33234234234p345e-9b
      prec := defaultPrecision;
      overflow := false;
      -- Remove the 'b' suffix before parsing
-     baseString := if s.length > 0 && s.(s.length-1) == 'b' then 
-          new string len s.length - 1 do for i from 0 to s.length - 2 do provide s.i
+     baseString := if length(s) > 0 && s.(length(s)-1) == 'b' then 
+          new string len length(s) - 1 do for i from 0 to length(s) - 2 do provide s.i
           else s;
      ss := new string len length(baseString) + 1 do (	    -- we add 1 to get at least one null character at the end
      	  inPrec := false;
