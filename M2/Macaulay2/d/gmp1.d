@@ -164,6 +164,8 @@ export printingSeparator := "e";			    -- was "*10^"
 export tostringRR(x:RR):string := concatenate(format(printingPrecision,printingAccuracy,printingLeadLimit,printingTrailLimit,printingSeparator,x));
 tostringRRpointer = tostringRR;
 
+export tostringRR(x:RRb):string := concatenate(format(printingPrecision,printingAccuracy,printingLeadLimit,printingTrailLimit,printingSeparator,Ccode(RR, x)));
+
 export tostringRRi(x:RRi):string := concatenate( 
     array(string)(
        	"[",
