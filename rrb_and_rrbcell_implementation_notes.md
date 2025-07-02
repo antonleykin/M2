@@ -108,6 +108,7 @@ The current implementation treats RRb as identical to RR at the underlying level
 - **Problem**: `toRRb` functions were returning `RR` type instead of `RRb` type
 - **Solution**: Fixed all `toRRb` function signatures to properly return `RRb` type using `Ccode(RRb, ...)` casting
 - **Added**: `isnan(x:RRb)` function to support NaN checking in `parseRRb`
+- **Added**: `toFloat(x:RRb)` function to support float conversion
 - **Added**: Equality operators (`===`) for RRb with itself and cross-compatibility with RR
 
 ## Next Steps

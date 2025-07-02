@@ -1213,6 +1213,7 @@ export moveToRRb(z:RRbmutable):RRb := Ccode(RRb, moveToRR(Ccode(RRmutable, z)));
 export moveToRRbandclear(z:RRbmutable):RRb := Ccode(RRb, moveToRRandclear(Ccode(RRmutable, z)));
 
 export toFloat(x:RR):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
+export toFloat(x:RRb):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
 export toFloat(x:RRi):float := toFloat(midpointRR(x));
 export toFloat(x:RRcell):float := toFloat(x.v);
 export toFloat(x:RRbcell):float := toFloat(x.v);
