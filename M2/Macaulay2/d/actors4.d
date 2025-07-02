@@ -990,6 +990,7 @@ tostringfun(e:Expr):Expr := (
      is DictionaryClosure do toExpr("<<a dictionary>>")
      is NetFile do toExpr("<<a netfile>>")
      is x:RRcell do toExpr(tostringRR(x.v))
+     is x:RRbcell do toExpr(tostringRR(x.v))
      is x:RRicell do toExpr(tostringRRi(x.v))
      is z:CCcell do toExpr(tostringCC(z.v))
      is Error do toExpr("<<an error message>>")
@@ -1098,6 +1099,7 @@ format(e:Expr):Expr := (
      is ZZcell do e
      is QQcell do e
      is RRcell do format(Expr(Sequence(e)))
+     is RRbcell do format(Expr(Sequence(e)))
      is RRicell do format(Expr(Sequence(e)))
      is CCcell do format(Expr(Sequence(e)))
      is args:Sequence do (
@@ -1121,6 +1123,7 @@ format(e:Expr):Expr := (
 	  is x:ZZcell do toExpr(concatenate(format(s,ac,l,t,sep,toRR(x.v,defaultPrecision))))
 	  is x:QQcell do toExpr(concatenate(format(s,ac,l,t,sep,toRR(x.v,defaultPrecision))))
 	  is x:RRcell do toExpr(concatenate(format(s,ac,l,t,sep,x.v)))
+	  is x:RRbcell do toExpr(concatenate(format(s,ac,l,t,sep,Ccode(RR, x.v))))
 	  is z:CCcell do toExpr(format(s,ac,l,t,sep,false,false,z.v))
 	  else WrongArgRR(n)
 	  )
@@ -1342,6 +1345,7 @@ toRR(e:Expr):Expr := (
      is x:ZZcell do toExpr(toRR(x.v,defaultPrecision))
      is x:QQcell do toExpr(toRR(x.v,defaultPrecision))
      is RRcell do e
+     is x:RRbcell do toExpr(Ccode(RR, x.v))
      is x:RRicell do toExpr(midpointRR(x.v))
      is s:Sequence do (
 	  if length(s) != 2 then WrongNumArgs(1,2) else
@@ -1352,6 +1356,7 @@ toRR(e:Expr):Expr := (
      	       	    is x:ZZcell do toExpr(toRR(x.v,toULong(prec.v)))
 	       	    is x:QQcell do toExpr(toRR(x.v,toULong(prec.v)))
      	       	    is x:RRcell do toExpr(toRR(x.v,toULong(prec.v)))
+     	       	    is x:RRbcell do toExpr(toRR(Ccode(RR, x.v),toULong(prec.v)))
                  is x:RRicell do toExpr(midpointRR(x.v,toULong(prec.v)))
 		    else WrongArg(1,"an integral, rational, or real number")
 		    )
@@ -1493,6 +1498,7 @@ toCC(e:Expr):Expr := (
      is x:ZZcell do toExpr(toCC(x.v,defaultPrecision)) -- # typical value: toCC, ZZ, CC
      is x:QQcell do toExpr(toCC(x.v,defaultPrecision)) -- # typical value: toCC, QQ, CC
      is x:RRcell do toExpr(toCC(x.v)) -- # typical value: toCC, RR, CC
+     is x:RRbcell do toExpr(toCC(Ccode(RR, x.v))) -- # typical value: toCC, RRb, CC
      is CCcell do e -- # typical value: toCC, CC, CC
      is s:Sequence do (
 	  if length(s) == 2 then (
@@ -1503,12 +1509,19 @@ toCC(e:Expr):Expr := (
 			 is x:ZZcell do toExpr(toCC(x.v,toULong(prec.v))) -- # typical value: toCC, ZZ, ZZ, CC
 			 is x:QQcell do toExpr(toCC(x.v,toULong(prec.v))) -- # typical value: toCC, ZZ, QQ, CC
 			 is x:RRcell do toExpr(toCC(x.v,toULong(prec.v))) -- # typical value: toCC, ZZ, RR, CC
+			 is x:RRbcell do toExpr(toCC(Ccode(RR, x.v),toULong(prec.v))) -- # typical value: toCC, ZZ, RRb, CC
 			 is x:CCcell do toExpr(toCC(x.v,toULong(prec.v))) -- # typical value: toCC, ZZ, CC, CC
 			 else WrongArg("a rational number, real number, or an integer")
 			 )
 		    )
 	       is x:RRcell do (
 		    when s.1 is y:RRcell do toExpr(toCC(x.v,y.v))	    -- # typical value: toCC, RR, RR, CC
+		    is y:RRbcell do toExpr(toCC(x.v,Ccode(RR, y.v)))	    -- # typical value: toCC, RR, RRb, CC
+		    else WrongArgRR()
+		    )
+	       is x:RRbcell do (
+		    when s.1 is y:RRcell do toExpr(toCC(Ccode(RR, x.v),y.v))	    -- # typical value: toCC, RRb, RR, CC
+		    is y:RRbcell do toExpr(toCC(Ccode(RR, x.v),Ccode(RR, y.v)))	    -- # typical value: toCC, RRb, RRb, CC
 		    else WrongArgRR()
 		    )
 	       else WrongArgZZ(1)
@@ -1530,6 +1543,7 @@ toCC(e:Expr):Expr := (
 			      is x:QQcell do toRR(x.v,toULong(prec.v))
 			      is x:ZZcell do toRR(x.v,toULong(prec.v))
 			      is x:RRcell do toRR(x.v,toULong(prec.v))
+			      is x:RRbcell do toRR(Ccode(RR, x.v),toULong(prec.v))
 			      else (
 				   return WrongArg("a rational number, real number, or an integer");
 				   toRR(0,toULong(prec.v)) -- dummy
@@ -1539,6 +1553,7 @@ toCC(e:Expr):Expr := (
 			      is x:QQcell do toRR(x.v,toULong(prec.v))
 			      is x:ZZcell do toRR(x.v,toULong(prec.v))
 			      is x:RRcell do toRR(x.v,toULong(prec.v))
+			      is x:RRbcell do toRR(Ccode(RR, x.v),toULong(prec.v))
 			      else (
 				   return WrongArg("a rational number, real number, or an integer");
 				   toRR(0,toULong(prec.v)) -- dummy
@@ -1551,6 +1566,7 @@ setupfun("toCC",toCC);
 precision(e:Expr):Expr := (
      when e
      is x:RRcell do toExpr(precision(x.v))
+     is x:RRbcell do toExpr(precision0(Ccode(RR, x.v)))
      is x:RRicell do toExpr(precision(x.v))
      is x:CCcell do toExpr(precision(x.v))
      else WrongArgRR());

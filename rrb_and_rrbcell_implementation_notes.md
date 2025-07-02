@@ -115,6 +115,9 @@ The current implementation treats RRb as identical to RR at the underlying level
 - **Added**: `equal(lhs:Expr,rhs:Expr)` support for RRbcell equality checking
 - **Added**: `strictequality(x:RRb,y:RRb)` for precise equality comparisons
 - **Added**: `tostringRR(x:RRb)` for string conversion/printing support
+- **Added**: `tostringfun(e:Expr)` support for RRbcell string conversion
+- **Added**: `format(e:Expr)` support for RRbcell formatting with precision control
+- **Added**: `toRR(e:Expr)`, `toCC(e:Expr)`, `precision(e:Expr)` support for RRbcell conversion
 - **Added**: Cross-type equality operators (`===`) for RRb with ZZ, QQ, RR, RRi, CC, int, double (all bidirectional)
 - **Added**: Core equality operators (`===`) for RRb with itself and comprehensive cross-compatibility
 
