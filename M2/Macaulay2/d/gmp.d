@@ -1488,6 +1488,12 @@ export hash(x:RR):hash_t := hash_t(precision0(x)) + Ccode(hash_t,
      ")"
     );
 
+export hash(x:RRb):hash_t := hash_t(precision0(Ccode(RR, x))) + Ccode(hash_t,
+     "mpfr_hash(",					    -- see gmp_aux.c for this function
+          x, 
+     ")"
+    );
+
 export hash(x:RRi):hash_t := hash_t(precision0(x)) + Ccode(hash_t,
     "mpfi_hash(",     -- Added for MPFI
     x,
