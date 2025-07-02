@@ -1274,6 +1274,54 @@ export (x:RRb) === (y:RR):bool := (			    -- cross equality RRb/RR
      && !flagged0()
     );
 
+export (x:RRb) === (y:ZZ):bool := (			    -- cross equality RRb/ZZ
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_z(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (y:ZZ) === (x:RRb):bool := (			    -- cross equality ZZ/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_z(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RRb) === (y:QQ):bool := (			    -- cross equality RRb/QQ
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_q(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (y:QQ) === (x:RRb):bool := (			    -- cross equality QQ/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_q(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RRb) === (y:int):bool := (			    -- cross equality RRb/int
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_si(",  x, ",(long)",  y, ")" )
+     && !flagged0()
+    );
+
+export (y:int) === (x:RRb):bool := (			    -- cross equality int/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_si(",  x, ",(long)",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RRb) === (y:double):bool := (			    -- cross equality RRb/double
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_d(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (y:double) === (x:RRb):bool := (			    -- cross equality double/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 == Ccode( int, "mpfr_cmp_d(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
 export (x:RRi) === (y:RRi):bool := (                -- weak equality
     Ccode( void, "mpfr_clear_flags()" ); -- No equivalent in mpfi
     leftRR(x) === leftRR(y) && rightRR(x) === rightRR(y) && !flagged0() -- equality is not defined in mpfi
