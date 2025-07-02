@@ -865,9 +865,13 @@ export imaginaryPart(z:CC):RR := z.im;
 
 -- warning: these routines just check the sign bit, and don't verify finiteness!
 export sign(x:RR):int := Ccode(int, "mpfr_sgn(", x, ")");
+export sign(x:RRb):int := Ccode(int, "mpfr_sgn(", x, ")");
 isPositive0(x:RR) ::=  1 == sign(x);
+isPositive0(x:RRb) ::=  1 == sign(x);
 isNegative0(x:RR) ::= -1 == sign(x);
+isNegative0(x:RRb) ::= -1 == sign(x);
 isZero0    (x:RR) ::=  0 == sign(x);
+isZero0    (x:RRb) ::=  0 == sign(x);
 
 isPositive0(x:RRi) ::=  0 < Ccode(int, "mpfi_is_strictly_pos(", x, ")");
 isNegative0(x:RRi) ::=  0 < Ccode(int, "mpfi_is_strictly_neg(", x, ")");
@@ -877,14 +881,18 @@ contains0  (x:RRi) ::= 0 < Ccode(int, "mpfi_has_zero(", x, ")");
 flagged0() ::= 0 != Ccode( int, "mpfr_erangeflag_p()" );
 setflag0() ::= Ccode( void, "mpfr_set_erangeflag()" );
 isfinite0(x:RR) ::=Ccode(bool,"mpfr_number_p(",x,")");
+isfinite0(x:RRb) ::=Ccode(bool,"mpfr_number_p(",x,")");
 isfinite0(x:RRmutable) ::=Ccode(bool,"mpfr_number_p(",x,")");
 isfinite0(x:RRi) ::=Ccode(bool,"mpfi_bounded_p(",x,")");
 isfinite0(x:RRimutable) ::=Ccode(bool,"mpfi_bounded_p(",x,")");
 isinf0 (x:RR) ::= Ccode(bool,"mpfr_inf_p(",x,")");
+isinf0 (x:RRb) ::= Ccode(bool,"mpfr_inf_p(",x,")");
 isinf0 (x:RRi) ::= Ccode(bool,"mpfi_inf_p(",x,")");
 isnan0 (x:RR) ::= Ccode(bool,"mpfr_nan_p(",x,")");
+isnan0 (x:RRb) ::= Ccode(bool,"mpfr_nan_p(",x,")");
 isnan0 (x:RRi) ::= Ccode(bool,"mpfi_nan_p(",x,")");
 sign0(x:RR) ::= 0 != Ccode(int,"mpfr_signbit(",x,")");
+sign0(x:RRb) ::= 0 != Ccode(int,"mpfr_signbit(",x,")");
 sign0(x:RRi) ::= 0 != Ccode(int,"mpfi_is_strictly_neg(",x,")");
 export isEmpty(x:RRi):bool := Ccode(bool,"mpfi_is_empty(",x,")");
                                     
@@ -894,12 +902,15 @@ sizeinbase0(x:ZZ,b:int) ::= Ccode( int, "mpz_sizeinbase(",  x, ",", b, ")" );
 
 -- warning: these routines just check the sign bit, and don't verify finiteness!
 export isPositive(x:RR):bool := isPositive0(x);
+export isPositive(x:RRb):bool := isPositive0(x);
 export isPositive(x:RRi):bool := isPositive0(x);
 
 export isNegative(x:RR):bool := isNegative0(x);
+export isNegative(x:RRb):bool := isNegative0(x);
 export isNegative(x:RRi):bool := isNegative0(x);
 
 export isZero    (x:RR):bool := isZero0(x) && isfinite0(x);
+export isZero    (x:RRb):bool := isZero0(x) && isfinite0(x);
 export isZero    (x:RRi):bool := isZero0(x) && isfinite0(x);
 
 export isZero    (x:CC):bool := isZero0(x.re) && isfinite0(x.re) && isZero0(x.im) && isfinite0(x.im);
@@ -928,9 +939,13 @@ export moveToCCandclear(z:CCmutable):CC := (
 
 precision0(x:RR) ::= Ccode(ulong,"(unsigned long)mpfr_get_prec(", x, ")");
 
+precision0(x:RRb) ::= Ccode(ulong,"(unsigned long)mpfr_get_prec(", x, ")");
+
 precision0(x:RRi) ::= Ccode(ulong,"(unsigned  long)mpfi_get_prec(", x, ")");
 
 export precision(x:RR):ulong := precision0(x);
+
+export precision(x:RRb):ulong := precision0(x);
 
 export precision(x:RRi):ulong := precision0(x);
 
@@ -1150,7 +1165,19 @@ export nanCC(prec:ulong):CC := (x := nanRR(prec); toCC(x,x));
 
 export toCC(x:RR):CC := CC(x,toRR(0,precision0(x)));
 
+export toCC(x:RRb):CC := (
+    real_part := toRR(x,precision0(x));
+    imag_part := toRR(0,precision0(x));
+    CC(real_part,imag_part)
+);
+
 export toCC(x:int,y:RR):CC := CC(toRR(x,precision0(y)),y);
+
+export toCC(x:int,y:RRb):CC := (
+    real_part := toRR(x,precision0(y));
+    imag_part := toRR(y,precision0(y));
+    CC(real_part,imag_part)
+);
 
 export toCC(x:RR,prec:ulong):CC := CC(toRR(x,prec),toRR(0,prec));
 
@@ -1178,39 +1205,91 @@ export toCC(x:double,prec:ulong):CC := CC(toRR(x,prec),toRR(0,prec));
 
 export toCC(x:double,y:double,prec:ulong):CC := CC(toRR(x,prec),toRR(y,prec));
 
--- RRb functions (need proper RRb type conversion)
+-- RRb functions - implementing native RRb operations without type conversion
 export toRRb(s:string, prec:ulong):RRb := (
-    rr_val := toRR(s, prec);
-    Ccode(RRb, rr_val)  -- Cast RR to RRb
+    z := newRRbmutable(prec);
+    Ccode( void,  "mpfr_set_str(",  z,", (char *)",  s, "->array,", "10,", "MPFR_RNDN", ")" );
+    moveToRRbandclear(z)
 );
 
 export toRRb(x:double, prec:ulong):RRb := (
-    rr_val := toRR(x, prec);
-    Ccode(RRb, rr_val)  -- Cast RR to RRb
+    z := newRRbmutable(prec);
+    Ccode( void, "mpfr_set_d(",  z, ",", x, ", MPFR_RNDN)" );
+    moveToRRbandclear(z)
 );
 
-export toRRb(x:RR):RRb := Ccode(RRb, x);  -- Direct cast RR to RRb
-
 export toRRb(x:QQ, prec:ulong):RRb := (
-    rr_val := toRR(x, prec);
-    Ccode(RRb, rr_val)  -- Cast RR to RRb
+    z := newRRbmutable(prec);
+    Ccode( void, "mpfr_set_q(",  z, ",",  x, ", MPFR_RNDN)" );
+    moveToRRbandclear(z)
 );
 
 export toRRb(x:ZZ, prec:ulong):RRb := (
-    rr_val := toRR(x, prec);
-    Ccode(RRb, rr_val)  -- Cast RR to RRb
+    z := newRRbmutable(prec);
+    Ccode( void, "mpfr_set_z(",  z, ",",  x, ", MPFR_RNDN)" );
+    moveToRRbandclear(z)
 );
 
 export toRRb(x:int, prec:ulong):RRb := (
-    rr_val := toRR(x, prec);
-    Ccode(RRb, rr_val)  -- Cast RR to RRb
+    z := newRRbmutable(prec);
+    Ccode( void, "mpfr_set_si(",  z, ",(long)", x, ", MPFR_RNDN)" );
+    moveToRRbandclear(z)
 );
 
-export newRRbmutable(prec:ulong):RRbmutable := Ccode(RRbmutable, newRRmutable(prec));
+export newRRbmutable(prec:ulong):RRbmutable := (
+    x := GCmalloc(RRbmutable);
+    if prec < minprec then prec = minprec else if prec > maxprec then prec = maxprec;
+    Ccode( RRbmutable, "(mpfr_init2(", x, ",(mpfr_prec_t)",prec,"),",x,")" )
+);
 
-export moveToRRb(z:RRbmutable):RRb := Ccode(RRb, moveToRR(Ccode(RRmutable, z)));
+export moveToRRb(z:RRbmutable):RRb := (
+    y := GCmalloc(RRbmutable);
+    Ccode(void, "
+         int limb_size = (",z,"->_mpfr_prec - 1) / GMP_NUMB_BITS + 1;
+         mp_limb_t *p = (mp_limb_t*) getmem_atomic(limb_size * sizeof(mp_limb_t));
+         memcpy(p, ",z,"->_mpfr_d, limb_size * sizeof(mp_limb_t));
+         ",y,"->_mpfr_prec = ",z,"->_mpfr_prec;
+         ",y,"->_mpfr_sign = ",z,"->_mpfr_sign;
+         ",y,"->_mpfr_exp  = ",z,"->_mpfr_exp;
+         ",y,"->_mpfr_d    = p;
+         ");
+    Ccode(RRb,y)
+);
 
-export moveToRRbandclear(z:RRbmutable):RRb := Ccode(RRb, moveToRRandclear(Ccode(RRmutable, z)));
+export moveToRRbandclear(z:RRbmutable):RRb := (
+    w := moveToRRb(z);
+    Ccode( void, "mpfr_clear(",  z, ")" );
+    w
+);
+
+-- Conversion functions between RR and RRb
+export toRR(x:RRb, prec:ulong):RR := (
+    z := newRRmutable(prec);
+    Ccode( void, "mpfr_set(",  z, ",",  x, ", MPFR_RNDN)" );
+    moveToRRandclear(z)
+);
+
+export toRRb(x:RR, prec:ulong):RRb := (
+    z := newRRbmutable(prec);
+    Ccode( void, "mpfr_set(",  z, ",",  x, ", MPFR_RNDN)" );
+    moveToRRbandclear(z)
+);
+
+-- Default precision versions
+export toRRb(s:string):RRb := toRRb(s,defaultPrecision);
+export toRRb(x:double):RRb := toRRb(x,defaultPrecision);
+export toRRb(x:QQ):RRb := toRRb(x,defaultPrecision);
+export toRRb(x:ZZ):RRb := toRRb(x,defaultPrecision);
+export toRRb(x:int):RRb := toRRb(x,defaultPrecision);
+export toRRb(x:RR):RRb := toRRb(x,precision0(x));
+
+-- String conversion for RRb
+export tostringRR(x:RRb):string := (
+    s := newarray(string, 256);  -- Allocate enough space for the string
+    Ccode( void, "mpfr_sprintf((char *)", s, "->array, \"%.40Rg\", ", x, ")" );
+    Ccode( void, s, "->len = strlen((char *)", s, "->array)" );
+    string(s)
+);
 
 export toFloat(x:RR):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
 export toFloat(x:RRb):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
@@ -1231,16 +1310,17 @@ export toDouble(x:RRicell):double := toDouble(midpointRR(x.v));
 export flagged():bool := flagged0();
 
 export isfinite(x:RR):bool := isfinite0(x);
+export isfinite(x:RRb):bool := isfinite0(x);
                                     
 export isfinite(x:RRi):bool := isfinite0(x);
 
 export isinf(x:RR):bool := isinf0(x);
+export isinf(x:RRb):bool := isinf0(x);
 
 export isinf(x:RRi):bool := isinf0(x);
 
 export isnan(x:RR):bool := isnan0(x);
-
-export isnan(x:RRb):bool := isnan0(Ccode(RR, x));  -- Cast RRb to RR for isnan check
+export isnan(x:RRb):bool := isnan0(x);
 
 export isnan(x:RRi):bool := isnan0(x);
 
@@ -1324,12 +1404,12 @@ export (y:double) === (x:RRb):bool := (			    -- cross equality double/RRb
 
 export (x:RRb) === (y:RRi):bool := (			    -- cross equality RRb/RRi
      Ccode( void, "mpfr_clear_flags()" );
-     rightRR(y) === Ccode(RR, x) && leftRR(y) === Ccode(RR, x) && !flagged0()
+     x === rightRR(y) && x === leftRR(y) && !flagged0()
     );
 
 export (y:RRi) === (x:RRb):bool := (			    -- cross equality RRi/RRb
      Ccode( void, "mpfr_clear_flags()" );
-     rightRR(y) === Ccode(RR, x) && leftRR(y) === Ccode(RR, x) && !flagged0()
+     x === rightRR(y) && x === leftRR(y) && !flagged0()
     );
 
 export (x:RRi) === (y:RRi):bool := (                -- weak equality
@@ -1349,8 +1429,8 @@ export strictequality(x:RRb,y:RRb):bool := (
      Ccode( void, "mpfr_clear_flags()" );
      0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
      && !flagged0()
-     && sign0(Ccode(RR, x)) == sign0(Ccode(RR, y))
-     && precision0(Ccode(RR, x)) == precision0(Ccode(RR, y))
+     && sign0(x) == sign0(y)
+     && precision0(x) == precision0(y)
     );
 
 export strictequality(x:RRi,y:RRi):bool := (
@@ -1554,7 +1634,7 @@ export hash(x:RR):hash_t := hash_t(precision0(x)) + Ccode(hash_t,
      ")"
     );
 
-export hash(x:RRb):hash_t := hash_t(precision0(Ccode(RR, x))) + Ccode(hash_t,
+export hash(x:RRb):hash_t := hash_t(precision0(x)) + Ccode(hash_t,
      "mpfr_hash(",					    -- see gmp_aux.c for this function
           x, 
      ")"
