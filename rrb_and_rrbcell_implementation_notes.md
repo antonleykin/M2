@@ -112,6 +112,8 @@ The current implementation treats RRb as identical to RR at the underlying level
 - **Added**: `hash(x:RRb)` function to support hash table operations
 - **Added**: `RRbClass` type class definition for proper type system integration
 - **Added**: `Class(e:Expr)` support for RRbcell -> RRbClass mapping
+- **Added**: `equal(lhs:Expr,rhs:Expr)` support for RRbcell equality checking
+- **Added**: `strictequality(x:RRb,y:RRb)` for precise equality comparisons
 - **Added**: Equality operators (`===`) for RRb with itself and cross-compatibility with RR
 
 ## Next Steps

@@ -142,6 +142,12 @@ export equal(lhs:Expr,rhs:Expr):Expr := (
 	       if strictequality(x.v,y.v) then True else False
 	       )
 	  else False)
+     is x:RRbcell do (
+	  when rhs
+	  is y:RRbcell do (
+	       if strictequality(x.v,y.v) then True else False
+	       )
+	  else False)
      is x:RRicell do ( -- Added for MPFI
 	  when rhs
 	  is y:RRicell do (

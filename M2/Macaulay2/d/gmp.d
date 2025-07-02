@@ -1287,6 +1287,14 @@ export strictequality(x:RR,y:RR):bool := (
      && precision0(x) == precision0(y)
     );
 
+export strictequality(x:RRb,y:RRb):bool := (
+     Ccode( void, "mpfr_clear_flags()" );
+     0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
+     && !flagged0()
+     && sign0(Ccode(RR, x)) == sign0(Ccode(RR, y))
+     && precision0(Ccode(RR, x)) == precision0(Ccode(RR, y))
+    );
+
 export strictequality(x:RRi,y:RRi):bool := (
      Ccode( void, "mpfr_clear_flags()" ); -- No equivalent in mpfi
      leftRR(x) === leftRR(y)
