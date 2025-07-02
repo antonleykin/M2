@@ -1322,6 +1322,16 @@ export (y:double) === (x:RRb):bool := (			    -- cross equality double/RRb
      && !flagged0()
     );
 
+export (x:RRb) === (y:RRi):bool := (			    -- cross equality RRb/RRi
+     Ccode( void, "mpfr_clear_flags()" );
+     rightRR(y) === Ccode(RR, x) && leftRR(y) === Ccode(RR, x) && !flagged0()
+    );
+
+export (y:RRi) === (x:RRb):bool := (			    -- cross equality RRi/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     rightRR(y) === Ccode(RR, x) && leftRR(y) === Ccode(RR, x) && !flagged0()
+    );
+
 export (x:RRi) === (y:RRi):bool := (                -- weak equality
     Ccode( void, "mpfr_clear_flags()" ); -- No equivalent in mpfi
     leftRR(x) === leftRR(y) && rightRR(x) === rightRR(y) && !flagged0() -- equality is not defined in mpfi
@@ -2299,6 +2309,10 @@ export (x:ZZ) === (y:CC) : bool := x === y.re && y.im === 0;
 export (x:CC) === (y:QQ) : bool := x.re === y && x.im === 0;
 
 export (x:QQ) === (y:CC) : bool := x === y.re && y.im === 0;
+
+export (x:CC) === (y:RRb) : bool := x.re === y && x.im === 0;
+
+export (x:RRb) === (y:CC) : bool := x === y.re && y.im === 0;
 
 export compare(x:CC,y:CC):int := (
      if ( isinf(x.re) || isinf(y.re) || isinf(x.im) || isinf(y.im) ) then (
