@@ -1178,19 +1178,39 @@ export toCC(x:double,prec:ulong):CC := CC(toRR(x,prec),toRR(0,prec));
 
 export toCC(x:double,y:double,prec:ulong):CC := CC(toRR(x,prec),toRR(y,prec));
 
--- RRb functions (same underlying implementation as RR for now)
-export toRRb(s:string, prec:ulong):RRb := toRR(s, prec);  -- Use same implementation as RR
-export toRRb(x:double, prec:ulong):RRb := toRR(x, prec);
-export toRRb(x:RR):RRb := x;  -- Direct cast since they have same underlying type
-export toRRb(x:QQ, prec:ulong):RRb := toRR(x, prec);
-export toRRb(x:ZZ, prec:ulong):RRb := toRR(x, prec);
-export toRRb(x:int, prec:ulong):RRb := toRR(x, prec);
+-- RRb functions (need proper RRb type conversion)
+export toRRb(s:string, prec:ulong):RRb := (
+    rr_val := toRR(s, prec);
+    Ccode(RRb, rr_val)  -- Cast RR to RRb
+);
 
-export newRRbmutable(prec:ulong):RRbmutable := newRRmutable(prec);
+export toRRb(x:double, prec:ulong):RRb := (
+    rr_val := toRR(x, prec);
+    Ccode(RRb, rr_val)  -- Cast RR to RRb
+);
 
-export moveToRRb(z:RRbmutable):RRb := moveToRR(z);
+export toRRb(x:RR):RRb := Ccode(RRb, x);  -- Direct cast RR to RRb
 
-export moveToRRbandclear(z:RRbmutable):RRb := moveToRRandclear(z);
+export toRRb(x:QQ, prec:ulong):RRb := (
+    rr_val := toRR(x, prec);
+    Ccode(RRb, rr_val)  -- Cast RR to RRb
+);
+
+export toRRb(x:ZZ, prec:ulong):RRb := (
+    rr_val := toRR(x, prec);
+    Ccode(RRb, rr_val)  -- Cast RR to RRb
+);
+
+export toRRb(x:int, prec:ulong):RRb := (
+    rr_val := toRR(x, prec);
+    Ccode(RRb, rr_val)  -- Cast RR to RRb
+);
+
+export newRRbmutable(prec:ulong):RRbmutable := Ccode(RRbmutable, newRRmutable(prec));
+
+export moveToRRb(z:RRbmutable):RRb := Ccode(RRb, moveToRR(Ccode(RRmutable, z)));
+
+export moveToRRbandclear(z:RRbmutable):RRb := Ccode(RRb, moveToRRandclear(Ccode(RRmutable, z)));
 
 export toFloat(x:RR):float := Ccode(float, "mpfr_get_flt(", x, ", MPFR_RNDN)");
 export toFloat(x:RRi):float := toFloat(midpointRR(x));
@@ -1219,6 +1239,8 @@ export isinf(x:RRi):bool := isinf0(x);
 
 export isnan(x:RR):bool := isnan0(x);
 
+export isnan(x:RRb):bool := isnan0(Ccode(RR, x));  -- Cast RRb to RR for isnan check
+
 export isnan(x:RRi):bool := isnan0(x);
 
 export isfinite(x:CC):bool := isfinite0(x.re) && isfinite0(x.im);
@@ -1228,6 +1250,24 @@ export isinf(x:CC):bool := isinf0(x.re) && !isnan0(x.im) || isinf0(x.im) && !isn
 export isnan(x:CC):bool := isnan0(x.re) || isnan0(x.im);
 
 export (x:RR) === (y:RR):bool := (			    -- weak equality
+     Ccode( void, "mpfr_clear_flags()" );
+     0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RRb) === (y:RRb):bool := (			    -- weak equality for RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RR) === (y:RRb):bool := (			    -- cross equality RR/RRb
+     Ccode( void, "mpfr_clear_flags()" );
+     0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
+     && !flagged0()
+    );
+
+export (x:RRb) === (y:RR):bool := (			    -- cross equality RRb/RR
      Ccode( void, "mpfr_clear_flags()" );
      0 != Ccode( int, "mpfr_equal_p(",  x, ",",  y, ")" )
      && !flagged0()

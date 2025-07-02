@@ -99,10 +99,16 @@ The current implementation treats RRb as identical to RR at the underlying level
 
 ## Build Dependencies Fixed
 
-The initial implementation had function declaration order issues:
+### 1. Function Declaration Order Issues
 - **Problem**: `toRR` functions were called before being declared
 - **Solution**: Moved RRb function definitions to after line 1170 in `gmp.d`, after all `toRR` functions are declared
 - **Functions added**: `toRRb`, `newRRbmutable`, `moveToRRb`, `moveToRRbandclear`
+
+### 2. Type Signature Issues  
+- **Problem**: `toRRb` functions were returning `RR` type instead of `RRb` type
+- **Solution**: Fixed all `toRRb` function signatures to properly return `RRb` type using `Ccode(RRb, ...)` casting
+- **Added**: `isnan(x:RRb)` function to support NaN checking in `parseRRb`
+- **Added**: Equality operators (`===`) for RRb with itself and cross-compatibility with RR
 
 ## Next Steps
 
