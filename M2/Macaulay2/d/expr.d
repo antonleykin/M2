@@ -320,6 +320,7 @@ export ringFamilyClass := newtypeof(typeClass);
 export inexactNumberTypeClass := newtypeof(ringFamilyClass);
        newbignumbertype():HashTable := newHashTableWithHash(inexactNumberTypeClass,inexactNumberClass);
 export RRClass := newbignumbertype();
+export RRbClass := newbignumbertype();
 export CCClass := newbignumbertype();
 
 export rawObjectClass := newbasictype();		    -- RawObject
