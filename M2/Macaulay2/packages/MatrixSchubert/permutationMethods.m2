@@ -173,6 +173,7 @@ getOneReducedWord List := List => (w) -> (
 ------------------------------------
 toOneLineNotation = method()
 toOneLineNotation (List, ZZ) := List => (perm, maxIdx) -> (
+    if maxIdx == 1 then return {1};
     switch(perm_0-1, perm_1-1, toList(1..maxIdx))
 )
 toOneLineNotation (Matrix) := List => (P) -> (
@@ -224,14 +225,14 @@ isPatternAvoiding (List,List) := Boolean => (perm, pattern) -> (
     --input validation
     if not (isPerm perm) then error(toString perm | " is not a permutation.");
     --assume permutation is pattern-avoiding, break if not true
-    isAvoiding := true;
     for idx in subsets(0..#perm-1, #pattern) do {
-        sortedIdx := sort(idx);
-        pairwiseComparison := apply(pattern_{0..#pattern-2}, pattern_{1..#pattern-1}, (i,j) -> perm#(sortedIdx#(i-1)) < perm#(sortedIdx#(j-1))); -- pairwise comparison of permutation according to pattern
-        isAvoiding = not all(pairwiseComparison, i -> i == true); -- true if there was one inequality that failed, else all inequalities are true and so not pattern-avoiding
-        if not isAvoiding then break;
+        vals := perm_(idx);
+        sortedVals := sort(vals);
+        relPositions := hashTable toList apply(0..#vals-1, i -> {sortedVals#i, i});
+        p := toList apply(vals, i -> (relPositions#i) + 1); 
+        if p == pattern then return false;
     };
-    isAvoiding
+    true
 )
 
 --------------------------------
@@ -317,7 +318,7 @@ longestIncrSeq (ZZ,ZZ,List) := List => memoize ((preVal,prevSZ,w) -> (
 	else currSZ = longestIncrSeq(currVal, prevSZ+1, w_{i+1..#w-1});
 	longestSZ = max(longestSZ, currSZ);
     );
-    return longestSZ;
+    longestSZ
 ))
 
 ------------------------------------------
@@ -327,11 +328,11 @@ longestIncrSeq (ZZ,ZZ,List) := List => memoize ((preVal,prevSZ,w) -> (
 rajcode = method()
 rajcode List := ZZ => (w) -> (
     if not (isPerm w) then error ("Expecting a permutation.");
-    rajCodeVec := {};
+    rajCodeVec := new MutableList;
     for k from 0 to #w-1 do (
-    	rajCodeVec = append(rajCodeVec, (#w-k) - longestIncrSeq(w_k, 1, w_{k+1..#w-1}));
+	rajCodeVec#(#rajCodeVec) = (#w-k) - longestIncrSeq(w_k, 1, w_{k+1..#w-1});
     );
-    return rajCodeVec;
+    toList rajCodeVec
 )
 
 ------------------------------------------

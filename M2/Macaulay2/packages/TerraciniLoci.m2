@@ -1,8 +1,8 @@
--- TerraciniLoci - Macaulay2 package for computing Terracini locus
+-- TerraciniLoci - Macaulay2 package for computing the Terracini locus
 -- of a projective variety
 
--- Copyright (c) 2023 Francesco Galuppi, Pierpaola Santarsiero, Doug Torrance,
--- and Ettore Teixeira Turatti
+-- Copyright (c) 2023-2025 Francesco Galuppi, Pierpaola Santarsiero,
+-- Doug Torrance, and Ettore Teixeira Turatti
 
 -- This program is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU General Public License
@@ -31,15 +31,15 @@
 
 newPackage("TerraciniLoci",
     Headline => "Terracini loci of projective varieties",
-    Version => "0.1",
-    Date => "November 16, 2023",
+    Version => "0.3",
+    Date => "May 10, 2025",
     Authors => {
 	{
 	    Name => "Francesco Galuppi",
-	    Email => "francesco.galuppi@impan.pl"},
+	    Email => "galuppi@mimuw.edu.pl"},
 	{
 	    Name => "Pierpaola Santarsiero",
-	    Email => "pierpaola.santarsiero@uni-osnabrueck.de"},
+	    Email => "pierpaola.santarsiero@unibo.it"},
 	{
 	    Name => "Doug Torrance",
 	    Email => "dtorrance@piedmont.edu",
@@ -54,12 +54,30 @@ newPackage("TerraciniLoci",
 	"FastMinors",
 	"MinimalPrimes"})
 
+---------------
+-- ChangeLog --
+---------------
+
+-*
+
+0.3 (2025-05-10, M2 1.25.05)
+* add citation information
+* update link from arXiv -> DOI
+* update author email addresses
+
+0.2 (2024-10-19, M2 1.24.11)
+* stop exporting "Threads" symbol from FastMinors; now exported by Core
+
+0.1 (2023-11-16, M2 1.23)
+* initial release
+
+*-
+
 export {
     "terraciniLocus"
     }
 
 importFrom("Core", {"concatRows"})
-exportFrom(FastMinors, {"Threads"})
 
 terraciniLocus = method(Options => {Threads => 0})
 
@@ -102,8 +120,9 @@ doc ///
     package for computing Terracini loci
   Description
     Text
-      This package implements the algorithms from Section 8 of the
-      paper @arXiv("2311.09067", "Geometry of first nonempty Terracini loci")@
+      This package implements the algorithms from Section 8 of the paper
+      @HREF("https://doi.org/10.1142/S0219199725500531",
+	  "Geometry of first nonempty Terracini loci")@
       by F. Galuppi, P. Santarsiero, D. Torrance, and E. Turatti.
 
       The Terracini locus of projective variety $X$ is a subvariety of
@@ -114,6 +133,17 @@ doc ///
 
       This package exports one method, @TO terraciniLocus@, for computing the
       ideals of these varieties.
+  Citation
+    @article{Galuppi_2025,
+      title={Geometry of First Nonempty Terracini Loci},
+      ISSN={1793-6683},
+      url={http://dx.doi.org/10.1142/S0219199725500531},
+      DOI={10.1142/s0219199725500531},
+      journal={Communications in Contemporary Mathematics},
+      publisher={World Scientific Pub Co Pte Ltd},
+      author={Galuppi, Francesco and Santarsiero, Pierpaola and Torrance, Douglas A. and Turatti, Ettore Teixeira},
+      year={2025},
+      month=apr }
 ///
 
 doc ///

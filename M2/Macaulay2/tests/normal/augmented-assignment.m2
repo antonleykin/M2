@@ -29,7 +29,7 @@ assert Equation(x, matrix{{1}, {2}})
 x |= matrix {{3}, {4}}
 assert Equation(x, matrix {{1, 3}, {2, 4}})
 x \\= matrix {{4, 3}, {2, 1}}
-assert Equation(x, matrix {{-5, -6}, {3, 3}})
+assert Equation(x, matrix {{-3, 3}, {-1, 1}})
 x = 1:(1)
 x ..= 1:(3)
 assert Equation(x, (1:(1), 1:(2), 1:(3)))
@@ -126,7 +126,7 @@ assert Equation(x#0, 5)
 
 -- install custom method
 Bar - Bar := (x, y) -> Bar(x#0 - y#0)
-Bar -= (x, y) -> if even y#0 then x#0 = 0 else Default
+installMethod(symbol -=, Bar, (x, y) -> if even y#0 then x#0 = 0 else Default)
 x = Bar 5
 x -= Bar 2
 assert Equation(x#0, 0)
@@ -157,3 +157,7 @@ assert BinaryOperation(symbol ===, y ?? x, y)
 assert BinaryOperation(symbol ===, x ?? y, y)
 x ??= y
 assert BinaryOperation(symbol ===, x, y)
+
+-- issue #3612
+h = new HashTable from { symbol cache => new CacheTable };
+h.cache ??= new CacheTable

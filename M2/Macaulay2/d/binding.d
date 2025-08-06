@@ -286,7 +286,11 @@ bumpPrecedence();
      export PlusS := makeKeyword(unarybinaryleft("+"));	    -- also binary
      export PlusPlusS := makeKeyword(binaryleft("++"));
 bumpPrecedence();
+     export InterpunctS := makeKeyword(binaryleft("·"));
+bumpPrecedence();
      export StarStarS := makeKeyword(binaryleft("**"));
+     export BoxTimesS := makeKeyword(binaryleft("⊠"));
+     export ShuffleProductS := makeKeyword(binaryleft("⧢"));
 bumpPrecedence();
      precBracket := prec;
      export leftbracket := parens("[","]",precBracket, precRightParen, precRightParen);
@@ -306,23 +310,25 @@ bumpPrecedence();
      export leftparen   := parens("(",")",precSpace, precRightParen, precRightParen);
      export leftbrace   := parens("{","}",precSpace, precRightParen, precRightParen);
      parseWORD.precedence = prec; parseWORD.binaryStrength = nopr; parseWORD.unaryStrength = nopr;
-     export timeS := special("time",unaryop,precSpace,wide);
-     export timingS := special("timing",unaryop,precSpace,wide);
-     export elapsedTimeS := special("elapsedTime",unaryop,precSpace,wide);
-     export elapsedTimingS := special("elapsedTiming",unaryop,precSpace,wide);
-     export shieldS := special("shield",unaryop,precSpace,wide);
-     export throwS := special("throw",nunaryop,precSpace,wide);
-     export returnS := special("return",nunaryop,precSpace,wide);
-     export breakS := special("break",nunaryop,precSpace,wide);
-     export continueS := special("continue",nunaryop,precSpace,wide);
-     export stepS := special("step",nunaryop,precSpace,wide);
-     -- export codePositionS := special("codePosition",unaryop,precSpace,narrow);
-     special("new",unarynew,precSpace,narrow);
-     special("for",unaryfor,precSpace,narrow);
-     special("while",unarywhile,precSpace,wide);
-     special("if",unaryif,precSpace,wide);
-     special("try",unarytry,precSpace,wide);
-     special("catch",unarycatch,precSpace,wide);
+     export TestS          := special("TEST",          unaryop, precSpace, wide);
+     export timeS          := special("time",          unaryop, precSpace, wide);
+     export timingS        := special("timing",        unaryop, precSpace, wide);
+     export elapsedTimeS   := special("elapsedTime",   unaryop, precSpace, wide);
+     export elapsedTimingS := special("elapsedTiming", unaryop, precSpace, wide);
+     export breakpointS    := special("breakpoint",    unaryop, precSpace, wide);
+     export profileS       := special("profile",       unaryop, precSpace, wide);
+     export shieldS        := special("shield",        unaryop, precSpace, wide);
+     export throwS         := special("throw",        nunaryop, precSpace, wide);
+     export returnS        := special("return",       nunaryop, precSpace, wide);
+     export breakS         := special("break",        nunaryop, precSpace, wide);
+     export continueS      := special("continue",     nunaryop, precSpace, wide);
+     export stepS          := special("step",         nunaryop, precSpace, wide);
+     special("new",   unarynew,   precSpace, narrow);
+     special("for",   unaryfor,   precSpace, narrow);
+     special("while", unarywhile, precSpace, wide);
+     special("if",    unaryif,    precSpace, wide);
+     special("try",   unarytry,   precSpace, wide);
+     special("catch", unarycatch, precSpace, wide);
 bumpPrecedence();
      export ParenStarParenS := makeKeyword(postfix("(*)"));
 bumpPrecedence();
@@ -359,10 +365,10 @@ bumpPrecedence();
      --export UnderscoreSharpS := makeKeyword(postfix("_#"));
 bumpPrecedence();
      --why are these using precSpace and not prec?
-     special("symbol",unarysymbol,precSpace,prec);
-     special("global",unaryglobal,precSpace,prec);
-     special("threadLocal",unarythread,precSpace,prec);
-     special("local",unarylocal,precSpace,prec);
+     special("symbol",      unarysymbol, precSpace, prec);
+     special("global",      unaryglobal, precSpace, prec);
+     special("threadLocal", unarythread, precSpace, prec);
+     special("local",       unarylocal,  precSpace, prec);
 -----------------------------------------------------------------------------
 export GlobalAssignS := makeProtectedSymbolClosure("GlobalAssignHook");
 export GlobalAssignE := Expr(GlobalAssignS);
@@ -395,12 +401,15 @@ export NewOfFromE := Expr(NewOfFromS);
 export InverseS := makeProtectedSymbolClosure("InverseMethod");
 export InverseE := Expr(InverseS);
 
+export RobustPrintS := makeProtectedSymbolClosure("RobustPrintMethod");
+export RobustPrintE := Expr(RobustPrintS);
+
 export StopIterationS := makeProtectedSymbolClosure("StopIteration");
 export StopIterationE := Expr(StopIterationS);
 
 -----------------------------------------------------------------------------
 export makeSymbol(t:Token):Symbol := (
-     e := makeSymbol(t.word,position(t),t.dictionary);
+     e := makeSymbol(t.word,t.position,t.dictionary);
      t.entry = e;
      e);
 export makeErrorTree(e:ParseTree,message:string):void := (
@@ -462,6 +471,7 @@ lookup(t:Token,forcedef:bool,thread:bool):void := (
      	  when lookup(t.word,t.dictionary)
      	  is entry:Symbol do (
 	       t.entry = entry;
+	       if entry.position == tempPosition then entry.position = t.position;
 	       if entry.flagLookup then (
 		    printErrorMessage(t,"flagged symbol encountered");
 		    HadError=true;
@@ -483,7 +493,7 @@ lookup(t:Token,forcedef:bool,thread:bool):void := (
 
 		    locallyCreated := t.dictionary.frameID != 0 && dictionaryDepth(t.dictionary) > 0;
 		    t.dictionary = globalDictionary; -- undefined variables are defined as global
-		    t.entry = makeSymbol(t.word,position(t),globalDictionary,thread,locallyCreated);
+		    t.entry = makeSymbol(t.word,t.position,globalDictionary,thread,locallyCreated);
 		    )
 	       else (
 	       	    printErrorMessage(t,"undefined symbol " + t.word.name);
@@ -506,7 +516,10 @@ export opsWithBinaryMethod := array(SymbolClosure)(
      PowerGreaterEqualS,   UnderscoreGreaterEqualS,
      PowerLessS,           UnderscoreLessS,
      PowerLessEqualS,      UnderscoreLessEqualS,
-     PowerStarStarS
+     PowerStarStarS,
+     InterpunctS,
+     BoxTimesS,
+     ShuffleProductS
      );
 export opsWithUnaryMethod := array(SymbolClosure)(
      StarS, MinusS, PlusS, LessLessS, QuestionQuestionS,
@@ -754,10 +767,10 @@ bindassignment(assn:Binary,dictionary:Dictionary,colon:bool):void := (
 	  )
      is n:New do (
 	  if colon then (
-	       bind(n.newclass,dictionary);
-	       bind(n.newparent,dictionary);
-	       bind(n.newinitializer,dictionary);
-	       bind(body,dictionary))
+	    bind(n.newClass,       dictionary);
+	    bind(n.newParent,      dictionary);
+	    bind(n.newInitializer, dictionary);
+	    bind(body,             dictionary))
 	  else makeErrorTree(assn.Operator, 
 	       "left hand side of assignment inappropriate"))
      else makeErrorTree(assn.Operator, 
@@ -766,13 +779,13 @@ export bind(e:ParseTree,dictionary:Dictionary):void := (
      when e
      is i:IfThen do (
 	  bind(i.predicate,dictionary);
-	  -- i.thenclause = bindnewdictionary(i.thenclause,dictionary);
-	  bind(i.thenclause,dictionary);
+	  -- i.thenClause = bindnewdictionary(i.thenClause,dictionary);
+	  bind(i.thenClause,dictionary);
 	  )
      is i:IfThenElse do (
 	  bind(i.predicate,dictionary);
-	  -- i.thenclause = bindnewdictionary(i.thenclause,dictionary);
-	  bind(i.thenclause,dictionary);
+	  -- i.thenClause = bindnewdictionary(i.thenClause,dictionary);
+	  bind(i.thenClause,dictionary);
 	  -- i.elseClause = bindnewdictionary(i.elseClause,dictionary);
 	  bind(i.elseClause,dictionary);
 	  )
@@ -880,14 +893,19 @@ export bind(e:ParseTree,dictionary:Dictionary):void := (
 	  bind(w.doClause,dictionary);
 	  )
      is n:New do (
-     	  bind(n.newclass,dictionary);
-     	  bind(n.newparent,dictionary);
-     	  bind(n.newinitializer,dictionary);)
+	 bind(n.newClass,       dictionary);
+	 bind(n.newParent,      dictionary);
+	 bind(n.newInitializer, dictionary);
+	 )
      is i:TryElse do (
 	  -- i.primary = bindnewdictionary(i.primary,dictionary);
 	  bind(i.primary,dictionary);
 	  -- i.alternate = bindnewdictionary(i.alternate,dictionary);
 	  bind(i.alternate,dictionary);
+	  )
+     is i:TryThen do (
+	  bind(i.primary,dictionary);
+	  bind(i.sequel,dictionary);
 	  )
      is i:TryThenElse do (
 	  bind(i.primary,dictionary);

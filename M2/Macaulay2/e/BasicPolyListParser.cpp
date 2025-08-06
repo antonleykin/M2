@@ -1,7 +1,6 @@
 #include "BasicPolyListParser.hpp"
 
 #include <iostream>
-#include <sstream>
 #include <fstream>
 
 std::string readEntireFile(const std::string &fileName)
@@ -10,7 +9,7 @@ std::string readEntireFile(const std::string &fileName)
 
   std::ifstream::pos_type fileSize = ifs.tellg();
   ifs.seekg(0, std::ios::beg);
-  
+
   std::vector<char> bytes(fileSize);
   ifs.read(bytes.data(), fileSize);
 
@@ -37,13 +36,12 @@ std::string_view next_line(std::string_view& str)
   return result;
 }
 
-
 // TODO: check for overflow
 // TODO: make a readCoefficient function
 //  it should be able to read arbitrary precision ints too...
 //  also maybe a set of variables for the coefficient ring
 //  and allow e.g.: (3*a+2)*x^2*y^3
-long readInteger(const std::string_view& str, size_t& begin_loc, size_t end_loc)
+long readInteger_long(const std::string_view& str, size_t& begin_loc, size_t end_loc)
 {
   // if str[0] is a digit, find the value, and increment str past the number.
   // if it is not: return 1, leave str unchanged.
@@ -60,9 +58,47 @@ long readInteger(const std::string_view& str, size_t& begin_loc, size_t end_loc)
   return result;
 }
 
+// allocates memory to (and inits) an __mpz_struct
+// void readInteger_mpz_t(mpz_t& result, const std::string_view& str, size_t& begin_loc, size_t end_loc)
+// {
+//   // if str[0] is a digit, find the value, and increment str past the number.
+//   // if it is not: return 1, leave str unchanged.
+//   if (not isdigit(str[begin_loc])) return mpz_set_ui(result,1);
+//   mpz_set_ui(result, 0);
+//   size_t loc = begin_loc;
+//   while (loc < end_loc and isdigit(str[loc]))
+//     {
+//       mpz_mul_ui(result, result, 10);
+//       mpz_add_ui(result, result, (str[loc] - '0'));
+//       loc++;
+//     }
+//   begin_loc = loc;
+// }
+
+mpz_class readInteger_mpz_class(const std::string_view& str, size_t& begin_loc, size_t end_loc)
+{
+  // if str[0] is a digit, find the value, and increment str past the number.
+  // if it is not: return 1, leave str unchanged.
+  mpz_class result;
+  if (not isdigit(str[begin_loc])) return result = 1;
+  result = 0;
+  size_t loc = begin_loc;
+  while (loc < end_loc and isdigit(str[loc]))
+    {
+      result *= 10;
+      result += str[loc] - '0';
+      loc++;
+    }
+  begin_loc = loc;
+  return result;
+}
+
 int readIdentifier(const std::string_view& str, const IdentifierHash& map, size_t& begin_loc, size_t end_loc)
 {
-  // if str[0] is a character, find the identifier, and increment str past that,
+  /*
+    std::cout << str << "(begin=" << begin_loc << ", end=" << end_loc << " )" << std::endl;
+  */
+    // if str[0] is a character, find the identifier, and increment str past that,
   if (begin_loc >= end_loc or not isalpha(str[begin_loc])) return -1; // TODO: throw an error here?
   size_t loc = begin_loc;
   while (loc < end_loc and (isdigit(str[loc]) or isalpha(str[loc]) or str[loc] == '_'))
@@ -82,7 +118,7 @@ std::vector<std::string> readIdentifierList(const std::string_view line)
       char c = line[i];
       if (not isalpha(c)) continue; // possibly should give an error if we see a number? or non-identifieer start char?
       auto loc = i+1;
-      while ((isalpha(line[loc]) or isdigit(line[loc]) or line[loc] == '_') and (loc < line.size()))
+      while (loc < line.size() and (isalpha(line[loc]) or isdigit(line[loc]) or line[loc] == '_'))
         {
           loc++;
         }
@@ -103,13 +139,13 @@ void parseBasicPoly(const std::string_view& str, const IdentifierHash& idenHash,
   size_t begin_loc = 0;
   size_t end_loc = str.size();
 
-  result.mCoefficients.clear();
-  result.mMonomials.clear();
+  result.clear();
   
   if (end_loc > begin_loc and str[begin_loc] == '[')
     {
       ++begin_loc;
     }
+  while (end_loc > begin_loc and str[end_loc-1] == ' ') --end_loc;
   if (end_loc > begin_loc and str[end_loc-1] == ',') --end_loc;
   if (end_loc > begin_loc and str[end_loc-1] == ':') --end_loc;
   if (end_loc > begin_loc and str[end_loc-1] == ']') --end_loc;
@@ -119,7 +155,7 @@ void parseBasicPoly(const std::string_view& str, const IdentifierHash& idenHash,
   while (end_loc > begin_loc)
     {
       int sign = 1;
-      
+
       // Read the next term into `result`.
       if (str[begin_loc] == '+')
         {
@@ -131,10 +167,10 @@ void parseBasicPoly(const std::string_view& str, const IdentifierHash& idenHash,
           ++begin_loc;
           sign = -1;
         }
-      long coeff = readInteger(str, begin_loc, end_loc); // defaults to 1 if no integer present.
-        
+      mpz_class coeff{readInteger_mpz_class(str, begin_loc, end_loc)}; // defaults to 1 if no integer present.
+
       if (sign == -1) coeff = -coeff;
-      result.mCoefficients.push_back(coeff);
+      result.mCoefficients.push_back(coeff); // do not clear(coeff) !
 
       // Now we read the monomial part.
       long loc = result.mMonomials.size(); // this is where the length field will go.
@@ -158,12 +194,12 @@ void parseBasicPoly(const std::string_view& str, const IdentifierHash& idenHash,
                 }
               c = str[begin_loc];
             }
-          
+
           if (not isalpha(c))
             // not well forrmed, I think.
             {
               throw parsing_error("expected an identifier at position " + std::to_string(begin_loc));
-            } 
+            }
           // TODO: in fact, throw an error here
           auto prev_loc = begin_loc;
           int v = readIdentifier(str, idenHash, begin_loc, end_loc);
@@ -181,7 +217,7 @@ void parseBasicPoly(const std::string_view& str, const IdentifierHash& idenHash,
                 {
                   throw parsing_error("expected a digit at position " + std::to_string(begin_loc));
                 }
-              e = readInteger(str, begin_loc, end_loc);
+              e = readInteger_long(str, begin_loc, end_loc);
             }
           // if exponent is zero, don't add anything to monomial.
           if (e != 0)
@@ -236,13 +272,13 @@ BasicPolyList parseBasicPolyListFromString(std::string contents, std::vector<std
 ///////////////////////////////
 bool lineContainsVars(std::string_view& line) // if returns true, line now contains the part of the line with the variable names.
 {
-  std::string varHeader {"#for variable order "};
+  std::string varHeader {"#variable order:"};
   if (line.compare(0, varHeader.size(), varHeader) != 0)
     return false;
   line.remove_prefix(varHeader.size());
   return true;
 }
-  
+
 BasicPolyList parseMsolveFromString(std::string contents)
 {
   // Read in file
@@ -259,13 +295,16 @@ BasicPolyList parseMsolveFromString(std::string contents)
       if (lineContainsVars(thisline))
         {
           std::vector<std::string> idenList = readIdentifierList(thisline);
+          /*
+            std::cout << "-- idenList" << std::endl;
+          for (auto& id : idenList)
+            std::cout << id << std::endl;
+          */
           idenMap = { idenList };
           continue;
         }
 
-      if (thisline.size() == 0)
-        std::cout << "oops, this isn't good?" << std::endl;
-      if (thisline.size() == 0 or thisline[0] == '#')
+      if (thisline.size() == 0 or thisline[0] == '#' or thisline[0] == ']')
         {
           continue;
         }
@@ -292,7 +331,7 @@ BasicPolyList parseMsolveFile(std::string filename)
 
 // BasicPolyList: should have a memoryUsed function.
 // Monoid: should return std::vector<std::string> of variable names.
-// 
+//
 
 // TODO: read sparse matrix, first line is `#rows #cols`, each line is of the form e.g. `0 5 2*x^2*y^2-3*x*y`
 //  how to end it?

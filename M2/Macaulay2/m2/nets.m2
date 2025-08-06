@@ -69,14 +69,13 @@ toExternalString Net := x -> if height x + depth x == 0 then
      concatenate("(horizontalJoin())", "^", toString height x) else
      concatenate(format toString x, "^", toString(height x - 1))
 
-toExternalString MutableHashTable := s -> (
-     if hasAttribute(s,ReverseDictionary) then return toString getAttribute(s,ReverseDictionary);
-     error "anonymous mutable hash table cannot be converted to external string";
-     )
-toExternalString Type := s -> (
-     if hasAttribute(s,ReverseDictionary) then return toString getAttribute(s,ReverseDictionary);
-     error "anonymous type cannot be converted to external string";
-     )
+toExternalString MutableHashTable :=
+toExternalString MutableList      := s -> (
+    if hasAttribute(s,ReverseDictionary)
+    then toString getAttribute(s,ReverseDictionary)
+    else error("anonymous ", synonym class s,
+	" cannot be converted to external string"))
+
 toExternalString HashTable := s -> (
      concatenate (
 	  "new ", toExternalString class s,
@@ -86,10 +85,6 @@ toExternalString HashTable := s -> (
 	  then demark(", ", apply(pairs s, (k,v) -> toExternalString k | " => " | toExternalString v) )
 	  else "",
 	  "}"))
-toExternalString MutableList := s -> (
-     error "anonymous mutable list cannot be converted to external string";
-     -- concatenate("new ",toExternalString class s, " from {...", toString(#s), "...}" )
-     )
 mid := s -> (
      if #s === 1 then toExternalString s#0
      else between(",",apply(toSequence s,x -> if x === null then "" else toExternalString x))
@@ -276,16 +271,15 @@ netList VisibleList := o -> (x) -> (
 -- TODO: move to debugging, except for Net?
 commentize = method(Dispatch => Thing)
 commentize Nothing   := s -> ""
-commentize BasicList := s -> commentize horizontalJoin s
+commentize BasicList := s -> commentize horizontalJoin apply(s, net)
 commentize String    := s -> concatenate(" -- ", between("\n -- ", separate s))
 commentize Net       := S -> (
     baseline := height S - if height S == -depth S then 0 else 1;
     (stack(commentize \ unstack S))^baseline)
 
 printerr = msg -> (stderr << commentize msg << endl;) -- always return null
-warning  = msg -> if debugLevel > 0 then (
-    if msg =!= () then printerr("warning: " | msg);
-    error "warning issued, debugLevel > 0");
+warning' = (n, msg) -> if debugLevel >= n then printerr("warning: ", horizontalJoin apply(msg, net))
+warning  =     msg  -> warning'(1, msg)
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/m2 "

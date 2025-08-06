@@ -10,7 +10,8 @@ Iterator.synonym = "iterator"
 
 iterator Iterator := identity
 next Iterator := iter -> iter()
-net Iterator := iter -> (
+
+net Iterator := iter -> if hasAttribute(iter,ReverseDictionary) then net getAttribute(iter,ReverseDictionary) else (
     x := if not (first frames iter)#?0 then () else first first frames iter;
     net FunctionApplication(iterator,
 	(if instance(x, String) then format else identity) x))
@@ -64,3 +65,11 @@ joinIterators = a -> (
 		r))))
 
 Iterator | Iterator := (x, y) -> joinIterators(x, y)
+
+pairsIterator = x -> Iterator (
+    iter := iterator x;
+    i := 0;
+    () -> (
+	y := next iter;
+	if y === StopIteration then StopIteration
+	else (i, (i += 1; y))))

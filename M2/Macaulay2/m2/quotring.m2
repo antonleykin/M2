@@ -1,6 +1,7 @@
 --		Copyright 1996-2006 by Daniel R. Grayson and Michael E. Stillman
 
 needs "enginering.m2"
+needs "polyrings.m2"
 needs "matrix1.m2"
 
 -----------------------------------------------------------------------------
@@ -14,7 +15,8 @@ isQuotientRing = method(TypicalValue => Boolean)
 isQuotientRing Ring := R -> false
 isQuotientRing QuotientRing := R -> true
 
-isFinitePrimeField = F -> isQuotientRing F and ambient F === ZZ and F.?char
+isFinitePrimeField = method(TypicalValue => Boolean)
+isFinitePrimeField Ring := F -> isQuotientRing F and ambient F === ZZ and F.?char
 
 isQuotientOf = method(TypicalValue => Boolean)
 isQuotientOf(Ring,Ring) := (R,S) -> false
@@ -36,7 +38,6 @@ degreesMonoid QuotientRing := (cacheValue degreesMonoid) (S -> degreesMonoid amb
 degreeLength QuotientRing := S -> degreeLength ambient S
 degreeGroup  QuotientRing := S -> degreeGroup  ambient S
 
-vars QuotientRing := (cacheValue vars) (S -> map(S^1,, table (1, numgens S, (i,j) -> S_j)))
 degrees QuotientRing := R -> degrees ambient R
 
 precision QuotientRing := precision @@ ambient
@@ -54,7 +55,6 @@ expression QuotientRing := S -> (
     if hasAttribute(S, ReverseDictionary)
     then expression getAttribute(S, ReverseDictionary)
     else new Divide from { unhold expression ambient S, unhold expression printRels S })
-toExternalString QuotientRing := toString @@ describe
 -- TODO: add AfterPrint for QuotientRing
 
 -----------------------------------------------------------------------------
@@ -232,8 +232,7 @@ Ring / List := Ring / Sequence := QuotientRing => (R,f) -> R / promote(ideal f, 
 -----------------------------------------------------------------------------
 
 presentation PolynomialRing := Matrix => R -> map(R^1, R^0, 0)
-presentation QuotientRing   := Matrix => R -> (
-     if R.?presentation then R.presentation else R.presentation = (
+presentation QuotientRing   := Matrix => R -> R.presentation ??= (
 	  S := ambient R;
 	  f := generators ideal R;
 	  while class S === QuotientRing do (		    -- untested code
@@ -241,8 +240,7 @@ presentation QuotientRing   := Matrix => R -> (
 	       S = ambient S;
 	       );
 	  f
-	  )
-     )
+    )
 
 presentation(QuotientRing,   QuotientRing)   :=
 presentation(QuotientRing,   PolynomialRing) :=
@@ -281,7 +279,7 @@ char QuotientRing := (stashValue symbol char) ((S) -> (
      g := generators gb relns;
      if g == 0 then return char ring g;
      m := g_(0,0);
-     if liftable(m,ZZ) then lift(m,ZZ) else 0))
+     lift(m,ZZ,Verify=>false) ?? 0))
 
 singularLocus = method()
 singularLocus(Ring) := QuotientRing => (R) -> (

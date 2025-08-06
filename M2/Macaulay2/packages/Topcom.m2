@@ -77,10 +77,12 @@ topcomPoints Matrix := opts -> (A) -> (
 callTopcom = method()
 callTopcom(String, List) := (command, inputs) -> (
     if topcomProgram === null then
-	topcomProgram = findProgram("topcom","cube 3", Prefix => {
+	topcomProgram = findProgram("topcom", {"cube 3", "B_A 3"}, Prefix => {
 	    (".*", "topcom-"), -- debian
 	    ("^(cross|cube|cyclic|hypersimplex|lattice)$", "TOPCOM-"), --fedora
-	    ("^cube$", "topcom_")}); --gentoo
+	    ("^cube$", "topcom_"), --gentoo
+	    ("^(binomial|cross|cube|cyclic|lattice)$", "topcom-") --arch
+	    });
     filename := temporaryFileName();
     infile := filename|".in";
     -- now create the output file
@@ -962,21 +964,21 @@ doc ///
   Key
     ConnectedToRegular
   Headline
-    an optional argument used in some functions in the Topcom interfacce package
+    an optional argument used in some functions in the Topcom interface package
 ///
 
 doc ///
   Key
     Fine
   Headline
-    an optional argument used in some functions in the Topcom interfacce package
+    an optional argument used in some functions in the Topcom interface package
 ///
 
 doc ///
   Key
     RegularOnly
   Headline
-    an optional argument used in some functions in the Topcom interfacce package
+    an optional argument used in some functions in the Topcom interface package
 ///
 
 

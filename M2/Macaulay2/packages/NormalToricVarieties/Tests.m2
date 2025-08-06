@@ -162,6 +162,8 @@ assert (makeSimplicial X === X)
 assert (makeSmooth X === X)
 M = saturate(image map(S^1/x_0, S^0, 0), ideal X)
 assert(0 == cohomology(0, X, sheaf_X M))
+-- test prune for line bundles
+assert(OO_X^1 === prune sheaf(X, truncate({1,1}, S^1)))
 ///
 
 -- test 4
@@ -206,7 +208,7 @@ Y = makeSmooth X;
 assert isWellDefined Y
 assert isSmooth Y
 assert (set rays Y === set {{-2,-3},{1,0},{0,1},{-1,-2},{-1,-1},{0,-1}})
-assert (sort max Y === sort {{0,5},{0,4},{1,2},{1,3},{2,4},{3,5}})
+assert (sort max Y === sort {{0,3},{0,4},{1,2},{1,5},{2,4},{3,5}})
 ///
 
 -- test 5

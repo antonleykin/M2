@@ -9,6 +9,7 @@ use struct;
 
 header "// TODO: break apart this file so each piece includes only one:
 #include <interface/aring.h>
+#include <interface/cone.h>
 #include <interface/cra.h>
 #include <interface/factory.h>
 #include <interface/flint.h>
@@ -50,18 +51,36 @@ export rawRandomZZ(e:Expr):Expr := (
      is maxN:ZZcell do toExpr(Ccode(ZZ, "rawRandomInteger(", maxN.v, ")"))
      else WrongArgZZ());
 setupfun("rawRandomZZ",rawRandomZZ);
+export rawFareyApproximation(e:Expr):Expr := (
+    when e
+    is a:Sequence do (
+	if length(a) != 2 then return WrongNumArgs(2);
+	when a.0
+	is x:RRcell do (
+	    when a.1
+	    is hgt:ZZcell do toExpr(Ccode(QQ,
+		    "rawFareyApproximation(", x.v, ", ", hgt.v, ")"))
+	    else WrongArgZZ(2))
+	else WrongArgRR(1))
+    else WrongNumArgs(2));
+setupfun("rawFareyApproximation", rawFareyApproximation);
 export rawRandomQQ(e:Expr):Expr := (
      when e
-     is Nothing do toExpr(Ccode(QQ, "rawRandomQQ(", "0)"))
-     is ht:ZZcell do toExpr(Ccode(QQ, "rawRandomQQ(", ht.v, ")"))
+     is ht:ZZcell do toExpr(Ccode(QQorNull, "rawRandomQQ(", ht.v, ")"))
      else WrongArgZZ());
 setupfun("rawRandomQQ",rawRandomQQ);
-export rawRandomRR(e:Expr):Expr := (
+export rawRandomRRUniform(e:Expr):Expr := (
      when e
      is prec:ZZcell do if !isULong(prec.v) then WrongArgSmallInteger() 
-     else toExpr(Ccode(RR, "rawRandomRR(", toULong(prec.v), ")"))
+     else toExpr(Ccode(RR, "rawRandomRRUniform(", toULong(prec.v), ")"))
      else WrongArgZZ());
-setupfun("rawRandomRR",rawRandomRR);
+setupfun("rawRandomRRUniform",rawRandomRRUniform);
+export rawRandomRRNormal(e:Expr):Expr := (
+     when e
+     is prec:ZZcell do if !isULong(prec.v) then WrongArgSmallInteger()
+     else toExpr(Ccode(RR, "rawRandomRRNormal(", toULong(prec.v), ")"))
+     else WrongArgZZ());
+setupfun("rawRandomRRNormal",rawRandomRRNormal);
 export rawRandomCC(e:Expr):Expr := (
      when e
      is prec:ZZcell do if !isULong(prec.v) then WrongArgSmallInteger() 
@@ -2364,7 +2383,7 @@ export rawMutableIdentity(e:Expr):Expr := (
      when s.0 is R:RawRingCell do
      when s.1 is nrows:ZZcell do if !isInt(nrows) then WrongArgSmallInteger(2) else
      when s.2 is preferDense:Boolean do
-     toExpr(Ccode(RawMutableMatrix, 
+     toExpr(Ccode(RawMutableMatrixOrNull,
 	       "IM2_MutableMatrix_identity(", 
 	       R.p, ",",
 	       toInt(nrows), ",",
@@ -2389,7 +2408,7 @@ export rawMutableMatrix(e:Expr):Expr := (
      when s.1 is nrows:ZZcell do if !isInt(nrows) then WrongArgSmallInteger(2) else
      when s.2 is ncols:ZZcell do if !isInt(ncols) then WrongArgSmallInteger(3) else
      when s.3 is preferDense:Boolean do
-     toExpr(Ccode(RawMutableMatrix, 
+     toExpr(Ccode(RawMutableMatrixOrNull,
 	       "IM2_MutableMatrix_make(", 
 	       R.p, ",",
 	       toInt(nrows), ",",
@@ -3850,6 +3869,21 @@ export rawNCReductionTwoSided(e:Expr):Expr := (
   ) else WrongNumArgs(2)
   );
 setupfun("rawNCReductionTwoSided",rawNCReductionTwoSided);
+
+-----------------------------------------------------------------------------
+-- Hilbert basis of a cone
+-----------------------------------------------------------------------------
+
+export rawFourierMotzkin(e:Expr):Expr := (
+     when e is G:RawMatrixCell do toExpr(Ccode(RawMatrixOrNull, "rawFourierMotzkin(", G.p, ")"))
+     else WrongArgMatrix());
+setupfun("rawFourierMotzkin", rawFourierMotzkin);
+
+export rawHilbertBasis(e:Expr):Expr := (
+     when e is G:RawMatrixCell do toExpr(Ccode(RawMatrixOrNull, "rawHilbertBasis(", G.p, ")"))
+     else WrongArgMatrix());
+setupfun("rawHilbertBasis", rawHilbertBasis);
+
 -----------------------------------------------------------------------------
 -- LU
 -----------------------------------------------------------------------------

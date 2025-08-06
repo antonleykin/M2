@@ -14,8 +14,7 @@ newPackage(
       HomePage => "http://www.mit.edu/~parrilo/"},
      {Name => "Helfried Peyrl",
       Email => "peyrl@control.ee.ethz.ch",
-      HomePage => "https://scholar.google.com/citations?user=cFOV7nYAAAAJ&hl=de"},
-     {Name => "Special thanks: Ilir Dema, Nidhi Kaihnsa, Anton Leykin"}
+      HomePage => "https://scholar.google.com/citations?user=cFOV7nYAAAAJ&hl=de"}
     },
     Headline => "sums of squares",
     Keywords => {"Real Algebraic Geometry"},
@@ -30,7 +29,6 @@ newPackage(
         "published article URI" => "https://msp.org/jsag/2020/10-1/p03.xhtml",
         "published article DOI" => "10.2140/jsag.2020.10.17",
         "published code URI" => "https://msp.org/jsag/2020/10-1/jsag-v10-n1-x03-SumsOfSquares.zip",
-        "repository code URI" => "https://github.com/Macaulay2/M2/blob/master/M2/Macaulay2/packages/SumsOfSquares.m2",
         "release at publication" => "7623915208e2f52445cd73c9acd680027bba1d9c",     -- git commit number in hex
         "version at publication" => "2.1",
         "volume number" => "10",
@@ -64,7 +62,7 @@ export {
 --##########################################################################--
 
 -- Constants
-MaxRoundTol = 32 --maximum rounding tolerance
+MaxRoundTol = 33 --maximum rounding tolerance
 HighPrecision = 1e-10 --e.g. for numerical linear algebra
 MedPrecision = 1e-6 --e.g. for SDP solutions
 LowPrecision = 1e-4
@@ -475,12 +473,12 @@ createSOSModel(Matrix,Matrix) := o -> (F,v) -> (
 
     -- monomials in vvT
     vvT := entries(v* transpose v);
-    mons := g -> set first entries monomials g;
-    K1 := toList \\ sum \\ mons \ flatten vvT;
+    mons := g -> unique first entries monomials g;
+    K1 := unique \\ flatten \\ mons \ flatten vvT;
 
     -- monomials in F and not in vvT
-    lmf := sum \\ mons \ flatten entries F;
-    K2 := toList(lmf - K1);
+    lmf := unique \\ flatten \\ mons \ flatten entries F;
+    K2 := lmf - set K1;
     K := K1 | K2;
 
     -- Linear constraints: b
@@ -1158,9 +1156,9 @@ checkLowerBound(String) := o -> (solver) -> (
 
     t1:= (
         R = RR[x,y];
-        f = (x-exp(1)*y)^2 + x^2 + (y-4)^2;
+        f = (x-exp(1)*y)^2 + x^2 + (y-2)^2;
         (bound,sol) = lowerBound(f, Solver=>solver,Verbosity=>o.Verbosity);
-        equal(bound,16*exp(2)/(2+exp(2)))
+        equal(bound,4*exp(2)/(2+exp(2)))
         );
 
     t2:= (

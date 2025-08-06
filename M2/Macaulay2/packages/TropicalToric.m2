@@ -9,7 +9,7 @@ newPackage(
         HomePage=>"https://alessioborzi.github.io"
       }
   },
-	Headline => "A package on tropical methods for toric intersection theory",
+	Headline => "tropical methods for toric intersection theory",
 	Configuration => {},
   PackageExports => {
     "NormalToricVarieties",
@@ -19,11 +19,11 @@ newPackage(
   PackageImports => {
     "FourierMotzkin"
   },
-	DebuggingMode => true,
 	AuxiliaryFiles => true,
 	CacheExampleOutput => true,
   OptionalComponentsPresent => true,
   UseCachedExampleOutput => true,
+  Keywords => {"Tropical Geometry"},
   Certification => {
       "journal name" => "Journal of Software for Algebra and Geometry",
       "journal URI" => "https://msp.org/jsag/",
@@ -32,7 +32,6 @@ newPackage(
       "published article URI" => "https://msp.org/jsag/2024/14-1/p04.xhtml",
       "published article DOI" => "10.2140/jsag.2024.14.19",
       "published code URI" => "https://msp.org/jsag/2024/14-1/jsag-v14-n1-x04-TropicalToric.zip",
-      "repository code URI" => "https://github.com/Macaulay2/M2/blob/master/M2/Macaulay2/packages/TropicalToric.m2",
       "release at publication" => "9ef0931eee637fc1fd9f377b35e91f4c14309a7c",
       "version at publication" => "1.0",
       "volume number" => "14",

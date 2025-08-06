@@ -29,6 +29,7 @@ importFrom_Core {
     "raw",
     "degreeToHeft", 
     "rawBetti", 
+    "rawMinimalBetti",
     "rawStartComputation", 
     "rawGBSetStop", 
     "rawStatus1", 
@@ -36,9 +37,13 @@ importFrom_Core {
     "rawResolution",
     "rawResolutionGetFree", 
     "rawResolutionGetMatrix",
+    "unpackEngineBetti",
+    "generatorSymbols",
     "hasNoQuotients",
     "Computation"
     }
+
+importFrom_Core "Resolution"
 
 ResolutionObject = new Type of MutableHashTable
 ResolutionObject.synonym = "resolution object"
@@ -201,8 +206,9 @@ resolutionObjectInEngine = (opts, M, matM) -> (
             );
         complex maps
         );
-    
-    RO.compute(opts.LengthLimit, opts.DegreeLimit);
+
+    if not opts.StopBeforeComputation then
+        RO.compute(opts.LengthLimit, opts.DegreeLimit);
     RO.complex(opts.LengthLimit)
     )
 
@@ -454,12 +460,12 @@ resolutionBySyzygies = (opts, M) -> (
 
     RO.complex = (lengthlimit) -> (
         syzmats := toList RO.SyzygyList;
-        C := if numcols first syzmats === 0 then complex M
+        C := if numcols first syzmats === 0 then complex target first syzmats
              else (
                  if numcols last syzmats === 0 then syzmats = drop(syzmats, -1);
                  complex syzmats
                  );
-        C.cache.augmentationMap = map(complex M, C, i -> map(M, target presentation M, 1));
+        C.cache.augmentationMap = map(complex M, C, i -> map(M, C_0, 1));
         C);
     
     RO.compute(opts.LengthLimit, opts.DegreeLimit);
@@ -533,8 +539,12 @@ addHook((freeResolution, Module), resolutionInEngine, Strategy => Engine)
 addHook((freeResolution, Module), resolutionOverZZ, Strategy => OverZZ)
 addHook((freeResolution, Module), resolutionOverField, Strategy => OverField)
 
+-- TODO: compare this with the OverZZ strategy above
+-- c.f. https://github.com/Macaulay2/M2/issues/3785
+-- addHook((freeResolution, Module), Strategy => symbol LLL,
+--     (o, M) -> if ring M === ZZ then complex compress LLL presentation M)
 
-debug Core
+
 cechComplex = method()
 cechComplex MonomialIdeal := Complex => B -> (
     if not isSquareFree B then error "expected squarefree monomial ideal";
@@ -601,7 +611,67 @@ truncate(BettiTally, InfiniteNumber, InfiniteNumber) := BettiTally => {} >> opts
         else continue
     )
 
+-----------------------------------------------------------------------------
+-- minimalBetti
+-----------------------------------------------------------------------------
+
+-- TODO: place this here, not in Core
+-- minimalBetti = method(
+--     TypicalValue => BettiTally,
+--     Options => {
+-- 	DegreeLimit => null,
+-- 	LengthLimit => infinity,
+-- 	Weights => null,
+--     ParallelizeByDegree => false -- currently: only used over primes fields of positive characteristic
+-- 	})
+
+--- version 1.24.05 version of minimalBetti.
 -*
+minimalBetti Module := BettiTally => opts -> M -> (
+    R := ring M;
+    degreelimit := resolutionDegreeLimit(R, opts.DegreeLimit);
+    lengthlimit := resolutionLengthLimit(R, opts.LengthLimit);
+    -- check to see if a cached resolution is sufficient
+    cacheKey := ResolutionContext{};
+    if M.cache#?cacheKey and isComputationDone(C := M.cache#cacheKey,
+	DegreeLimit => degreelimit, LengthLimit => lengthlimit)
+    then return betti(C.Result.Resolution, Weights => opts.Weights);
+    -- if not, compute a fast non-minimal resolution
+    -- the following line is because we need to make sure we have the resolution
+    -- either complete, or one more than the desired minimal betti numbers.
+    
+    -- We see if we can now compute a non-minimal resolution.
+    -- If not, we compute a usual resolution.
+    -- TODO: this isn't quite correct.
+    useFastNonminimal := not isQuotientRing R and
+      char R > 0 and char R < (1<<15);
+
+    if not useFastNonminimal then 
+        return betti resolution(M, DegreeLimit => degreelimit, LengthLimit => lengthlimit);
+    -- At this point, we think we are good to use the faster algorithm.        
+    -- First, we need to comppute the non-minimal resolution to one further step.
+    if instance(opts.LengthLimit, ZZ) then lengthlimit = lengthlimit + 1;
+    C = resolution(M,
+	StopBeforeComputation => true, FastNonminimal => true, ParallelizeByDegree => opts.ParallelizeByDegree,
+	DegreeLimit => degreelimit, LengthLimit => lengthlimit);
+    rC := if C.?Resolution and C.Resolution.?RawComputation then C.Resolution.RawComputation
+    -- TODO: when can this error happen?
+    else error "cannot use 'minimalBetti' with this input. Input must be an ideal or module in a
+    polynomial ring or skew commutative polynomial ring over a finite field, which is singly graded.
+    These restrictions might be removed in the future.";
+    --
+    B := unpackEngineBetti rawMinimalBetti(rC,
+	if opts.DegreeLimit =!= null     then {opts.DegreeLimit} else {},
+	if opts.LengthLimit =!= infinity then {opts.LengthLimit} else {}
+        );
+    betti(B, Weights => heftvec(opts.Weights, heft R))
+    )
+minimalBetti Ideal := BettiTally => opts -> I -> minimalBetti(
+    if I.cache.?quotient then I.cache.quotient
+    else I.cache.quotient = cokernel generators I, opts
+    )
+*-
+
 minimalBetti Module := BettiTally => opts -> M -> (
     R := ring M;
     degreelimit := opts.DegreeLimit;
@@ -631,7 +701,8 @@ minimalBetti Module := BettiTally => opts -> M -> (
 	nvars := # generators(R, CoefficientRing => A);
 	lengthlimit = nvars + if A === ZZ then 1 else 0;
         );
-    C = freeResolution(M, DegreeLimit => degreelimit, LengthLimit => lengthlimit + 1, Strategy => Nonminimal);
+    C = freeResolution(M, DegreeLimit => degreelimit, LengthLimit => lengthlimit + 1,
+        Strategy => Nonminimal, StopBeforeComputation => true);
     rC := M.cache.ResolutionObject.RawComputation;
     B := unpackEngineBetti rawMinimalBetti(rC,
         if opts.DegreeLimit === infinity then {} else
@@ -640,6 +711,10 @@ minimalBetti Module := BettiTally => opts -> M -> (
     betti(B, Weights => heftvec(opts.Weights, heft R))
     )
 
+minimalBetti Ideal := BettiTally => opts -> I -> minimalBetti(comodule I, opts)
+
+-*
+-- older version of Core version of minimalBetti.  Can't use here?
 minimalBetti(Module, Thing) := BettiTally => opts -> (M, junk) -> (
     R := ring M;
     degreelimit := resolutionDegreeLimit(R, opts.DegreeLimit);

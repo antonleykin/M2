@@ -168,9 +168,11 @@ TEST ///
 -- isASMUnion
 assert isASMUnion {{1}}
 assert isASMUnion {{4,3,2,1}}
-assert not isASMUnion {{2,1,3,4},{4,2,3,1}}
+assert not isASMUnion {{2,1,3},{1,3,2}}
 assert isASMUnion {{3,1,2},{2,3,1}}
 assert isASMUnion {{4,1,3,2},{3,4,1,2},{2,4,3,1}}
+assert isASMUnion {{2,1,3}} --catches old bug from using cycle Decompositions
+assert isASMUnion {{2,1,3},{3,1,2}} --catches old bug that misses containment
 ///
 
 TEST ///
@@ -236,6 +238,10 @@ assert(isPatternAvoiding({1,4,6,2,3,7,5}, {1,4,3,2}));
 
 assert(not isPatternAvoiding({7,2,5,8,1,3,6,4}, {2,1,4,3}));
 assert(isPatternAvoiding({1,6,9,2,4,7,3,5,8}, {2,1,4,3}));
+
+assert(not isPatternAvoiding({3,1,2},{3,1,2}));
+assert(not isPatternAvoiding({1,2,3,6,4,5}, {3,1,2}));
+assert(isPatternAvoiding({3,1,2},{2,3,1}));
 
 --isVexillary
 assert(not isVexillary({7,2,5,8,1,3,6,4}));
@@ -1023,4 +1029,10 @@ M = matrix{{0,3,4},{1,1,1}}
 A = matrix{{0,1,1},{1,1,1}}
 assert(rankTableFromMatrix M == A)
 assert(rankTableFromMatrix A == A)
+///
+
+TEST ///
+--toOneLineNotation edge case
+assert(toOneLineNotation({1},1) == {1})
+
 ///

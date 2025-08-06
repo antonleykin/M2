@@ -25,6 +25,7 @@ newPackage(
 	  }
 	  },
      Headline => "aids in computations related to depth",
+     PackageImports => {"OldChainComplexes"},
      Keywords => {"Commutative Algebra"},
      DebuggingMode => false
      )
@@ -648,7 +649,7 @@ doc///
 	  (depth, Ideal, Module)
 	  (depth, Module)
           (depth, Ideal, Ideal)
-     Headline 
+     Headline
           computes the depth of a ring
      Usage
           d = depth(I,M)

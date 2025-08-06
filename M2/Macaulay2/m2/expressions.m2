@@ -5,7 +5,7 @@ needs "max.m2"
 needs "methods.m2"
 needs "nets.m2"
 
-Constant = new Type of BasicList
+Constant = new Type of Number
 globalAssignment Constant
 
 precedence = method(Dispatch => Thing)
@@ -476,6 +476,7 @@ expression ZZ := i -> (
      else if i < 0 then new Minus from { -i }
      else hold i
      )
+OneExpression ^ Expression :=
 Holder     ^ OneExpression :=
 Expression ^ OneExpression := (x,y) -> x
 Holder     ^ ZeroExpression :=
@@ -549,25 +550,46 @@ toString'(Function, SparseMonomialVectorExpression) := (fmt,v) -> toString (
 -----------------------------------------------------------------------------
 MatrixExpression = new HeaderType of Expression
 MatrixExpression.synonym = "matrix expression"
-matrixOpts1 := new OptionTable from {Blocks=>null,Degrees=>null,MutableMatrix=>false};
-matrixOpts := m -> ( -- helper function
+matrixOpts1 := new OptionTable from {
+    Blocks => null,
+    Degrees => null,
+    symbol MutableMatrix => false,
+    symbol zero => null};
+matrixOpts = m -> ( -- helper function
     (opts,x) := override(matrixOpts1,toSequence m);
     (opts, if #x > 0 and class x#0 =!= List then { x } else toList x) -- because of #1548
     )
 expressionValue MatrixExpression := x -> (
     (opts,m) := matrixOpts x;
-    if #m === 0 then return map(ZZ^0,ZZ^0,0); -- not great but best one can do
-    m = (if opts.MutableMatrix then mutableMatrix else matrix) applyTable(m,expressionValue);
+    if opts.zero =!= null
+    then (
+	if opts.MutableMatrix
+	then mutableMatrix(
+	    commonRing toList opts.zero, rank opts.zero#0, rank opts.zero#1)
+	else map(opts.zero#0, opts.zero#1, 0))
     -- TODO: keep track of blocks too
-    if opts.Degrees === null then m else (
-    R := ring m;
-    map(R^(-opts.Degrees#0),R^(-opts.Degrees#1),entries m)
-    ))
+    else (
+	m = (if opts.MutableMatrix then mutableMatrix else matrix) applyTable(m,expressionValue);
+	if opts.Degrees === null then m else (
+	    R := ring m;
+	    map(R^(-opts.Degrees#0),R^(-opts.Degrees#1),entries m)
+	    )))
 toString'(Function, MatrixExpression) := (fmt,x) -> concatenate(
     (opts,m) := matrixOpts x;
-    if opts.MutableMatrix then "mutableMatrix {" else "matrix {",
-    between(", ",apply(m,row->("{", between(", ",apply(row,fmt)), "}"))),
-    "}" )
+    if opts.zero =!= null
+    then (
+	if opts.MutableMatrix
+	then ("mutableMatrix(",
+	    fmt commonRing toList opts.zero, ", ",
+	    fmt opts.zero#0, ", ",
+	    fmt opts.zero#1, ")")
+	else ("map(",
+	    fmt opts.zero#0, ", ",
+	    fmt opts.zero#1, ", 0)"))
+    else (
+	if opts.MutableMatrix then "mutableMatrix {" else "matrix {",
+	between(", ",apply(m,row->("{", between(", ",apply(row,fmt)), "}"))),
+	"}" ))
 -----------------------------------------------------------------------------
 VectorExpression = new HeaderType of Expression
 VectorExpression.synonym = "vector expression"
@@ -585,60 +607,6 @@ toString'(Function, Table) := (fmt,m) -> concatenate(
      between(", ",apply(toList m,row->("{", between(", ",apply(row,fmt)), "}"))),
      "}" )
 -----------------------------------------------------------------------------
-
--- TODO: move this to latex.m2
-keywordTexMath = new HashTable from { -- both unary and binary keywords
-    symbol |- => "\\vdash ",
-    symbol .. => "\\,{.}{.}\\,",
-    symbol ..< => "\\,{.}{.}{<}\\,",
-    symbol <= => "\\le ",
-    symbol >= => "\\ge ",
-    symbol => => "\\Rightarrow ",
-    symbol ==> => "\\Longrightarrow ",
-    symbol <== => "\\Longleftarrow ",
-    symbol <==> => "\\Longleftrightarrow ",
-    symbol _>  => "{}_>",
-    symbol _>= => "{}_>=",
-    symbol _<  => "{}_<",
-    symbol _<= => "{}_<",
-    symbol ^>  => "{}^>",
-    symbol ^>= => "{}^>=",
-    symbol ^<  => "{}^<",
-    symbol ^<= => "{}^<",
-    symbol ** => "\\otimes ",
-    symbol ++ => "\\oplus ",
-    symbol != => "\\ne ",
-    symbol -> => "\\rightarrow ",
-    symbol <- => "\\leftarrow ",
-    symbol ===> => "{\\large\\Longrightarrow}",
-    symbol <=== => "{\\large\\Longleftarrow}",
-    symbol << => "\\ll ",
-    symbol >> => "\\gg ",
-    symbol  ! => "!",
-    symbol ^! => "{}^!",
-    symbol _! => "{}_!",
-    symbol  ~ => "\\sim ",
-    symbol ^~ => "{}^\\sim",
-    symbol _~ => "{}_\\sim",
-    --symbol ^# => "{}^\\sharp",
-    --symbol _# => "{}_\\sharp",
-    symbol ^** => "{}^{\\otimes}", -- temporary solution to KaTeX issue https://github.com/KaTeX/KaTeX/issues/3576
-    symbol _ => "\\_",
-    symbol { => "\\{",
-    symbol } => "\\}",
-    symbol \ => "\\backslash ",
-    symbol \\ => "\\backslash\\backslash ",
-    symbol # => "\\#",
-    symbol #? => "\\#?",
-    symbol % => "\\%",
-    symbol & => "\\&",
-    symbol ^ => "\\wedge ",
-    symbol ^^ => "\\wedge\\wedge ",
-    symbol <| => "\\langle ",
-    symbol |> => "\\rangle ",
-    symbol _* => "{}_*", -- temporary solution to KaTeX issue https://github.com/KaTeX/KaTeX/issues/3576
-    symbol ^* => "{}^*" -- temporary solution to KaTeX issue https://github.com/KaTeX/KaTeX/issues/3576
-    }
 
 BinaryOperation = new HeaderType of Expression -- {op,left,right}
 BinaryOperation.synonym = "binary operation expression"
@@ -855,7 +823,7 @@ net Sum := v -> (
 		    then bigParenthesize net v#i
 		    else      	   	 net v#i))))
 
-isNumber = method(TypicalValue => Boolean)
+isNumber = method(Dispatch => Thing, TypicalValue => Boolean)
 isNumber Thing := i -> false
 isNumber RR :=
 isNumber QQ := -- QQ never appears in an expression...
@@ -1114,7 +1082,7 @@ texMath Subscript := v -> (
      x := texMath v#0;
      y := if class v#1 === Sequence then demark(",", apply(v#1,texMath)) else texMath v#1; -- no () for sequences
      if precedence v#0 <  p or class v#0 === Subscript then x = "\\left(" | x | "\\right)"; -- precedence or double subscript
-     concatenate(x,"_{",y,"}") -- no braces around x
+     concatenate(x,"_{",y,"}",if class v#0===Symbol and last toString v#0=="'" then "{}") -- no braces around x
      )
 
 -*
@@ -1196,7 +1164,8 @@ texMath MatrixExpression := x -> (
 )
 
 texMath VectorExpression := v -> (
-    concatenate(
+    if all(v,i->class i===ZeroExpression) then "0"
+    else concatenate(
 	"\\left(",
 	"\\!\\begin{array}{c}",
 	newline,
@@ -1208,13 +1177,9 @@ texMath VectorExpression := v -> (
 
 -----------------------------------------------------------------------------
 print =  x -> (
-    c := class x;
-    while not c#?{topLevelMode,print} do (
-	if c === Thing then (<< net x << endl; return); -- default
-	c = parent c;
-	);
-    c#{topLevelMode,print} x
-    )
+    f := lookup({topLevelMode, print}, class x);
+    if f === null then << net x << endl -- default
+    else f x;)
 -----------------------------------------------------------------------------
 
 File << Thing := File => (o,x) -> printString(o,net x)
@@ -1312,7 +1277,7 @@ toString Dots := x -> "..."
 net Dots := x -> if x === vdots then "."||"."||"." else if x === ddots then ".  "||" . "||"  ." else "..."
 
 -- used e.g. in chaincomplexes.m2
-shortLength := 8
+shortLength = 8
 shortStringLength := 3*shortLength
 short = method(Dispatch => Thing, TypicalValue => Expression)
 short Thing := x -> short expression x

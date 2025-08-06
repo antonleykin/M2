@@ -33,7 +33,6 @@
 #include "schreyer-resolution/res-schreyer-frame.hpp"     // for SchreyerFrame
 #include "schreyer-resolution/res-schreyer-order.hpp"     // for ResSchreyer...
 #include "timing.hpp"                                     // for timer, seconds
-#include <gmp.h>                                          // for mpz_clear
 #include <cstdlib>                                        // for exit, size_t
 #include <chrono>                                         // for common_type...
 #include <iostream>                                       // for operator<<
@@ -248,7 +247,6 @@ MutableMatrix* ResF4toM2Interface::to_M2_MutableMatrix(SchreyerFrame& C,
   // ring of C.
   const PolynomialRing* RP = R->cast_to_PolynomialRing();
   const Monoid* M = RP->getMonoid();
-  const Ring* K = RP->getCoefficientRing();
 
   if (lev <= 0 or lev > C.maxLevel())
     {

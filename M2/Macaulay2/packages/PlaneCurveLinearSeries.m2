@@ -5,10 +5,11 @@ newPackage(
           Headline => "Linear series on the normalization of a plane curve",
           Authors => {{ Name => "David Eisenbud", 
 		  Email => "de@berkeley.edu", 
-		  HomePage => "eisenbud.io.github.com"}},
+		  HomePage => "https://eisenbud.github.io/"}},
 	  PackageExports => {"IntegralClosure","PrimaryDecomposition"},
           AuxiliaryFiles => false,
-          DebuggingMode => false
+          DebuggingMode => false,
+	  Keywords => {"Projective Algebraic Geometry"}
           )
       export {
 	  "canonicalSeries",
@@ -478,7 +479,7 @@ Outputs
 Description
   Text
    Implements the additive inverse in the group law on the smooth points of
-   a plane curve E of genus 1, represented by its homogeneouos coordinate ring,
+   a plane curve E of genus 1, represented by its homogeneous coordinate ring,
    with chosen zero point o.
   Example
    S = QQ[x,y,z]

@@ -17,7 +17,6 @@ newPackage(
 	     "published article URI" => "https://msp.org/jsag/2013/5-1/p02.xhtml",
 	     "published article DOI" => "10.2140/jsag.2013.5.8",
 	     "published code URI" => "https://msp.org/jsag/2013/5-1/jsag-v5-n1-x02-code.zip",
-	     "repository code URI" => "https://github.com/Macaulay2/M2/blob/master/M2/Macaulay2/packages/MonomialAlgebras.m2",
 	     "release at publication" => "68f41d641fadb0a1054023432eb60177f1d7cbd9",
 	     "version at publication" => "2.3",
 	     "volume number" => "5",
@@ -131,7 +130,7 @@ I:=binomialIdeal R;
 R/I)
 
 affineAlgebra List := opt-> B -> (
-I:=binomialIdeal B;
+I:=binomialIdeal(B, opt);
 (ring I)/I)
 
 affineAlgebra MonomialAlgebra := opt -> M-> affineAlgebra ring M
@@ -937,6 +936,10 @@ TEST ///
 5}, {1, 1, 3}, {4, 0, 1}, {0, 2, 3}}})
 ///
 
+TEST /// -- issue #636
+assert(coefficientRing affineAlgebra({{1, 2}, {3, 4}},
+	CoefficientField => QQ) === QQ)
+///
 
 doc ///
   Key
