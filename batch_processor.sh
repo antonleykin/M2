@@ -1,12 +1,60 @@
 #!/bin/bash
 
-# Script to find an available BATCH directory and launch gfan command
-# Usage: ./batch_processor.sh [nBatch]
+# Script to find available BATCH directories and launch gfan commands concurrently
+# Usage: ./batch_processor.sh [nBatch] [max_concurrent]
 
-# Default number of batches if not provided
+# Default number of batches and max concurrent processes if not provided
 nBatch=${1:-10}
+max_concurrent=${2:-3}
 
-echo "Searching through BATCH-0 to BATCH-$((nBatch-1)) for available directory..."
+echo "Searching through BATCH-0 to BATCH-$((nBatch-1)) for available directories..."
+echo "Processing up to $max_concurrent batches concurrently..."
+
+# Function to process a single batch
+process_batch() {
+    local batch_dir="$1"
+    local batch_num="$2"
+    
+    echo "[BATCH-$batch_num] Starting processing..."
+    
+    # Change to the batch directory
+    cd "$batch_dir"
+    
+    # Check if input file exists
+    if [ ! -f "_tropicalprevariety.input" ]; then
+        echo "[BATCH-$batch_num] Error: _tropicalprevariety.input file not found"
+        rm -f "processing"
+        cd ..
+        return 1
+    fi
+    
+    echo "[BATCH-$batch_num] Launching gfan command..."
+    
+    # Launch the gfan command
+    gfan _tropicalprevariety -j32 --log1 --usevaluation --bits64 --halfopenrestrictions --matrixoutput < _tropicalprevariety.input > _tropicalprevariety.output 2> gfan.log
+    
+    # Check if command completed successfully
+    if [ $? -eq 0 ]; then
+        echo "[BATCH-$batch_num] gfan command completed successfully"
+        # Remove processing file and create done file
+        rm -f "processing"
+        touch "done"
+        echo "[BATCH-$batch_num] Marked as completed"
+    else
+        echo "[BATCH-$batch_num] gfan command failed"
+        # Remove processing file on failure
+        rm -f "processing"
+    fi
+    
+    # Return to parent directory
+    cd ..
+    
+    echo "[BATCH-$batch_num] Finished processing"
+}
+
+# Array to store background process PIDs
+declare -a pids=()
+declare -a batch_nums=()
 
 # Search through BATCH directories
 for i in $(seq 0 $((nBatch-1))); do
@@ -29,41 +77,43 @@ for i in $(seq 0 $((nBatch-1))); do
     echo "Creating 'processing' file to mark as busy..."
     touch "$batch_dir/processing"
     
-    # Change to the batch directory
-    cd "$batch_dir"
+    # Start processing this batch in background
+    process_batch "$batch_dir" "$i" &
+    pid=$!
+    pids+=($pid)
+    batch_nums+=($i)
     
-    # Check if input file exists
-    if [ ! -f "_tropicalprevariety.input" ]; then
-        echo "Error: _tropicalprevariety.input file not found in $batch_dir"
-        rm -f "processing"
-        cd ..
-        continue
+    echo "Started BATCH-$i with PID $pid"
+    
+    # Check if we've reached max concurrent processes
+    if [ ${#pids[@]} -ge $max_concurrent ]; then
+        echo "Reached maximum concurrent processes ($max_concurrent), waiting for one to complete..."
+        
+        # Wait for any background process to complete
+        wait -n
+        
+        # Clean up completed processes from arrays
+        for j in "${!pids[@]}"; do
+            if ! kill -0 "${pids[j]}" 2>/dev/null; then
+                echo "BATCH-${batch_nums[j]} (PID ${pids[j]}) has completed"
+                unset pids[j]
+                unset batch_nums[j]
+            fi
+        done
+        
+        # Reindex arrays
+        pids=("${pids[@]}")
+        batch_nums=("${batch_nums[@]}")
     fi
-    
-    echo "Launching gfan command in $batch_dir..."
-    
-    # Launch the gfan command
-    gfan _tropicalprevariety -j32 --log1 --usevaluation --bits64 --halfopenrestrictions --matrixoutput < _tropicalprevariety.input > _tropicalprevariety.output 2> gfan.log
-    
-    # Check if command completed successfully
-    if [ $? -eq 0 ]; then
-        echo "gfan command completed successfully in $batch_dir"
-        # Remove processing file and create done file
-        rm -f "processing"
-        touch "done"
-        echo "Marked $batch_dir as completed"
-    else
-        echo "gfan command failed in $batch_dir"
-        # Remove processing file on failure
-        rm -f "processing"
-    fi
-    
-    # Return to parent directory
-    cd ..
-    
-    # Exit after processing one batch
-    exit 0
 done
 
-echo "No available BATCH directories found"
-exit 1
+# Wait for all remaining background processes to complete
+if [ ${#pids[@]} -gt 0 ]; then
+    echo "Waiting for remaining ${#pids[@]} processes to complete..."
+    for i in "${!pids[@]}"; do
+        wait "${pids[i]}"
+        echo "BATCH-${batch_nums[i]} (PID ${pids[i]}) has completed"
+    done
+fi
+
+echo "All batch processing completed"
