@@ -89,21 +89,21 @@ for i in $(seq 0 $((nBatch-1))); do
     if [ ${#pids[@]} -ge $max_concurrent ]; then
         echo "Reached maximum concurrent processes ($max_concurrent), waiting for one to complete..."
         
-        # Wait for any background process to complete
-        wait -n
-        
-        # Clean up completed processes from arrays
-        for j in "${!pids[@]}"; do
-            if ! kill -0 "${pids[j]}" 2>/dev/null; then
-                echo "BATCH-${batch_nums[j]} (PID ${pids[j]}) has completed"
-                unset pids[j]
-                unset batch_nums[j]
-            fi
+        # Wait for any background process to complete (compatible approach)
+        while true; do
+            for j in "${!pids[@]}"; do
+                if ! kill -0 "${pids[j]}" 2>/dev/null; then
+                    echo "BATCH-${batch_nums[j]} (PID ${pids[j]}) has completed"
+                    unset pids[j]
+                    unset batch_nums[j]
+                    # Reindex arrays
+                    pids=("${pids[@]}")
+                    batch_nums=("${batch_nums[@]}")
+                    break 2  # Break out of both loops
+                fi
+            done
+            sleep 1  # Wait a second before checking again
         done
-        
-        # Reindex arrays
-        pids=("${pids[@]}")
-        batch_nums=("${batch_nums[@]}")
     fi
 done
 
