@@ -228,15 +228,15 @@ verify Certificate := Boolean => c -> (
 	H := c#"witness";
 	(gens I * H)_(0,0) == f)
     else if strat == "MonomialDivision" then (
-	f := st#"data"#"element";
-	I := st#"data"#"ideal";
+	f = st#"data"#"element";
+	I = st#"data"#"ideal";
 	(g, q) := c#"witness";
 	any(first entries gens I, h -> h == g) and q * g == f)
     else if strat == "NonMembership" then (
 	-- st is a Not whose argument is the membership statement
 	inner := st#"arg";
-	f := inner#"data"#"element";
-	I := inner#"data"#"ideal";
+	f = inner#"data"#"element";
+	I = inner#"data"#"ideal";
 	f % I != 0 and c#"witness" == f % I)
     else error("unknown certificate strategy: " | toString strat))
 
