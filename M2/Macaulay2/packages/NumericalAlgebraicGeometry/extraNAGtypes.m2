@@ -186,6 +186,17 @@ evaluate(H,p0,x0)
 evaluateJacobian(H,p0,x0)
 ///
 
+TEST /// -- specialize(GateSystem, AbstractPoint) substitutes parameter values
+X = gateMatrix{declareVariable \ {x, y}}
+P = gateMatrix{declareVariable \ {a, b, c}}
+H = gateSystem(P, X, transpose gateMatrix{{a*x^2+c*y^2-6, 2*x^2-2*y*b}})
+p0 = point({{1.1_CC,0.51,1}})
+x0 = point({{1.0_CC,2.3_CC}})
+Hp = specialize(H, p0)
+assert(numParameters Hp == 0)
+assert areEqual(evaluate(Hp,x0), evaluate(H,p0,x0))
+///
+
 --TEST 
 /// -- package Serialization
 restart
